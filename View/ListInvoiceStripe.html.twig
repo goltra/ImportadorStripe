@@ -1,0 +1,84 @@
+{% extends 'Master/MenuTemplate.html.twig' %}
+
+{% block body %}
+
+    <div class="m-3">
+        <form action="{{ asset('ListInvoiceStripe') }}?action=load" method="post">
+            <div style="display: flex">
+
+                <label style="flex:1;padding-right:2.5px" for="f-ini-date">Fecha inicial
+                    <input type="date" class="form-control" name="f-ini-date" id="f-ini-date" autocomplete="off"
+                           value="{{ fsc.f_ini }}"/>
+                </label>
+                <label style="flex:1;padding-right:2.5px" for="f-fin-date">Fecha inicial
+                    <input type="date" class="form-control" name="f-fin-date" id="f-fin-date" autocomplete="off"
+                           value="{{ fsc.f_fin }}"/>
+                </label>
+
+            </div>
+
+            <label for="sk_stripe_index">Indica la cuenta de stripe</label>
+            <select id="sk_stripe_index" name="sk_stripe_index" class="custom-select">
+                {% for key,value in fsc.sks_stripe %}
+                    <option {% if(key == fsc.sk_stripe_index) %} selected {% endif %}
+                            value="{{ key }}">{{ value.name }}</option>
+                {% endfor %}
+                <!-- <option value="0" selected>sk_stript_1</option>
+                <option value="1">sk_stript_2</option>
+                <option value="2">sk_stript_3</option> -->
+            </select>
+            <button style="margin-top: 15px" onclick="muestraSpinner(true)" class="btn btn-info" type="submit">
+                Consultar
+            </button>
+        </form>
+    </div>
+    {% if(fsc.action=='load') %}
+        <div class="m-3 mt-4">
+            <h1>Lista de Facturas pendientes de procesar en stripe</h1>
+            <div class="alert alert-primary" role="alert">{{ fsc.textFilter }}</div>
+
+            {% set res = fsc.invoices %}
+            <table class="table table-striped">
+                <thead class="thead-light">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Email</th>
+                    <th>Cliente FS</th>
+                    <th>Importe</th>
+                    <th>Estado</th>
+                    <th>...</th>
+                </tr>
+                </thead>
+                {% for f in res.data %}
+                    <tr>
+                        <td>{{ f.date }}</td>
+                        <td>{{ f.customer_email }}</td>
+                        <td><a href="{{ asset('EditCliente') }}?code={{ f.fs_idFsCustomer }}"
+                               target="_blank">{{ f.fs_customerName }}</a>
+                            <a href="{{ asset('SelectClient') }}?action=changing&stripe_customer_id={{ f.customer_id }}&sk_stripe_index={{ fsc.sk_stripe_index }}">
+                                <i class="fas fa-pencil-alt"></i>
+                            </a>
+                        </td>
+                        <td>{{ f.amount }}</td>
+                        <td>{{ f.status }}</td>
+                        <td>
+                            <a href="{{ asset('CreateInvoiceStripe') }}?action=check&id={{ f.id }}&sk_stripe_index={{ fsc.sk_stripe_index }}"><i
+                                        class="fas fa-plus"></i></a></td>
+                    </tr>
+                {% endfor %}
+            </table>
+
+            {# {% if res.has_more==true %}
+                <a onclick="muestraSpinner(true)"
+                   href="{{ fsc.url() }}?action={{ fsc.actions['load'] }}&start={{ res.last }}&limit={{ res.limit }}&sk_stripe_index={{ fsc.sk_stripe_index }}">Cargar
+                    más</a>
+            {% else %}
+                <a onclick="muestraSpinner(true)" href="{{ fsc.url() }}">No hay más facturas de esta cuenta.</a>
+            {% endif %} #}
+        </div>
+    {% endif %}
+    {# <div onclick="muestraSpinner(true)">muestra spinner</div> #}
+    {{ include('_spinner.html.twig') }}
+
+
+{% endblock %}

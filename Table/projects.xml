@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<table>
+    <column>
+        <name>code</name>
+        <type>serial</type>
+        <null>NO</null>
+    </column>
+    <column>
+        <name>description</name>
+        <type>text</type>
+    </column>
+    <constraint>
+        <name>pk_project</name>
+        <type>PRIMARY KEY (code)</type>
+    </constraint>
+</table>

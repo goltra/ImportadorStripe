@@ -1,0 +1,18 @@
+{
+  "name": "vendor/importador-stripe",
+  "description": "Permite importar a FS datos de stripe.",
+  "authors": [
+    {
+      "name": "francisco",
+      "email": "goltratec@gmail.com"
+    }
+  ],
+  "config": {
+    "platform": {
+      "php": "7.4.12"
+    }
+  },
+  "require": {
+    "stripe/stripe-php": "^7.107"
+  }
+}

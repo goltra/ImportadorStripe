@@ -1,4 +1,4 @@
-# Stripe Invoice
+# Importador Stripe
 
 ## Descripción
 Stripe es un sistema de pagos online que entre otras cosas nos permite gestionar cobros recurrentes de servicios a los 

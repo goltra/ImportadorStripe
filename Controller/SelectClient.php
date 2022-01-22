@@ -55,6 +55,11 @@ class SelectClient extends ParentListCliente
 
     protected function execPreviousAction($action)
     {
+        
+        if($action=="" && $this->request->query->get('action')){
+            $action = $this->request->query->get('action');
+        }
+        var_dump($action);
         switch ($action) {
             case 'invoicing':
                 $this->postAction = 'selectClient';
@@ -63,8 +68,8 @@ class SelectClient extends ParentListCliente
                 $this->postAction = 'changeClient';
                 break;
         }
-        $this->init();
         parent::execPreviousAction($action);
+        $this->init();
     }
 
     protected function execAfterAction($action)

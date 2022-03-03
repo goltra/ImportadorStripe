@@ -187,8 +187,12 @@ class InvoiceStripe
                         // que es la importe de la parte de impuestos y si va o no incluido.
                         //Conociendo el Amount de la linea  podemos calcular el porcentaje de impuesto. Hacer una función que devuelva el % en base al importe.
                         //Si tax_amounts es un array vacio, entonces no hay que calcular nada.
-                        $vat_perc = $l->tax_rates !== null && count($l->tax_rates) > 0 ? $l->tax_rates[0]['percentage'] : null;
-                        $var_included = $l->tax_rates !== null && count($l->tax_rates) > 0 ? $l->tax_rates[0]['inclusive'] : null;
+                        $vat_perc = null;
+                        $vat_included = null;
+                        if (count($l->tax_amounts) > 0) {
+                            $vat_included = $l->tax_amounts[0]['inclusive'];
+                            $vat_perc = self::calculateTaxPercentage($l->tax_amounts[0]['amount'], $l->amount, $vat_included);
+                        }
 
                         if ($l->price !== null && $l->price->product !== null && $l->price->product !== '') {
                             $fs_product_id = ProductModel::getFsProductIdFromStripe($sk_stripe_index, $l->price->product);
@@ -402,7 +406,11 @@ class InvoiceStripe
         }
     }
 
-    static private function calculateTaxPercentage($tax_amount, $line_amount){
-        return ($tax_amount*100/($line_amount-$tax_amount));
+    static private function calculateTaxPercentage($tax_amount, $line_amount, $tax_included)
+    {
+        if ($tax_included)
+            return (($tax_amount / 100) * 100 / (($line_amount / 100) - ($tax_amount / 100)));
+
+        return (($tax_amount / 100) * 100 / (($line_amount / 100)));
     }
 }

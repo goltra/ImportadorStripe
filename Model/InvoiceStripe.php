@@ -217,10 +217,10 @@ class InvoiceStripe
                         }
 
                         $unit_amount = $l->price->unit_amount / 100;
-                        if ($var_included === null) {
+                        if ($vat_included === null) {
                             $unit_amount = $unit_amount / (1 + ($tax->iva / 100));
                         } else {
-                            $unit_amount = ($var_included) ? $unit_amount / (1 + ($tax->iva / 100)) : $unit_amount;
+                            $unit_amount = ($vat_included) ? $unit_amount / (1 + ($tax->iva / 100)) : $unit_amount;
                         }
                         $amount = $unit_amount * $l->quantity;
                         $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->plan->name . ' ' . $l->description, 'period_start' => $period_start, 'period_end' => $period_end];
@@ -324,7 +324,7 @@ class InvoiceStripe
 
                 $line->cantidad = $l['quantity'];
                 $line->pvpunitario = $l['unit_amount'];
-                $line->pvptotal = $l['amount'] / (1 + ($l['iva'] / 100));
+                $line->pvptotal = $l['amount'];
                 if ($client->regimeniva !== 'Exento') {
                     $line->codimpuesto = $l['codiimpuesto'];
                     $line->iva = $l['iva'];
@@ -409,8 +409,8 @@ class InvoiceStripe
     static private function calculateTaxPercentage($tax_amount, $line_amount, $tax_included)
     {
         if ($tax_included)
-            return (($tax_amount / 100) * 100 / (($line_amount / 100) - ($tax_amount / 100)));
+            return intval(($tax_amount / 100) * 100 / (($line_amount / 100) - ($tax_amount / 100)));
 
-        return (($tax_amount / 100) * 100 / (($line_amount / 100)));
+        return intval(($tax_amount / 100) * 100 / (($line_amount / 100)));
     }
 }

@@ -77,7 +77,7 @@ class InvoiceStripe
                 $endDate = time();
             }
             $params = ['status' => 'paid', 'limit' => $limit, 'created' => ['lte' => $endDate, 'gte' => $initDate]];
-           
+
 
             $stripe = new \Stripe\StripeClient($stripe_id);
             $stripe_response = $stripe->invoices->all($params);
@@ -183,6 +183,13 @@ class InvoiceStripe
                         $period_start = (isset($l->period->start)) ? $l->period->start : null;
                         $period_end = (isset($l->period->end)) ? $l->period->end : null;
                         $fs_product_id = '';
+                        // Todo: el tax_rates no viene siempre (no se la causistica). Lo que si veo siempre es el tax_amounts
+                        // que es la importe de la parte de impuestos y si va o no incluido.
+                        //Conociendo el Amount de la linea  podemos calcular el porcentaje de impuesto. Hacer una función que devuelva el % en base al importe.
+                        //Si tax_amounts es un array vacio, entonces no hay que calcular nada.
+                        $vat_perc = $l->tax_rates !== null && count($l->tax_rates) > 0 ? $l->tax_rates[0]['percentage'] : null;
+                        $var_included = $l->tax_rates !== null && count($l->tax_rates) > 0 ? $l->tax_rates[0]['inclusive'] : null;
+
                         if ($l->price !== null && $l->price->product !== null && $l->price->product !== '') {
                             $fs_product_id = ProductModel::getFsProductIdFromStripe($sk_stripe_index, $l->price->product);
                             // Compruebo si hay correlación entre producto de stripe y fs
@@ -193,13 +200,26 @@ class InvoiceStripe
                                 $product = new Producto();
                                 if (!$product->loadFromCode($fs_product_id))
                                     $errors[] = ['message' => 'El producto FS relacionado con el producto de stripe no existe', 'data' => $fs_product_id];
-                                else
+                                else {
+
                                     $tax = $product->getTax();
+                                    if ($vat_perc !== null) {
+                                        $tax->iva = $vat_perc;
+                                    }
+                                }
                             }
                         } else {
                             $errors[] = ['message' => 'No se ha podido cargar el producto desde stripe', 'data' => $l];
                         }
-                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $l->price->unit_amount / 100, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $l->amount / 100, 'description' => $l->plan->name . ' ' . $l->description, 'period_start' => $period_start, 'period_end' => $period_end];
+
+                        $unit_amount = $l->price->unit_amount / 100;
+                        if ($var_included === null) {
+                            $unit_amount = $unit_amount / (1 + ($tax->iva / 100));
+                        } else {
+                            $unit_amount = ($var_included) ? $unit_amount / (1 + ($tax->iva / 100)) : $unit_amount;
+                        }
+                        $amount = $unit_amount * $l->quantity;
+                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->plan->name . ' ' . $l->description, 'period_start' => $period_start, 'period_end' => $period_end];
                     }
 
                 }
@@ -299,7 +319,7 @@ class InvoiceStripe
                 }
 
                 $line->cantidad = $l['quantity'];
-                $line->pvpunitario = $l['unit_amount'] / (1 + ($l['iva'] / 100));
+                $line->pvpunitario = $l['unit_amount'];
                 $line->pvptotal = $l['amount'] / (1 + ($l['iva'] / 100));
                 if ($client->regimeniva !== 'Exento') {
                     $line->codimpuesto = $l['codiimpuesto'];
@@ -380,7 +400,9 @@ class InvoiceStripe
         } catch (Exception $ex) {
             throw new Exception('Error al vincular la factura de FS a la de Stripe ' . $ex->getMessage());
         }
+    }
 
-
+    static private function calculateTaxPercentage($tax_amount, $line_amount){
+        return ($tax_amount*100/($line_amount-$tax_amount));
     }
 }

@@ -25,7 +25,7 @@ class Helper{
     static public function parseDateToTS(string $fecha, string $format='d-m-Y')
     {
 
-        $res = DateTime::createFromFormat( $format,  $fecha);
+        $res = DateTime::createFromFormat( $format . '|',  $fecha );
 
         return $res->getTimestamp();
     }

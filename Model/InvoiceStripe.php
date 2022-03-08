@@ -183,15 +183,13 @@ class InvoiceStripe
                         $period_start = (isset($l->period->start)) ? $l->period->start : null;
                         $period_end = (isset($l->period->end)) ? $l->period->end : null;
                         $fs_product_id = '';
-                        // Todo: el tax_rates no viene siempre (no se la causistica). Lo que si veo siempre es el tax_amounts
-                        // que es la importe de la parte de impuestos y si va o no incluido.
-                        //Conociendo el Amount de la linea  podemos calcular el porcentaje de impuesto. Hacer una función que devuelva el % en base al importe.
-                        //Si tax_amounts es un array vacio, entonces no hay que calcular nada.
-                        $vat_perc = null;
+
+                        // De momento damos por hecho que el impuesto se aplica a nivel de factura y no a nivel de linea
+                        // por lo que obtenemos el impuesto predeterminado definido en la factura
+                        $vat_perc = $inv->tax!==null ? $inv->tax_percent : null;
                         $vat_included = null;
                         if (count($l->tax_amounts) > 0) {
                             $vat_included = $l->tax_amounts[0]['inclusive'];
-                            $vat_perc = self::calculateTaxPercentage($l->tax_amounts[0]['amount'], $l->amount, $vat_included);
                         }
 
                         if ($l->price !== null && $l->price->product !== null && $l->price->product !== '') {
@@ -216,13 +214,25 @@ class InvoiceStripe
                             $errors[] = ['message' => 'No se ha podido cargar el producto desde stripe', 'data' => $l];
                         }
 
+                        // Obtengo el precio de la linea
                         $unit_amount = $l->price->unit_amount / 100;
+
+                        // Aplico los descuentos que trae la linea
+                        foreach ($l->discount_amounts as $d) {
+                            $unit_amount -= ($d['amount'] / 100);
+                        }
+
+                        // Aplico impuestos según estén definidos
                         if ($vat_included === null) {
                             $unit_amount = $unit_amount / (1 + ($tax->iva / 100));
                         } else {
                             $unit_amount = ($vat_included) ? $unit_amount / (1 + ($tax->iva / 100)) : $unit_amount;
                         }
+
+                        // Multiplico por las unidades para obtener el total de la linea
                         $amount = $unit_amount * $l->quantity;
+
+                        // Asigno a cada variable el valor que debe tener en la linea
                         $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->plan->name . ' ' . $l->description, 'period_start' => $period_start, 'period_end' => $period_end];
                     }
 
@@ -404,13 +414,5 @@ class InvoiceStripe
         } catch (Exception $ex) {
             throw new Exception('Error al vincular la factura de FS a la de Stripe ' . $ex->getMessage());
         }
-    }
-
-    static private function calculateTaxPercentage($tax_amount, $line_amount, $tax_included)
-    {
-        if ($tax_included)
-            return intval(($tax_amount / 100) * 100 / (($line_amount / 100) - ($tax_amount / 100)));
-
-        return intval(($tax_amount / 100) * 100 / (($line_amount / 100)));
     }
 }

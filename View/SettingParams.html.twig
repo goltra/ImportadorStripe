@@ -1,25 +1,56 @@
 {% extends 'Master/MenuTemplate.html.twig' %}
 {% block body %}
     <div class="p-4">
-        <p>A continuación puedes configurar las claves secretas de las diferentes cuentas que tengas de stripe para
-            permitir que factura script se comunique con él.<br>
-            Por seguridad las claves no serán visibles una vez añadidas, solo verás el nombre que hayas puesto para
-            identificarla.
-        </p>
+        <div class="row">
+            <div class="col-12">
+                <p>Agrega aquí cliente y producto por defecto para cuando tengamos casos donde no los hayamos contemplado.</p>
+                <form id="frm_sk" method="post" name="frm_sk" action="SettingParams?action=add" style="display:flex">
+                
+                    <label for="name" style="flex:1; padding-right:5px">
+                        Cliente por defecto*
+                        <input type="text" id="name" name="name" class="form-control"/>
+                    </label>    
+                    
+                    <label for="sk" style="flex:2; padding-right: 5px">
+                        Producto por defecto*
+                        <input type="text" id="sk" name="sk" class="form-control"/>
+                    </label>
+                
+                    <button type="submit"
+                            class="btn btn-info" style="height: 40px; align-self: flex-end; margin-bottom: 7px;">Guardar
+                    </button>
+                    
+                </form>     
+            </div>
+            
+            <div class="col-12">
+                <hr style="margin-bottom: 50px">
+            </div>
 
-        <form id="frm_sk" method="post" name="frm_sk" action="SettingParams?action=add" style="display:flex">
-            <label for="name" style="flex:1; padding-right:5px">
-                Nombre*
-                <input type="text" id="name" name="name" class="form-control"/>
-            </label>
-            <label for="sk" style="flex:2; padding-right: 5px">
-                Clave secreta (sk_xxx)*
-                <input type="text" id="sk" name="sk" class="form-control"/>
-            </label>
-            <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
-                    class="btn btn-info">Guardar
-            </button>
-        </form>
+            <div class="col-12">
+                <p>A continuación puedes configurar las claves secretas de las diferentes cuentas que tengas de stripe para
+                    permitir que factura script se comunique con él.<br>
+                    Por seguridad las claves no serán visibles una vez añadidas, solo verás el nombre que hayas puesto para
+                    identificarla.
+                </p>
+
+                <form id="frm_sk" method="post" name="frm_sk" action="SettingParams?action=add" style="display:flex">
+                    <label for="name" style="flex:1; padding-right:5px">
+                        Nombre*
+                        <input type="text" id="name" name="name" class="form-control"/>
+                    </label>
+                    <label for="sk" style="flex:2; padding-right: 5px">
+                        Clave secreta (sk_xxx)*
+                        <input type="text" id="sk" name="sk" class="form-control"/>
+                    </label>
+                    <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
+                            class="btn btn-info">Guardar
+                    </button>
+                </form>        
+            </div>
+            
+        </div>
+        
         <hr style="margin-bottom: 50px">
 
         <p>Claves de Stripe dadas de alta ( por seguridad solo se muestra el identificador que le pusiste al

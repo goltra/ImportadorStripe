@@ -22,12 +22,12 @@ use FacturaScripts\Core\Lib\ExportManager;
 
 class CreateInvoiceStripe extends Controller
 {
-    public bool $existClient = false;
-    public Cliente $clientFs;
-    private string $fs_idFsCustomer = '';
-    public ?int $sk_stripe_index = null;
-    public string $action = '';
-    public bool $error = false;
+    public $existClient = false;
+    public $clientFs;
+    private $fs_idFsCustomer = '';
+    public $sk_stripe_index = null;
+    public $action = '';
+    public $error = false;
     public $payment_methods = [];
 
     public function getPageData()

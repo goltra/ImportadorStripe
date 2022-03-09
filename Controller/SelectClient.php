@@ -14,7 +14,7 @@ use Stripe\Invoice;
 
 class SelectClient extends ParentListCliente
 {
-    private string $postAction = '';
+    private $postAction = '';
 
     public function privateCore(&$response, $user, $permissions)
     {

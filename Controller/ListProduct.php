@@ -15,10 +15,10 @@ use FacturaScripts\Core\Lib\AssetManager;
 class ListProduct extends Controller
 {
 
-    public array $products = [];
-    public array $sks_stripe = [];
-    public ?string $action = '';
-    public ?int $sk_stripe_index = null;
+    public $products = [];
+    public $sks_stripe = [];
+    public $action = '';
+    public $sk_stripe_index = null;
 
     public function getPageData()
     {

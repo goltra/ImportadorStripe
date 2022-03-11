@@ -184,9 +184,14 @@ class InvoiceStripe
                         $period_end = (isset($l->period->end)) ? $l->period->end : null;
                         $fs_product_id = '';
 
-                        // De momento damos por hecho que el impuesto se aplica a nivel de factura y no a nivel de linea
-                        // por lo que obtenemos el impuesto predeterminado definido en la factura
-                        $vat_perc = $inv->tax!==null ? $inv->tax_percent : null;
+                        // El iva puede venir a nivel de factura o a nivel de linea. La prioridad va a ser:
+                        // - Iva en linea
+                        // - Iva en factura
+                        // - Iva del artículo de FS
+
+                        $vat_perc = $inv->tax_percent!==null ? $inv->tax_percent : null; //Impuesto aplicado a factura
+                        $vat_perc = (count($l->tax_rates)>0 && isset($l->tax_rates[0]['percentage'])) ? $l->tax_rates[0]['percentage'] : $vat_perc; //Impuesto aplicado a linea
+
                         $vat_included = null;
                         if (count($l->tax_amounts) > 0) {
                             $vat_included = $l->tax_amounts[0]['inclusive'];

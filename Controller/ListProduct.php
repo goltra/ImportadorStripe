@@ -68,7 +68,7 @@ class ListProduct extends Controller
                 $_SESSION['sk_stripe_index'] = $this->sk_stripe_index;
 
                 if ($limit === null || count($limit) == 0)
-                    $limit = 10;
+                    $limit = 1000;
                 if ($start === null || count($start) == 0)
                     $start = null;
 
@@ -94,7 +94,7 @@ class ListProduct extends Controller
 
                 try {
                     ProductModel::linkFsProductToStripeProduct($this->sk_stripe_index, $codproduct, $st_product_id);
-                    $this->redirect('ListProduct?action=load');
+                    $this->redirect('ListProduct?action=load',0);
                 } catch (\Exception $e) {
                     $this->toolbox()->log()->error('No se ha podido enlazar el producto' . $e->getMessage());
                 }
@@ -105,11 +105,11 @@ class ListProduct extends Controller
                 break;
         }
 
-        if ($this->request->query->get('action') && $this->request->query->get('action') == 'test') {
+        /*if ($this->request->query->get('action') && $this->request->query->get('action') == 'test') {
 
         } else {
 
-        }
+        }*/
     }
 
     public function getData($sk_stripe_index, $start = null, $limit = 10)

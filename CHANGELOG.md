@@ -1,9 +1,12 @@
-## Version 0.3
+## Versión 0.3
 - Al convertir las fechas a timestamp para usarlas en los filtros de stripe, reseteo horas y minutos para que siempre sean
 00:00:00
 - InvoiceStripe-> processInvoicesObject Se modifica la función para que tenga en cuenta los impuestos que se han definido en 
 la factura de stripe.
-## Version 0.4
+## Versión 0.4
 - Importar los descuentos que se producen cuando la suscripcion tiene un bono
 - Cambio en la forma de obtener el impuesto. Esta versión da por hecho que el iva viene dado por la factura (impuesto por defecto)
 y no por cada linea. Si es necesario se cambiará en futuras versiones.
+## Versión 0.5
+- Ahora se aplica el impuesto tanto si viene de lineas como si viene como impuesto por defecto en facturas. Prevalece el de linea
+- En listado de productos establezco el limit a 1000 en caso que no se haya mandado ninguno.

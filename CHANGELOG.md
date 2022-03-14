@@ -10,3 +10,7 @@ y no por cada linea. Si es necesario se cambiará en futuras versiones.
 ## Versión 0.5
 - Ahora se aplica el impuesto tanto si viene de lineas como si viene como impuesto por defecto en facturas. Prevalece el de linea
 - En listado de productos establezco el limit a 1000 en caso que no se haya mandado ninguno.
+## Versión 0.6
+- A la hora de generar una factura en FS se tiene en cuenta si el cliente en el campo "regimen iva" tiene el varlo "Exencto"
+en cuyo caso no se aplican impuestos.
+- El descuento aplicado por un cupón aparece en las factura de FS como dtopor1

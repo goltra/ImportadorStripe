@@ -33,6 +33,7 @@ class InvoiceStripe
     public ?string $fs_idFsCustomer = null;
     public ?string $fs_idFactura;
     public ?string $fs_customerName;
+    public ?int $discount=0;
     public array $lines;
 
 
@@ -166,6 +167,7 @@ class InvoiceStripe
                 $invoice->status = $inv->status;
                 $invoice->customer_id = $inv->customer;
                 $invoice->customer_email = $inv->customer_email;
+                $invoice->discount = ($inv->discount!==null && isset($inv->discount['coupon']['percent_off'])) ? $inv->discount['coupon']['percent_off'] : 0;
                 $invoice->fs_idFactura = isset($inv->metadata['fs_idFactura']) ? $inv->metadata['fs_idFactura'] : null;
                 $_fs_idCustomer = isset($customer->metadata['fs_idFsCustomer']) ? $customer->metadata['fs_idFsCustomer'] : null;
                 $fs_customer = new \FacturaScripts\Core\Model\Cliente();
@@ -223,9 +225,14 @@ class InvoiceStripe
                         $unit_amount = $l->price->unit_amount / 100;
 
                         // Aplico los descuentos que trae la linea
-                        foreach ($l->discount_amounts as $d) {
+                        /*foreach ($l->discount_amounts as $d) {
                             $unit_amount -= ($d['amount'] / 100);
-                        }
+                        }*/
+
+                        // Si el cliente de stripe tiene el regimeniva="Exento", entonces
+                        // el iva lo pongo a 0.
+                        if($tax!==null && $fs_customer->regimeniva==='Exento')
+                            $tax->iva=0;
 
                         // Aplico impuestos según estén definidos
                         if ($vat_included === null) {
@@ -314,6 +321,8 @@ class InvoiceStripe
 
         $invoiceFs = new FacturaCliente();
         $invoiceFs->setSubject($client);
+
+        $invoiceFs->dtopor1 = $invoice->discount;
 
         // Si se crea la factura, entonces creo las lineas.
         if ($invoiceFs->save()) {

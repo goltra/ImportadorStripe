@@ -51,6 +51,20 @@ class InvoiceStripe
     }
 
     /**
+     * Devuelve el sk de stripe mediante un nombre de cuenta
+     * @param $name
+     * @return mixed|null
+     */
+    static function loadSkStripeByAccountName($name){
+        foreach (self::loadSkStripe() as $i => $sk){
+            if(strtoupper($sk['name']) === strtoupper($name))
+                return $i;
+        }
+
+        return null;
+    }
+
+    /**
      * Devuelve las facturas de Stripe dentro del intervalo de fecha y a partir del id $start (en caso de recibirlo)
      * que han sido pagadas, tiene un importe > 0 y no tienen el metadato fs_idFactura
      * @param null $start id de la factura desde la que comenzar a cargar
@@ -169,12 +183,11 @@ class InvoiceStripe
 
             if ($customer === null) {
                 self::log('cliente No se ha podido cargar el cliente de stripe correspondiente a la factura');
-                ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
+                ToolBox::log('stripe')->error('invoice id error: ' . $sk_stripe_index);
                 throw new \Exception('No se ha podido cargar el cliente de stripe correspondiente a la factura ' . $inv->id);
             }
 
             self::log('Comprobamos si ya se ha pagado la factura o si ya ha sido descargada');
-            self::log($inv->amount_paid > 0 && (!isset($inv->metadata['fs_idFactura']) || $inv->metadata['fs_idFactura'] == ''));
 
             if ($inv->amount_paid > 0 && (!isset($inv->metadata['fs_idFactura']) || $inv->metadata['fs_idFactura'] == '')) {
 

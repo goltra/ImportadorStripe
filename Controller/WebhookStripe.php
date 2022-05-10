@@ -24,7 +24,7 @@ class WebhookStripe extends Controller
         $pageData['title'] = 'Webhook de stripe';
         $pageData['menu'] = 'Stripe';
         $pageData['icon'] = 'fas fa-search';
-        $pageData['showonmenu'] = true;
+        $pageData['showonmenu'] = false;
         return $pageData;
     }
 
@@ -36,31 +36,31 @@ class WebhookStripe extends Controller
 
     public function init(){
 
-//        $sk = 0;
-//        $id = 'in_1KtvAyHDuQaJAlOmqaj0kxOl';
-//
-//        try {
-//            InvoiceStripe::generateFSInvoice($id, $sk, false, 'TARJETA', false);
-//        } catch (Exception $ex) {
-//            $this->toolbox()->log()->error($ex->getMessage());
-//            http_response_code(400);
-//            exit();
-//        }
-//
-//
-//        die();
-
-
         $payload = @file_get_contents('php://input');
 
         if(!$payload){
+            $this->toolbox()->log('stripe')->error('no entra');
             http_response_code(400);
             exit();
         }
 
         $data = json_decode($payload);
 
-        $sk_index = 0;
+        if(!isset($data->data->object->account_name)){
+            $this->toolbox()->log('stripe')->error('no viene el account name');
+            http_response_code(400);
+            exit();
+        }
+
+        $account_name = $data->data->object->account_name;
+        $sk_index = InvoiceStripe::loadSkStripeByAccountName($account_name);
+
+        if(!$sk_index){
+            $this->toolbox()->log('stripe')->error('El sk de la empresa no está dada de alta en facturascript');
+            http_response_code(400);
+            exit();
+        }
+
         $sk = InvoiceStripe::loadSkStripe()[$sk_index];
 
         Stripe::setApiKey($sk['sk']);
@@ -68,6 +68,7 @@ class WebhookStripe extends Controller
         try {
             $event = Event::retrieve($data->id);
         } catch(ApiErrorException $e) {
+            $this->toolbox()->log('stripe')->error('Error en data');
             http_response_code(400);
             exit();
         }
@@ -78,9 +79,9 @@ class WebhookStripe extends Controller
 
             try {
                 InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', true);
-                $this->toolbox()->log('stripe')->error('invoice id correcto: ' . $event->data->object->id);
+                $this->toolbox()->log('stripe')->error('invoice id correcto: ' . $id);
             } catch (Exception $ex) {
-                $this->toolbox()->log('stripe')->error('invoice id error: ' . $event->data->object->id);
+                $this->toolbox()->log('stripe')->error('invoice id error: ' . $id);
                 $this->toolbox()->log('stripe')->error($ex->getMessage());
                 http_response_code(400);
                 exit();

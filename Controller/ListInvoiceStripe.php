@@ -10,21 +10,25 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 use Exception;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
+use FacturaScripts\Core\Model\Cliente;
 use FacturaScripts\Core\Model\ReciboCliente;
+use FacturaScripts\Dinamic\Model\ClientModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\Helper;
 use \FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Core\Lib\AssetManager;
+use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
+use mysql_xdevapi\BaseResult;
 
 class ListInvoiceStripe extends Controller
 {
 
-    public array $invoices = [];
-    public array $sks_stripe = [];
-    public ?string $action = '';
-    public ?int $sk_stripe_index = null;
-    public string $textFilter = '';
-    public string $f_ini='';
-    public string $f_fin='';
+    public $invoices = [];
+    public $sks_stripe = [];
+    public $action = '';
+    public $sk_stripe_index = null;
+    public $textFilter = '';
+    public $f_ini='';
+    public $f_fin='';
 
     public function getPageData()
     {
@@ -45,6 +49,8 @@ class ListInvoiceStripe extends Controller
 
     private function init()
     {
+        session_start();
+
         AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/stripe.css');
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
         $this->action = $this->request->query->get('action');
@@ -84,16 +90,30 @@ class ListInvoiceStripe extends Controller
                 $this->getData($this->sk_stripe_index, $start, $limit, $f_ini, $f_fin);
                 $this->textFilter='Filtrando de ' . $this->f_ini . ' a ' . $this->f_fin;
                 break;
+
+            case 'linkClient':
+                $customer_id = $this->request->query->get('customer_id');
+                $stripe_customer_id = $this->request->query->get('stripe_customer_id');
+
+                if (strlen($customer_id) > 0){
+                    $res = ClientModel::linkFsClientToStripeCustomer($stripe_customer_id, $_SESSION['sk_stripe_index'], $customer_id);
+
+                    if ($res['status'] === true) {
+                        $this->toolBox()->log()->info('Cliente vinculado correctamente.');
+                    } else {
+                        $this->toolBox()->log()->error($res['message']);
+                    }
+                }
+                else
+                    $this->toolBox()->log()->error('Error al seleccionar el cliente');
+
+
+                break;
+
             default:
                 //si no pasa accion, debe mostrar solo el desplegable para elegir que cuenta de stripe usar.
 
                 break;
-        }
-
-        if ($this->request->query->get('action') && $this->request->query->get('action') == 'test') {
-
-        } else {
-
         }
     }
 
@@ -110,6 +130,7 @@ class ListInvoiceStripe extends Controller
     {
         try {
             $data = InvoiceStripe::loadInvoicesNotProcessed($sk_stripe_index, $start, $limit, $f_ini, $f_fin);
+
             if ($data['status'] === false) {
                 $this->toolbox()->log()->error('No se han podido cargar las facturas ' . $data['message']);
             } else {
@@ -119,18 +140,5 @@ class ListInvoiceStripe extends Controller
             $this->toolbox()->log()->error('No se han podido cargar las facturas ' . $e->getMessage());
         }
 
-    }
-
-    public function test(){
-        $recibo = new ReciboCliente();
-        $where = [new DataBaseWhere('idfactura',10388)];
-
-        $recibos  = $recibo->all($where);
-        var_dump($recibos);
-        /*$recibo->pagado=true;
-        if($recibo->save())
-            var_dump($recibo);
-        else
-            echo'error';*/
     }
 }

@@ -14,3 +14,5 @@ y no por cada linea. Si es necesario se cambiará en futuras versiones.
 - A la hora de generar una factura en FS se tiene en cuenta si el cliente en el campo "regimen iva" tiene el varlo "Exencto"
 en cuyo caso no se aplican impuestos.
 - El descuento aplicado por un cupón aparece en las factura de FS como dtopor1
+## Versión 0.8
+- Webhook para generar las facturas directamente desde stripe

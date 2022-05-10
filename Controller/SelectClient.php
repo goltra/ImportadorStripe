@@ -8,13 +8,13 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Controller\ListCliente as ParentListCliente;
-use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
+use FacturaScripts\Plugins\ImportadorStripe\Model\ClientModel;
 use Stripe\Invoice;
 
 
 class SelectClient extends ParentListCliente
 {
-    private string $postAction = '';
+    private $postAction = '';
 
     public function privateCore(&$response, $user, $permissions)
     {
@@ -27,7 +27,7 @@ class SelectClient extends ParentListCliente
         $this->customSettingsView();
     }
 
-    public function getPageData()
+    public function getPageData(): array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Selecciona cliente';
@@ -55,11 +55,11 @@ class SelectClient extends ParentListCliente
 
     protected function execPreviousAction($action)
     {
-        
-        if($action=="" && $this->request->query->get('action')){
+
+        if($action == "" && $this->request->query->get('action')){
             $action = $this->request->query->get('action');
         }
-        var_dump($action);
+
         switch ($action) {
             case 'invoicing':
                 $this->postAction = 'selectClient';
@@ -97,7 +97,8 @@ class SelectClient extends ParentListCliente
     {
         $customer_id = $this->request->request->get('code')[0];
 
-        if ($customer_id !== null && count($customer_id) > 0) {
+
+        if ($customer_id !== null && strlen($customer_id) > 0) {
             $this->redirect('CreateInvoiceStripe?action=clientOk&codcliente=' . $customer_id);
         } else {
             $this->toolbox()->log()->error('No se ha podido vincular el cliente de facturascript. Alguno de los valores no es correcto');
@@ -106,21 +107,20 @@ class SelectClient extends ParentListCliente
 
     private function changeClient()
     {
-
         $customer_id = $this->request->request->get('code')[0];
         $stripe_customer_id = $this->request->query->get('stripe_customer_id');
-        $sk_stripe_index = $this->request->query->get('sk_stripe_index');
 
-        if ($customer_id === null || $stripe_customer_id === null || $sk_stripe_index === null) {
-            throw new \Exception('No se puede cambiar el cliente. No se han enviado los parametros necesario');
-        }
+        switch ($this->request->query->get('source')) {
+            case 'ListClient':
+                $this->redirect('ListClient?action=linkClient&customer_id='.$customer_id.'&stripe_customer_id='.$stripe_customer_id);
+                break;
+            case 'ListInvoiceStripe':
+                $this->redirect('ListInvoiceStripe?action=linkClient&customer_id='.$customer_id.'&stripe_customer_id='.$stripe_customer_id);
+                break;
 
-        $res = InvoiceStripe::setFsIdCustomer($stripe_customer_id, $sk_stripe_index, $customer_id);
-        if(!isset($res['status']) || $res['status']===false){
-            $this->toolbox()->log()->error('Hubo algún problema al cambiar el cliente.');
-        }else{
-            $this->toolbox()->log()->info('Cliente cambiado correctamente.');
-            $this->redirect('ListInvoiceStripe');
+            case 'CreateInvoiceStripe':
+                $this->redirect('CreateInvoiceStripe?action=linkClient&customer_id='.$customer_id.'&stripe_customer_id='.$stripe_customer_id);
+                break;
         }
     }
 

@@ -16,19 +16,20 @@ use FacturaScripts\Core\Model\Cliente;
 use FacturaScripts\Core\Model\EmailSent;
 use FacturaScripts\Core\Model\FacturaCliente;
 use FacturaScripts\Core\Model\FormaPago;
+use FacturaScripts\Plugins\ImportadorStripe\Model\ClientModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Core\Lib\ExportManager;
 
 
 class CreateInvoiceStripe extends Controller
 {
-    public bool $existClient = false;
-    public Cliente $clientFs;
-    private string $fs_idFsCustomer = '';
-    public ?int $sk_stripe_index = null;
-    public string $action = '';
-    public bool $error = false;
+    public $existClient = false;
+    public $clientFs;
+    public $sk_stripe_index = null;
+    public $action = '';
+    public $error = false;
     public $payment_methods = [];
+    public $customer_id = '';
 
     public function getPageData()
     {
@@ -74,6 +75,7 @@ class CreateInvoiceStripe extends Controller
                 if ($id !== null) {
                     $this->processInvoice($id, $this->sk_stripe_index);
                 }
+
                 break;
             case 'createInvoice':
                 $mark_as_paid = $this->request->request->get('ck_paid') !== null && $this->request->request->get('ck_paid') !== "false";
@@ -85,6 +87,26 @@ class CreateInvoiceStripe extends Controller
                     $this->exportAndSendEmail($code);
 
                 break;
+            case 'linkClient':
+                $customer_id = $this->request->query->get('customer_id');
+                $stripe_customer_id = $this->request->query->get('stripe_customer_id');
+
+                if (strlen($customer_id) > 0){
+                    $res = \FacturaScripts\Dinamic\Model\ClientModel::linkFsClientToStripeCustomer($stripe_customer_id, $_SESSION['sk_stripe_index'], $customer_id);
+
+                    if ($res['status'] === true) {
+                        $this->toolBox()->log()->info('Cliente vinculado correctamente.');
+                        //recibimos el cliente creado / seleccionado, modificamos el cliente, processInvoice
+                        $this->setClientToStripeClient();
+                    } else {
+                        $this->toolBox()->log()->error($res['message']);
+                    }
+                }
+                else
+                    $this->toolBox()->log()->error('Error al seleccionar el cliente');
+
+                break;
+
             case 'clientOk':
                 $this->customer_id = $this->request->query->get('codcliente');
                 if ($this->customer_id !== null) {
@@ -143,7 +165,7 @@ class CreateInvoiceStripe extends Controller
      */
     private function setClientToStripeClient()
     {
-        $res = InvoiceStripe::setFsIdCustomer($_SESSION['stripe_customer_id'], $_SESSION['sk_stripe_index'], $this->customer_id);
+        $res = ClientModel::linkFsClientToStripeCustomer($_SESSION['stripe_customer_id'], $_SESSION['sk_stripe_index'], $this->customer_id);
         if ($res['status'] === true) {
             $this->processInvoice($_SESSION['id_stripe_invoice'], $_SESSION['sk_stripe_index']);
             $this->toolBox()->log()->info('Cliente vinculador correctamente.');
@@ -202,16 +224,6 @@ class CreateInvoiceStripe extends Controller
                     $factura->femail = date('Y-m-d');
                     $factura->save();
                     $this->toolbox()->log()->info('Correo enviado correctamente');
-                   /* $emailSent = new EmailSent();
-                    $emailSent->addressee=$mail->getToAddresses()[0];
-                    $emailSent->subject = $mail->title;
-                    $emailSent->body =$mail->text;
-                    $emailSent->date = date('Y-m-d H:i:s');
-                    $emailSent->nick = $this->user->nick;
-                    $emailSent->verificode=$mail->verificode;
-                    if(!$emailSent->save()){
-                        $this->toolbox()->log()->info('Hubo algún error al guardar el correo en la ficha del cliente');
-                    }*/
 
                 } else {
                     $this->toolbox()->log()->info('Hubo algún error al enviar el correo');

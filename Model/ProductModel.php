@@ -12,17 +12,17 @@ use Exception;
 class ProductModel
 {
 
-    public string $id;
-    public string $name;
-    public ?string $description;
-    public ?string $fs_idProduct;
+    public $id;
+    public $name;
+    public $description;
+    public $fs_idProduct;
 
     static function loadSkStripe()
     {
         return SettingStripeModel::getSks();
     }
 
-    static public function loadStripeProducts($sk_stripe_index, $start = null, int $limit = 10)
+    static public function loadStripeProducts($sk_stripe_index, $start = null, int $limit = 1000)
     {
         $stripe_ids = self::loadSkStripe();
         // Cargo el index del sk pasado a la función

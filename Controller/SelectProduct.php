@@ -8,6 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Controller\ListProducto as ParentListProducto;
+use FacturaScripts\Core\Model\Variante;
 
 
 class SelectProduct extends ParentListProducto
@@ -84,7 +85,8 @@ class SelectProduct extends ParentListProducto
     private function selectProduct()
     {
         $id = $this->request->request->get('code')[0];
-        if ($id !== null && count($id) > 0) {
+
+        if ($id !== null && strlen($id) > 0) {
             $this->redirect('ListProduct?action=linkProduct&codproduct=' . $id);
         } else {
             $this->toolbox()->log()->error('No se ha podido vincular el producto de facturascript. Alguno de los valores no es correcto');

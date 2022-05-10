@@ -23,9 +23,6 @@
                     <option {% if(key == fsc.sk_stripe_index) %} selected {% endif %}
                             value="{{ key }}">{{ value.name }}</option>
                 {% endfor %}
-                <!-- <option value="0" selected>sk_stript_1</option>
-                <option value="1">sk_stript_2</option>
-                <option value="2">sk_stript_3</option> -->
             </select>
             <button style="margin-top: 15px" onclick="muestraSpinner(true)" class="btn btn-info" type="submit">
                 Consultar
@@ -53,11 +50,14 @@
                     <tr>
                         <td>{{ f.date }}</td>
                         <td>{{ f.customer_email }}</td>
-                        <td><a href="{{ asset('EditCliente') }}?code={{ f.fs_idFsCustomer }}"
-                               target="_blank">{{ f.fs_customerName }}</a>
-                            <a href="{{ asset('SelectClient') }}?action=changing&stripe_customer_id={{ f.customer_id }}&sk_stripe_index={{ fsc.sk_stripe_index }}">
-                                <i class="fas fa-pencil-alt"></i>
-                            </a>
+                        <td>
+                            {% if f.fs_idFsCustomer %}
+                                <a href="{{ asset('EditCliente') }}?code={{ f.fs_idFsCustomer }}"
+                                   target="_blank">{{ f.fs_customerName }}</a>
+                                <a href="{{ asset('SelectClient') }}?stripe_customer_id={{ f.customer_id }}&source=ListInvoiceStripe&action=changing">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </a>
+                            {% endif %}
                         </td>
                         <td>{{ f.amount }}</td>
                         <td>{{ f.status }}</td>

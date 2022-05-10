@@ -15,10 +15,10 @@ use FacturaScripts\Core\Lib\AssetManager;
 class ListProduct extends Controller
 {
 
-    public array $products = [];
-    public array $sks_stripe = [];
-    public ?string $action = '';
-    public ?int $sk_stripe_index = null;
+    public $products = [];
+    public $sks_stripe = [];
+    public $action = '';
+    public $sk_stripe_index = null;
 
     public function getPageData()
     {
@@ -117,7 +117,7 @@ class ListProduct extends Controller
         try{
             $data = ProductModel::loadStripeProducts($sk_stripe_index, $start, $limit);
 
-            if ($data['status'] === false) {
+            if (array_key_exists('status', $data) && $data['status'] === false) {
                 $this->toolbox()->log()->error( 'Error: ' . $data['message']);
             } else {
                 $this->products = $data;

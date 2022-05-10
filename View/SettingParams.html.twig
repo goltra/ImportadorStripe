@@ -16,16 +16,45 @@
                 Clave secreta (sk_xxx)*
                 <input type="text" id="sk" name="sk" class="form-control"/>
             </label>
+            <label for="sk" style="flex:2; padding-right: 5px">
+                Serie
+                <select name="codserie" id="codserie" class="form-control">
+                    {% for serie in fsc.series %}
+                        <option value="{{ serie.codserie }}">{{ serie.descripcion }}</option>
+                    {% endfor %}
+                </select>
+            </label>
             <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
                     class="btn btn-info">Guardar
             </button>
         </form>
         <hr style="margin-bottom: 50px">
 
+        <div>
+            <p>Aquí puedes agregar un cliente y producto por defecto para cuando se generen facturas cuyo cliente / producto no esté vinculado.
+            </p>
+
+            <form id="frm_settings" method="post" name="frm_settings" action="SettingParams?action=addSettings" style="display:flex">
+                <label for="name" style="flex:1; padding-right:5px">
+                    Cliente por defecto *
+                    <input type="text" id="codcliente" name="codcliente" class="form-control" value="{{ fsc.codcliente }}"/>
+                </label>
+                <label for="sk" style="flex:2; padding-right: 5px">
+                    Producto por defecto *
+                    <input type="text" id="codproducto" name="codproducto" class="form-control" value="{{ fsc.codproducto }}"/>
+                </label>
+                <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
+                        class="btn btn-info">Guardar
+                </button>
+            </form>
+        </div>
+
+        <hr style="margin-bottom: 50px">
+
         <p>Claves de Stripe dadas de alta ( por seguridad solo se muestra el identificador que le pusiste al
             crearlo):</p>
         {% for sk in fsc.sks_stripe %}
-            <li>{{ sk.name }} <a href="{{ asset('SettingParams') }}?action=del&name={{ sk.name }}"
+            <li>{{ sk.name }} - (Serie: {{ sk.codserie }}) <a href="{{ asset('SettingParams') }}?action=del&name={{ sk.name }}"
                                  class="fa fa-trash"></a></li>
         {% endfor %}
     </div>

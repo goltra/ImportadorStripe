@@ -36,7 +36,7 @@
                     <tr>
                         <td>{{ p.id }}</td>
                         <td>{{ p.name }}</td>
-                        <td><a href="{{ asset('EditProducto') }}?code={{ p.fs_idProduct }}"
+                        <td>{{ p.fs_idProduct }}<a href="{{ asset('EditProducto') }}?code={{ p.fs_idProduct }}"
                                target="_blank">{% if(p.fs_idProduct!='') %}<i class="fas fa-eye"></i>{% endif %}</a>
                         </td>
                         <td>{{ p.description }}</td>

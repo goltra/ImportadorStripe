@@ -14,7 +14,7 @@ use Stripe\Invoice;
 
 class SelectClient extends ParentListCliente
 {
-    private string $postAction = '';
+    private $postAction = '';
 
     public function privateCore(&$response, $user, $permissions)
     {
@@ -27,7 +27,7 @@ class SelectClient extends ParentListCliente
         $this->customSettingsView();
     }
 
-    public function getPageData()
+    public function getPageData(): array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Selecciona cliente';
@@ -55,7 +55,7 @@ class SelectClient extends ParentListCliente
 
     protected function execPreviousAction($action)
     {
-        
+
         if($action=="" && $this->request->query->get('action')){
             $action = $this->request->query->get('action');
         }

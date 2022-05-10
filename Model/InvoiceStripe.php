@@ -23,18 +23,18 @@ use Stripe\Product;
 
 class InvoiceStripe
 {
-    public string $id;
-    public string $numero;
-    public string $date;
-    public float $amount;
-    public string $status;
-    public string $customer_id;
-    public ?string $customer_email;
-    public ?string $fs_idFsCustomer = null;
-    public ?string $fs_idFactura;
-    public ?string $fs_customerName;
-    public ?int $discount=0;
-    public array $lines;
+    public $id;
+    public $numero;
+    public $date;
+    public $amount;
+    public $status;
+    public $customer_id;
+    public $customer_email;
+    public $fs_idFsCustomer = null;
+    public $fs_idFactura;
+    public $fs_customerName;
+    public $discount=0;
+    public $lines;
 
 
     public function __construct($data = [])

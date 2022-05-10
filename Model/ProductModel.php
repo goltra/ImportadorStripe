@@ -12,10 +12,10 @@ use Exception;
 class ProductModel
 {
 
-    public string $id;
-    public string $name;
-    public ?string $description;
-    public ?string $fs_idProduct;
+    public $id;
+    public $name;
+    public $description;
+    public $fs_idProduct;
 
     static function loadSkStripe()
     {

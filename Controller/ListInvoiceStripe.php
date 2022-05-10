@@ -18,13 +18,13 @@ use FacturaScripts\Core\Lib\AssetManager;
 class ListInvoiceStripe extends Controller
 {
 
-    public array $invoices = [];
-    public array $sks_stripe = [];
-    public ?string $action = '';
-    public ?int $sk_stripe_index = null;
-    public string $textFilter = '';
-    public string $f_ini='';
-    public string $f_fin='';
+    public $invoices = [];
+    public $sks_stripe = [];
+    public $action = '';
+    public $sk_stripe_index = null;
+    public $textFilter = '';
+    public $f_ini='';
+    public $f_fin='';
 
     public function getPageData()
     {

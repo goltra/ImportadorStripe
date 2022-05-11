@@ -349,7 +349,7 @@ class InvoiceStripe
      * Crea la factura y deuvelve un array con las propiedades bool status y integer code
      * return Array
      */
-    static public function generateFSInvoice($id_invoice_stripe, $sk_stripe_index, $mark_as_paid = false, $payment_method = null, $send_by_email = false)
+    static public function generateFSInvoice($id_invoice_stripe, $sk_stripe_index, $mark_as_paid = false, $payment_method = null, $send_by_email = false, $stripe_customer = '')
     {
         self::log('generateFSInvoice');
         $invoices = self::loadInvoiceFromStripe($id_invoice_stripe, $sk_stripe_index);
@@ -400,7 +400,7 @@ class InvoiceStripe
             self::log('no hay cliente, agregamos al cliente por defecto');
             $default_cliente = SettingStripeModel::getSetting('codcliente');
             $res_load_client = $client->loadFromCode($default_cliente);
-            $invoiceFs->observaciones = 'Cliente de Stripe no vinculado en Facturascripts';
+            $invoiceFs->observaciones = 'Cliente de Stripe no vinculado en Facturascripts ('.$stripe_customer.')';
         }
 
         self::log('cliente');

@@ -78,7 +78,7 @@ class WebhookStripe extends Controller
             $id = $event->data->object->id;
 
             try {
-                InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', true);
+                InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', true, $event->data->object->customer);
                 $this->toolbox()->log('stripe')->error('invoice id correcto: ' . $id);
             } catch (Exception $ex) {
                 $this->toolbox()->log('stripe')->error('invoice id error: ' . $id);

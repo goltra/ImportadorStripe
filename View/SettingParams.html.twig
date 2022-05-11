@@ -54,7 +54,7 @@
         <p>Claves de Stripe dadas de alta ( por seguridad solo se muestra el identificador que le pusiste al
             crearlo):</p>
         {% for sk in fsc.sks_stripe %}
-            <li>{{ sk.name }} - (Serie: {{ sk.codserie }}) <a href="{{ asset('SettingParams') }}?action=del&name={{ sk.name }}"
+            <li>{{ sk.name }} - (Serie: {{ sk.codserie }}) - (Webhook: {{ asset('WebhookStripe') }}?source={{ sk.token }}) <a href="{{ asset('SettingParams') }}?action=del&name={{ sk.name }}"
                                  class="fa fa-trash"></a></li>
         {% endfor %}
     </div>

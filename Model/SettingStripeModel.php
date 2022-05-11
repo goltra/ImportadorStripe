@@ -52,7 +52,7 @@ class SettingStripeModel
     {
         $sks = self::getSks();
         if (is_array($sks)) {
-            $sks[] = ['name' => $name, 'sk' => $sk, 'codserie' => $serie];
+            $sks[] = ['name' => $name, 'sk' => $sk, 'codserie' => $serie, 'token' => md5($name.date('now'))];
             self::save($sks, 'sks');
         }
     }

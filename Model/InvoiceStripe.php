@@ -50,18 +50,21 @@ class InvoiceStripe
         return SettingStripeModel::getSks();
     }
 
+
     /**
-     * Devuelve el sk de stripe mediante un nombre de cuenta
-     * @param $name
-     * @return mixed|null
+     * Devuelve el sk de stripe mediante el token. Esto se usa por ejemplo para las llamadas desde el webhook de stripe
+     * @param $token
+     * @return int
      */
-    static function loadSkStripeByAccountName($name){
+    static function loadSkStripeByToken($token): int
+    {
+        $index = -1;
         foreach (self::loadSkStripe() as $i => $sk){
-            if(strtoupper($sk['name']) === strtoupper($name))
-                return $i;
+            if($sk['token'] === $token)
+                $index = $i;
         }
 
-        return null;
+        return $index;
     }
 
     /**
@@ -131,6 +134,7 @@ class InvoiceStripe
         self::log('loadInvoiceFromStripe');
         $stripe_ids = self::loadSkStripe();
         $sk_stripe = $stripe_ids[$sk_stripe_index];
+
         if ($sk_stripe === '') {
             return ['status' => false, 'message' => 'No ha indicado el sk de stripe que desea consultar'];
         }
@@ -215,9 +219,6 @@ class InvoiceStripe
 
                 $invoice->date = Helper::castTime($inv->created);
                 $invoice->amount = $inv->amount_paid / 100;
-
-
-
 
                 if (isset($inv->lines) && $withLines) {
                     self::log('Hay lineas en la factura');
@@ -349,7 +350,7 @@ class InvoiceStripe
      * Crea la factura y deuvelve un array con las propiedades bool status y integer code
      * return Array
      */
-    static public function generateFSInvoice($id_invoice_stripe, $sk_stripe_index, $mark_as_paid = false, $payment_method = null, $send_by_email = false, $stripe_customer = '')
+    static public function generateFSInvoice($id_invoice_stripe, $sk_stripe_index, $mark_as_paid = false, $payment_method = null, $send_by_email = false, $stripe_customer = '', $source = 'direct')
     {
         self::log('generateFSInvoice');
         $invoices = self::loadInvoiceFromStripe($id_invoice_stripe, $sk_stripe_index);
@@ -407,10 +408,9 @@ class InvoiceStripe
         self::log($client);
 
 //        Agregamos la serie vinculada, en caso de que no haya, cogemos la del cliente.
-        $serie = isset($sk_stripe['serie']) && strlen($sk_stripe['serie']) > 0 ? $sk_stripe['serie'] : $client->codserie;
-//        Agregamos la serie vinculada, en caso de que no haya, cogemos la del cliente.
         $default_serie = new Serie();
-        $serie = isset($sk_stripe['codserie']) && strlen($sk_stripe['codserie']) > 0 ? $sk_stripe['codserie'] : $client->codserie;
+        $serie = isset($sk_stripe['codserie']) && strlen($sk_stripe['codserie']) > 0 && $source == 'webhook' ? $sk_stripe['codserie'] : $client->codserie;
+        self::log('source: '.$source);
         self::log('serie usada: '.$serie);
         $default_serie->loadFromCode($serie);
 
@@ -579,6 +579,9 @@ class InvoiceStripe
             $fecha = date('d-m-Y H:i:s');
 
             if (is_object($valor))
+                $valor = serialize($valor);
+
+            if(is_array($valor))
                 $valor = serialize($valor);
 
             $file = fopen($dir, "a");

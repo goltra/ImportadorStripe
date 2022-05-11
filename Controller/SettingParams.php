@@ -20,6 +20,7 @@ class SettingParams extends Controller
     public $codcliente = '';
     public $codproducto = '';
 
+
     public function privateCore(&$response, $user, $permissions)
     {
         $this->init();

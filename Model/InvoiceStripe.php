@@ -100,7 +100,6 @@ class InvoiceStripe
             }
             $params = ['status' => 'paid', 'limit' => $limit, 'created' => ['lte' => $endDate, 'gte' => $initDate]];
 
-
             $stripe = new \Stripe\StripeClient($stripe_id);
             $stripe_response = $stripe->invoices->all($params);
 
@@ -406,6 +405,11 @@ class InvoiceStripe
 
         self::log('cliente');
         self::log($client);
+        $invoiceFs->setSubject($client);
+        $invoiceFs->dtopor1 = $invoice->discount;
+
+        self::log('invoiceFS');
+        self::log($invoiceFs);
 
 //        Agregamos la serie vinculada, en caso de que no haya, cogemos la del cliente.
         $default_serie = new Serie();
@@ -414,13 +418,18 @@ class InvoiceStripe
         self::log('serie usada: '.$serie);
         $default_serie->loadFromCode($serie);
 
-        if ($default_serie->exists())
-            $invoiceFs->codserie = $default_serie->codserie;
+        self::log('serie devuelta al filtrar: ');
+        self::log($default_serie);
 
-        $invoiceFs->setSubject($client);
-        $invoiceFs->dtopor1 = $invoice->discount;
+        if ($default_serie->exists()){
+            $invoiceFs->codserie = $serie;
+            self::log('Se asigna la serie '.$serie);
+        }
+        else
+            self::log('serie da error.');
 
-        self::log('invoiceFS');
+
+        self::log('invoiceFS después de la serie');
         self::log($invoiceFs);
 
         // Si se crea la factura, entonces creo las lineas.

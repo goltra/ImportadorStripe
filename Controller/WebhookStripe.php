@@ -84,11 +84,16 @@ class WebhookStripe extends Controller
         if($event->type == 'invoice.payment_succeeded') {
             $id = $event->data->object->id;
 
+            if($event->data->object->amount_paid === 0){
+                InvoiceStripe::log('Se ha pagado 0€, no se factura');
+                http_response_code(200);
+                exit();
+            }
+
             $this->toolbox()->log('stripe')->error($event->data);
 
             try {
-
-                InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', true, $event->data->object->customer, 'webhook');
+                InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', false, $event->data->object->customer, 'webhook');
                 InvoiceStripe::log('invoice id correcto: ' . $id);
             } catch (Exception $ex) {
                 InvoiceStripe::log('invoice id error: ' . $id);

@@ -23,6 +23,7 @@ class ClientModel
 
     static public function loadStripeCustomers($sk_stripe_index, $start = null, int $limit = 10)
     {
+        $limit = 100000;
         $stripe_ids = self::loadSkStripe();
         // Cargo el index del sk pasado a la función
         $sk_stripe = $stripe_ids[$sk_stripe_index];
@@ -31,13 +32,20 @@ class ClientModel
         }
         $stripe_id = $sk_stripe['sk'];
         $stripe = new \Stripe\StripeClient($stripe_id);
-        $response = $stripe->customers->all(['limit'=>$limit]);
 
+        $response = $stripe->customers->all(
+            ['limit'=>$limit]
+        );
 
-        $customers = $response->data;
+        $customers = [];
 
-        if ($customers)
+        foreach ($response->autoPagingIterator() as $customer) {
+            $customers[] = $customer;
+        }
+
+        if (count($customers) > 0)
             return self::processStripeObjects($customers);
+
         return null;
     }
 

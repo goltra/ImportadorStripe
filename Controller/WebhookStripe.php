@@ -98,7 +98,7 @@ class WebhookStripe extends Controller
             } catch (Exception $ex) {
                 InvoiceStripe::log('invoice id error: ' . $id);
                 var_dump($ex->getMessage());
-                http_response_code(400);
+                http_response_code(200);
                 exit();
             }
         }

@@ -16,3 +16,4 @@ en cuyo caso no se aplican impuestos.
 - El descuento aplicado por un cupón aparece en las factura de FS como dtopor1
 ## Versión 0.8
 - Webhook para generar las facturas directamente desde stripe
+- 

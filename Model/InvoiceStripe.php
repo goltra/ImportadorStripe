@@ -361,9 +361,9 @@ class InvoiceStripe
 
         // COMPROBAMOS QUE LA FACTURA DE ESTRIPE SE HA CARGADO CORRECTAMENTE
         if ($invoice === null) {
-            self::log('No se ha podido cargar la factura de stripe');
+            self::log('La factura de stripe ya ha sido generada');
             ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
-            throw new Exception('No se ha podido cargar la factura de stripe');
+            throw new Exception('La factura de stripe ya ha sido generada');
         }
         // COMPROBAMOS QUE LA FACTURA DE STRIPE TIENE UN CLIENTE DE FS ASOCIADO
 //        if (!isset($invoice->fs_idFsCustomer) || $invoice->fs_idFsCustomer === '') {

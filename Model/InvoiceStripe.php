@@ -365,11 +365,7 @@ class InvoiceStripe
             ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
             throw new Exception('La factura de stripe ya ha sido generada');
         }
-        // COMPROBAMOS QUE LA FACTURA DE STRIPE TIENE UN CLIENTE DE FS ASOCIADO
-//        if (!isset($invoice->fs_idFsCustomer) || $invoice->fs_idFsCustomer === '') {
-//            self::log('La factura de stripe no tiene asociado un cliente de FS');
-//            throw new Exception('La factura de stripe no tiene asociado un cliente de FS');
-//        }
+
         // COMPROBAMOS QUE LA FACTURA DE STRIPE NO ESTE VINCULADA YA A UNA FACTURA DE FS
         if (isset($invoice->fs_idFactura) && ($invoice->fs_idFactura === null || $invoice->fs_idFactura !== '')) {
             self::log('La factura de stripe ya está vinculada a la factura de FS ' . $invoice->fs_idFactura);
@@ -460,7 +456,7 @@ class InvoiceStripe
                 else{
                     self::log('No hay producto de fs vinculado');
                     $producto = new Producto();
-                    $default_producto = SettingStripeModel::getSetting('codcliente');
+                    $default_producto = SettingStripeModel::getSetting('codproducto');
                     self::log('asignamos el producto por defecto'.$default_producto);
                     $producto->loadFromCode($default_producto);
                     $invoiceFs->observaciones = 'Producto de Stripe no vinculado en Facturascripts';
@@ -476,10 +472,14 @@ class InvoiceStripe
                 $line->pvptotal = $l['amount'];
 
                 if ($client->regimeniva !== 'Exento') {
-                    self::log('El cliente es exento de iva');
+                    self::log('El cliente tiene iva');
                     $line->codimpuesto = $l['codimpuesto'];
                     $line->iva = $l['iva'];
                 }
+                else{
+                    self::log('El cliente está exento de iva');
+                }
+
                 self::log('Guardamos la linea de la factura');
 
                 if (!$line->save()) {

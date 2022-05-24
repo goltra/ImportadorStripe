@@ -270,7 +270,7 @@ class InvoiceStripe
                         }
 
                         // Obtengo el precio de la linea
-                        $unit_amount = $l->price->unit_amount / 100;
+                        $unit_amount = $l->amount / 100;
 
                         // Aplico los descuentos que trae la linea
                         /*foreach ($l->discount_amounts as $d) {
@@ -303,7 +303,7 @@ class InvoiceStripe
                     }
 
 
-                    self::log('Factura descargada correctamente');
+                    self::log('Factura de stripe procesada correctamente');
                     self::log('Errores: '.count($errors));
                 }
 
@@ -356,15 +356,15 @@ class InvoiceStripe
 
         self::log('vuelvo a generateFSInvoice');
 
-        $invoice = $invoices['data'][0];
-        $result = false;
-
         // COMPROBAMOS QUE LA FACTURA DE ESTRIPE SE HA CARGADO CORRECTAMENTE
-        if ($invoice === null) {
+        if (count($invoices['data']) === 0) {
             self::log('La factura de stripe ya ha sido generada');
             ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
             throw new Exception('La factura de stripe ya ha sido generada');
         }
+
+        $invoice = $invoices['data'][0];
+        $result = false;
 
         // COMPROBAMOS QUE LA FACTURA DE STRIPE NO ESTE VINCULADA YA A UNA FACTURA DE FS
         if (isset($invoice->fs_idFactura) && ($invoice->fs_idFactura === null || $invoice->fs_idFactura !== '')) {
@@ -431,6 +431,7 @@ class InvoiceStripe
         // Si se crea la factura, entonces creo las lineas.
         if ($invoiceFs->save()) {
             foreach ($invoice->lines as $l) {
+
                 self::log('linea stripe');
                 /** \FacturaScripts\Core\Model\LineaFacturaCliente $line */
                 $line = $invoiceFs->getNewLine();
@@ -482,21 +483,21 @@ class InvoiceStripe
 
                 self::log('Guardamos la linea de la factura');
 
+
                 if (!$line->save()) {
                     self::log('Ha ocurrido algun error mientras se creaban la lineas de la factura.');
+                    self::log($line);
                     $database->rollback();
-                    ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
                     throw new Exception('Ha ocurrido algun error mientras se creaban la lineas de la factura.');
                 }
             }
+
         } else {
             self::log('Ha ocurrido algun error mientras se creaba la factura.');
             $database->rollback();
             ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
             throw new Exception('Ha ocurrido algun error mientras se creaba la factura.');
         }
-
-
 
         // recalculo los totales
         $tool = new BusinessDocumentTools();

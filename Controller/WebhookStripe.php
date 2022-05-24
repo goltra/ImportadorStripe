@@ -35,7 +35,7 @@ class WebhookStripe extends Controller
 
 
     public function init(){
-
+        
 
         $payload = @file_get_contents('php://input');
 

@@ -113,6 +113,7 @@ class ProductModel
         $stripe_id = $sk_stripe['sk'];
         $stripe = new \Stripe\StripeClient($stripe_id);
         $product = $stripe->products->retrieve($st_product_id);
-        return $product->metadata['fs_idProduct'] === null ? '' : $product->metadata['fs_idProduct'];
+
+        return $product->metadata['fs_idProduct'] === null ? SettingStripeModel::getSetting('codproducto') : $product->metadata['fs_idProduct'];
     }
 }

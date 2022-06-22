@@ -202,7 +202,7 @@ class InvoiceStripe
                 $invoice->customer_email = $inv->customer_email;
                 $invoice->discount = ($inv->discount!==null && isset($inv->discount['coupon']['percent_off'])) ? $inv->discount['coupon']['percent_off'] : 0;
                 $invoice->fs_idFactura = isset($inv->metadata['fs_idFactura']) ? $inv->metadata['fs_idFactura'] : null;
-                $_fs_idCustomer = isset($customer->metadata['fs_idFsCustomer']) ? $customer->metadata['fs_idFsCustomer'] : null;
+                $_fs_idCustomer = isset($customer->metadata['fs_idFsCustomer']) ? $customer->metadata['fs_idFsCustomer'] : SettingStripeModel::getSetting('codcliente');
                 $fs_customer = new \FacturaScripts\Core\Model\Cliente();
                 $fs_customer->loadFromCode($_fs_idCustomer);
 
@@ -211,13 +211,12 @@ class InvoiceStripe
                     $invoice->fs_idFsCustomer = $_fs_idCustomer;
                     $invoice->fs_customerName = $fs_customer->nombre;
                 }
-                else {
 
-                    self::log('No existe el cliente');
-                }
+                self::log('Cliente '.serialize($fs_customer));
 
                 $invoice->date = Helper::castTime($inv->created);
                 $invoice->amount = $inv->amount_paid / 100;
+
 
                 if (isset($inv->lines) && $withLines) {
                     self::log('Hay lineas en la factura');
@@ -236,10 +235,17 @@ class InvoiceStripe
                         $vat_perc = (count($l->tax_rates)>0 && isset($l->tax_rates[0]['percentage'])) ? $l->tax_rates[0]['percentage'] : $vat_perc; //Impuesto aplicado a linea
 
 
+                        if ($vat_perc === null && isset($inv->default_tax_rates[0]->percentage))
+                            $vat_perc = $inv->default_tax_rates[0]->percentage;
+
+
                         $vat_included = null;
-                        if (count($l->tax_amounts) > 0) {
+
+                        if (count($l->tax_amounts) > 0)
                             $vat_included = $l->tax_amounts[0]['inclusive'];
-                        }
+
+                        self::log('¿El iva está incluido?: '.($vat_included ? 'si' : 'no'));
+
 
                         if ($l->price !== null && $l->price->product !== null && $l->price->product !== '') {
                             $fs_product_id = ProductModel::getFsProductIdFromStripe($sk_stripe_index, $l->price->product);
@@ -259,9 +265,9 @@ class InvoiceStripe
                                 else {
                                     $tax = $product->getTax();
 
-                                    if ($vat_perc !== null) {
+                                    if ($vat_perc !== null)
                                         $tax->iva = $vat_perc;
-                                    }
+
                                 }
 
                             }
@@ -269,39 +275,52 @@ class InvoiceStripe
                             $errors[] = ['message' => 'No se ha podido cargar el producto desde stripe', 'data' => $l];
                         }
 
+
                         // Obtengo el precio de la linea
                         $unit_amount = $l->amount / 100;
+
+                        self::log('Precio antes de impuestos '.$unit_amount);
 
                         // Aplico los descuentos que trae la linea
                         /*foreach ($l->discount_amounts as $d) {
                             $unit_amount -= ($d['amount'] / 100);
                         }*/
 
-                        // Si el cliente de stripe tiene el regimeniva="Exento", entonces
-                        // el iva lo pongo a 0.
-
-                        if($tax !== null && $fs_customer->regimeniva==='Exento')
-                            $tax->iva = 0;
 
 
-                        // Aplico impuestos según estén definidos
-                        if ($vat_included === null) {
-                            $unit_amount = $unit_amount / (1 + ($tax->iva / 100));
-                        } else {
-                            $unit_amount = ($vat_included) ? $unit_amount / (1 + ($tax->iva / 100)) : $unit_amount;
+
+                        self::log('Tax '.serialize($tax));
+
+                        if($tax !== null && $fs_customer->regimeniva==='Exento'){
+                            $tax->loadFromCode('IVA0');
+                            self::log('Cliente exento de iva');
+
+                            if($vat_included === null || $vat_included === false){
+                                $unit_amount = $unit_amount * (1 + ($vat_perc / 100));
+                                self::log('Le sumamos el iva que viene de stripe: '.$vat_perc);
+                            }
                         }
+                        else
+                            self::log('El cliente tiene iva');
+
+
+
+                        if ($tax->iva !== 0 && ($vat_included === null || $vat_included )){
+                            $unit_amount = $unit_amount / (1 + ($tax->iva / 100));
+                            self::log('Le restamos el iva que viene de stripe: '.$tax->iva);
+                        }
+
 
                         // Multiplico por las unidades para obtener el total de la linea
                         $amount = round($unit_amount * $l->quantity, ToolBox::appSettings()->get('default', 'decimals'));
                         $unit_amount = round($unit_amount * $l->quantity, ToolBox::appSettings()->get('default', 'decimals'));
 
-                        self::log('precio: '.$amount);
-                        self::log('unit precio: '.$unit_amount);
+                        self::log('precio después de impuestos: '.$amount);
+                        self::log('unit precio después de impuestos: '.$unit_amount);
 
                         // Asigno a cada variable el valor que debe tener en la linea
                         $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->plan->name . ' ' . $l->description, 'period_start' => $period_start, 'period_end' => $period_end];
                     }
-
 
                     self::log('Factura de stripe procesada correctamente');
                     self::log('Errores: '.count($errors));
@@ -391,18 +410,18 @@ class InvoiceStripe
          */
 
         $client = new Cliente();
-        $res_load_client = $client->loadFromCode($invoice->fs_idFsCustomer);
-        if (!$res_load_client) {
-            self::log('no hay cliente, agregamos al cliente por defecto');
-            $default_cliente = SettingStripeModel::getSetting('codcliente');
-            $res_load_client = $client->loadFromCode($default_cliente);
+        $client->loadFromCode($invoice->fs_idFsCustomer);
+
+        if ($client->codcliente === SettingStripeModel::getSetting('codcliente')){
+            self::log('El cliente no está vinculado');
             $invoiceFs->observaciones = 'Cliente de Stripe no vinculado en Facturascripts ('.$stripe_customer.')';
         }
 
-        self::log('cliente');
-        self::log($client);
+
         $invoiceFs->setSubject($client);
         $invoiceFs->dtopor1 = $invoice->discount;
+
+
 
         self::log('invoiceFS');
         self::log($invoiceFs);
@@ -455,12 +474,16 @@ class InvoiceStripe
                     $producto->loadFromCode($l['fs_product_id']);
                 }
                 else{
+                    self::log('No hay producto asignado');
+                    $database->rollback();
+                    throw new Exception('Ha ocurrido algun error mientras se creaba la factura.');
+                }
+
+
+                if ($l['fs_product_id'] === SettingStripeModel::getSetting('codproducto')){
                     self::log('No hay producto de fs vinculado');
-                    $producto = new Producto();
-                    $default_producto = SettingStripeModel::getSetting('codproducto');
-                    self::log('asignamos el producto por defecto'.$default_producto);
-                    $producto->loadFromCode($default_producto);
-                    $invoiceFs->observaciones = 'Producto de Stripe no vinculado en Facturascripts';
+
+                    $invoiceFs->observaciones = 'Producto de Stripe no vinculado en Facturascripts ('.$l['fs_product_id'].')';
                     $invoiceFs->save();
                 }
 
@@ -471,16 +494,10 @@ class InvoiceStripe
                 $line->cantidad = $l['quantity'];
                 $line->pvpunitario = $l['unit_amount'];
                 $line->pvptotal = $l['amount'];
+                $line->iva = $l['iva'];
+                $line->codimpuesto = $l['codimpuesto'];
 
-                if ($client->regimeniva !== 'Exento') {
-                    self::log('El cliente tiene iva');
-                    $line->codimpuesto = $l['codimpuesto'];
-                    $line->iva = $l['iva'];
-                }
-                else{
-                    self::log('El cliente está exento de iva');
-                }
-
+                
                 self::log('Guardamos la linea de la factura');
 
 

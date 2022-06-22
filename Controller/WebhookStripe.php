@@ -35,7 +35,19 @@ class WebhookStripe extends Controller
 
 
     public function init(){
-        
+
+//        $idIvaIncluido = "in_1LAx5fHDuQaJAlOm7qXpRu7w";
+//        $idIvaDesglosado = "in_1LAx6HHDuQaJAlOmo1Npgsc1";
+//        $idCuponDescuento = "in_1LAx7ZHDuQaJAlOmL5eEYjI9";
+//
+//
+//        $id = $idCuponDescuento;
+//        $sk_index = 0;
+//        $customer = '"cus_LaNXVPN1J3hUiF"';
+//
+//        InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', false, $customer, 'webhook');
+//
+//        die();
 
         $payload = @file_get_contents('php://input');
 

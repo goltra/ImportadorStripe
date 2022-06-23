@@ -24,6 +24,7 @@ use FacturaScripts\Dinamic\Model\FacturaCliente;
 use FacturaScripts\Dinamic\Model\LineaFacturaCliente;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Product;
+use function Composer\Autoload\includeFile;
 
 class InvoiceStripe
 {
@@ -124,6 +125,7 @@ class InvoiceStripe
 
             return $response;
         } catch (ApiErrorException $e) {
+            self::sendMailError('(no hay factura)', $e->getMessage());
             return ['status' => false, 'message' => $e->getMessage()];
         }
     }
@@ -142,7 +144,11 @@ class InvoiceStripe
 
         try {
             $stripe = new \Stripe\StripeClient($stripe_id);
-            $invoices[] = $stripe->invoices->retrieve($id); //guardamos en un array porque el método que genera el objeto lo tenemos definido así
+            $invoices[] = $stripe->invoices->retrieve($id, [
+                'expand' => ['lines.data.price.product'],
+            ]); //guardamos en un array porque el método que genera el objeto lo tenemos definido así
+
+
             self::log('factura descargada');
             self::log(serialize($invoices));
 
@@ -150,6 +156,7 @@ class InvoiceStripe
                 $res = self::processInvoicesObject($invoices, $sk_stripe_index);
             } catch (Exception $e) {
                 self::log('Error al procesar la factura de stripe ' . serialize($e->getMessage()));
+                self::sendMailError($id, serialize($e->getMessage()));
                 return ['status' => false, 'message' => 'Error al procesar la factura de stripe ' . $e->getMessage()];
             }
 
@@ -157,6 +164,7 @@ class InvoiceStripe
 
         } catch (\Exception $ex) {
             self::log('Error al obtener la factura desde stripe ' . serialize($ex->getMessage()));
+            self::sendMailError($id, serialize($ex->getMessage()));
             return ['status' => false, 'message' => 'Error al obtener la factura desde stripe ' . $ex->getMessage()];
         }
 
@@ -200,7 +208,6 @@ class InvoiceStripe
                 $invoice->status = $inv->status;
                 $invoice->customer_id = $inv->customer;
                 $invoice->customer_email = $inv->customer_email;
-                $invoice->discount = ($inv->discount!==null && isset($inv->discount['coupon']['percent_off'])) ? $inv->discount['coupon']['percent_off'] : 0;
                 $invoice->fs_idFactura = isset($inv->metadata['fs_idFactura']) ? $inv->metadata['fs_idFactura'] : null;
                 $_fs_idCustomer = isset($customer->metadata['fs_idFsCustomer']) ? $customer->metadata['fs_idFsCustomer'] : SettingStripeModel::getSetting('codcliente');
                 $fs_customer = new \FacturaScripts\Core\Model\Cliente();
@@ -216,7 +223,6 @@ class InvoiceStripe
 
                 $invoice->date = Helper::castTime($inv->created);
                 $invoice->amount = $inv->amount_paid / 100;
-
 
                 if (isset($inv->lines) && $withLines) {
                     self::log('Hay lineas en la factura');
@@ -248,7 +254,8 @@ class InvoiceStripe
 
 
                         if ($l->price !== null && $l->price->product !== null && $l->price->product !== '') {
-                            $fs_product_id = ProductModel::getFsProductIdFromStripe($sk_stripe_index, $l->price->product);
+                            $fs_product_id = ProductModel::getFsProductIdFromStripe($sk_stripe_index, $l->price->product->id);
+
                             self::log('producto: '.$fs_product_id);
 
                             // Compruebo si hay correlación entre producto de stripe y fs
@@ -281,13 +288,21 @@ class InvoiceStripe
 
                         self::log('Precio antes de impuestos '.$unit_amount);
 
-                        // Aplico los descuentos que trae la linea
-                        /*foreach ($l->discount_amounts as $d) {
-                            $unit_amount -= ($d['amount'] / 100);
-                        }*/
 
 
-
+//                        // Aplico los descuentos que trae la linea, siempre van a ser porcentaje. Por tanto si el descuento es una cantidad fija, se calcula el porcentaje respecto al precio final.
+                        if(isset($inv->total_discount_amounts) && isset($inv->subtotal) && count($inv->total_discount_amounts) > 0) {
+                            $discount = 0;
+                            foreach ($inv->total_discount_amounts as $d){
+                                $discount += round($d->amount / $inv->subtotal * 100, 2);
+                            }
+//
+                            $invoice->discount = $discount;
+                            self::log('Se aplica un descuento de '.$discount);
+                        }
+                        else{
+                            self::log('No hay descuentos o no hay subtotal en la factura.');
+                        }
 
                         self::log('Tax '.serialize($tax));
 
@@ -319,7 +334,7 @@ class InvoiceStripe
                         self::log('unit precio después de impuestos: '.$unit_amount);
 
                         // Asigno a cada variable el valor que debe tener en la linea
-                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->plan->name . ' ' . $l->description, 'period_start' => $period_start, 'period_end' => $period_end];
+                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->price->product->name, 'period_start' => $period_start, 'period_end' => $period_end];
                     }
 
                     self::log('Factura de stripe procesada correctamente');
@@ -359,6 +374,7 @@ class InvoiceStripe
             $stripe = new \Stripe\StripeClient($stripe_id);
             return $stripe->customers->retrieve($customer_id);
         } catch (\Exception $ex) {
+            self::sendMailError($customer_id, serialize($ex->getMessage()));
             return null;
         }
     }
@@ -497,7 +513,7 @@ class InvoiceStripe
                 $line->iva = $l['iva'];
                 $line->codimpuesto = $l['codimpuesto'];
 
-                
+
                 self::log('Guardamos la linea de la factura');
 
 
@@ -557,6 +573,7 @@ class InvoiceStripe
         } catch (Exception $ex) {
             $database->rollback();
             self::log('No se ha podido crear la factura porque ha fallado al actualizar el documento de stripe');
+            self::sendMailError($invoice->fs_idFactura, serialize($ex->getMessage()));
             ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
             throw new Exception('No se ha podido crear la factura porque ha fallado al actualizar el documento de stripe');
         }
@@ -593,6 +610,7 @@ class InvoiceStripe
                 ['metadata' => ['fs_idFactura' => $fs_idFactura]]);
         } catch (Exception $ex) {
             ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
+            self::sendMailError($id_invoice_stripe, serialize($ex->getMessage()));
             throw new Exception('Error al vincular la factura de FS a la de Stripe ' . $ex->getMessage());
         }
     }
@@ -615,5 +633,13 @@ class InvoiceStripe
             $a = fwrite($file, $fecha . ' - ' . $valor . PHP_EOL);
             fclose($file);
         }
+    }
+
+    static function sendMailError($factura, $error){
+        $mail = new NewMail();
+        $mail->addAddress('jose@goltratec.com', 'Pepe');
+        $mail->title = 'Error al generar factura en Facturascript';
+        $mail->text = 'Se ha generado un error al generar la factura '.$factura.'. <br /> El error es: '.$error;
+        $mail->send();
     }
 }

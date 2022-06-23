@@ -150,7 +150,6 @@ class InvoiceStripe
 
 
             self::log('factura descargada');
-            self::log(serialize($invoices));
 
             try {
                 $res = self::processInvoicesObject($invoices, $sk_stripe_index);
@@ -189,9 +188,6 @@ class InvoiceStripe
             //obtengo el cliente de stripe.
             $customer = self::getStripeClient($inv->customer, $sk_stripe_index);
 
-            self::log('customer:');
-            self::log($customer);
-
             if ($customer === null) {
                 self::log('cliente No se ha podido cargar el cliente de stripe correspondiente a la factura');
                 ToolBox::log('stripe')->error('invoice id error: ' . $sk_stripe_index);
@@ -217,9 +213,12 @@ class InvoiceStripe
                 if ($_fs_idCustomer !== null && $fs_customer->exists()) {
                     $invoice->fs_idFsCustomer = $_fs_idCustomer;
                     $invoice->fs_customerName = $fs_customer->nombre;
+                    self::log('cliente: '.$fs_customer->nombre);
                 }
-
-                self::log('Cliente '.serialize($fs_customer));
+                else{
+                    self::log('cliente no encontrado en facturascripts');
+                    $errors[] = ['message' => 'Cliente no encontrado en facturascripts'];
+                }
 
                 $invoice->date = Helper::castTime($inv->created);
                 $invoice->amount = $inv->amount_paid / 100;
@@ -256,7 +255,6 @@ class InvoiceStripe
                         if ($l->price !== null && $l->price->product !== null && $l->price->product !== '') {
                             $fs_product_id = ProductModel::getFsProductIdFromStripe($sk_stripe_index, $l->price->product->id);
 
-                            self::log('producto: '.$fs_product_id);
 
                             // Compruebo si hay correlación entre producto de stripe y fs
                             if (strlen($fs_product_id) === 0) {
@@ -304,9 +302,8 @@ class InvoiceStripe
                             self::log('No hay descuentos o no hay subtotal en la factura.');
                         }
 
-                        self::log('Tax '.serialize($tax));
 
-                        if($tax !== null && $fs_customer->regimeniva==='Exento'){
+                        if($tax !== null && $fs_customer->regimeniva === 'Exento'){
                             $tax->loadFromCode('IVA0');
                             self::log('Cliente exento de iva');
 
@@ -438,10 +435,6 @@ class InvoiceStripe
         $invoiceFs->dtopor1 = $invoice->discount;
 
 
-
-        self::log('invoiceFS');
-        self::log($invoiceFs);
-
 //        Agregamos la serie vinculada, en caso de que no haya, cogemos la del cliente.
         $default_serie = new Serie();
         $serie = isset($sk_stripe['codserie']) && strlen($sk_stripe['codserie']) > 0 && $source == 'webhook' ? $sk_stripe['codserie'] : $client->codserie;
@@ -460,8 +453,6 @@ class InvoiceStripe
             self::log('serie da error.');
 
 
-        self::log('invoiceFS después de la serie');
-        self::log($invoiceFs);
 
         // Si se crea la factura, entonces creo las lineas.
         if ($invoiceFs->save()) {
@@ -485,9 +476,9 @@ class InvoiceStripe
                  * En caso de que no esté cogemos el que esté asignado por defecto
                  */
                 if ($l['fs_product_id'] !== null && $l['fs_product_id'] !== '') {
-                    self::log('Hay producto de fs vinculado');
                     $producto = new Producto();
                     $producto->loadFromCode($l['fs_product_id']);
+                    self::log('Hay producto de fs vinculado. El producto es: '.$producto->referencia);
                 }
                 else{
                     self::log('No hay producto asignado');
@@ -512,10 +503,7 @@ class InvoiceStripe
                 $line->pvptotal = $l['amount'];
                 $line->iva = $l['iva'];
                 $line->codimpuesto = $l['codimpuesto'];
-
-
-                self::log('Guardamos la linea de la factura');
-
+                
 
                 if (!$line->save()) {
                     self::log('Ha ocurrido algun error mientras se creaban la lineas de la factura.');
@@ -545,8 +533,6 @@ class InvoiceStripe
 
         if ($mark_as_paid === true && $payment_method !== null) $invoiceFs->codpago = $payment_method;
 
-        self::log('invoice fs l:411');
-        self::log($invoiceFs);
         $invoiceFs->save();
         //Genero el asiento contable
         if (!self::generateAccounting($invoiceFs)) {

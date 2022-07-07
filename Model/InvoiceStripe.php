@@ -8,23 +8,16 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
-use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\Base\DataBase;
 use FacturaScripts\Core\Base\ToolBox;
 use FacturaScripts\Core\Lib\BusinessDocumentTools;
 use FacturaScripts\Core\Lib\Email\NewMail;
-use FacturaScripts\Core\Lib\Export\PDFExport;
 use FacturaScripts\Core\Model\Producto;
-use FacturaScripts\Core\Model\ReciboCliente;
 use FacturaScripts\Core\Model\Serie;
-use FacturaScripts\Core\Model\Variante;
 use FacturaScripts\Dinamic\Lib\Accounting\InvoiceToAccounting;
 use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\FacturaCliente;
-use FacturaScripts\Dinamic\Model\LineaFacturaCliente;
 use Stripe\Exception\ApiErrorException;
-use Stripe\Product;
-use function Composer\Autoload\includeFile;
 
 class InvoiceStripe
 {
@@ -396,7 +389,6 @@ class InvoiceStripe
         }
 
         $invoice = $invoices['data'][0];
-        $result = false;
 
         // COMPROBAMOS QUE LA FACTURA DE STRIPE NO ESTE VINCULADA YA A UNA FACTURA DE FS
         if (isset($invoice->fs_idFactura) && ($invoice->fs_idFactura === null || $invoice->fs_idFactura !== '')) {
@@ -412,6 +404,7 @@ class InvoiceStripe
         $database->beginTransaction();
 
         $invoiceFs = new FacturaCliente();
+
 
         $stripe_ids = self::loadSkStripe();
         $sk_stripe = $stripe_ids[$sk_stripe_index];
@@ -466,10 +459,10 @@ class InvoiceStripe
                 if ($l['period_start']) {
                     $line->descripcion = $line->descripcion . ' desde ' . date('d-m-Y', $l['period_start']);
                 }
+
                 if ($l['period_end']) {
                     $line->descripcion = $line->descripcion . ' hasta ' . date('d-m-Y', $l['period_end']);
                 }
-                $productCode = '';
 
                 /*
                  * Seleccionamos el producto que esté vinculado
@@ -483,7 +476,7 @@ class InvoiceStripe
                 else{
                     self::log('No hay producto asignado');
                     $database->rollback();
-                    throw new Exception('Ha ocurrido algun error mientras se creaba la factura.');
+                    throw new Exception('No hay producto asignado');
                 }
 
 
@@ -494,7 +487,6 @@ class InvoiceStripe
                     $invoiceFs->save();
                 }
 
-
                 $productCode = $producto->referencia;
                 $line->idproducto = $l['fs_product_id'];
                 $line->referencia = $productCode;
@@ -503,7 +495,6 @@ class InvoiceStripe
                 $line->pvptotal = $l['amount'];
                 $line->iva = $l['iva'];
                 $line->codimpuesto = $l['codimpuesto'];
-                
 
                 if (!$line->save()) {
                     self::log('Ha ocurrido algun error mientras se creaban la lineas de la factura.');
@@ -514,10 +505,10 @@ class InvoiceStripe
             }
 
         } else {
+            self::log($invoiceFs);
             self::log('Ha ocurrido algun error mientras se creaba la factura.');
             $database->rollback();
-            ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
-            throw new Exception('Ha ocurrido algun error mientras se creaba la factura.');
+            throw new Exception('Error al generar la factura.');
         }
 
         // recalculo los totales
@@ -623,7 +614,7 @@ class InvoiceStripe
 
     static function sendMailError($factura, $error){
         $mail = new NewMail();
-        $mail->addAddress('jose@goltratec.com', 'Pepe');
+        $mail->addAddress('jose@goltratec.com', 'Goltratec');
         $mail->title = 'Error al generar factura en Facturascript';
         $mail->text = 'Se ha generado un error al generar la factura '.$factura.'. <br /> El error es: '.$error;
         $mail->send();

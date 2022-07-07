@@ -36,20 +36,20 @@ class WebhookStripe extends Controller
 
     public function init(){
 
-        $idIvaIncluido = "in_1LAx5fHDuQaJAlOm7qXpRu7w";
-        $idIvaDesglosado = "in_1LAx6HHDuQaJAlOmo1Npgsc1";
-        $idCuponDescuento = "in_1LAx7ZHDuQaJAlOmL5eEYjI9";
-        $cuponFijo = "in_1LDjKfHDuQaJAlOmQBHv69rT";
-        $cuponFijoIva = "in_1LDmaZHDuQaJAlOmfLcepN7P";
-
-
-        $id = $cuponFijoIva;
-        $sk_index = 0;
-        $customer = 'cus_LaNXVPN1J3hUiF';
-
-        InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', false, $customer, 'webhook');
-
-        die();
+//        $idIvaIncluido = "in_1LAx5fHDuQaJAlOm7qXpRu7w";
+//        $idIvaDesglosado = "in_1LAx6HHDuQaJAlOmo1Npgsc1";
+//        $idCuponDescuento = "in_1LAx7ZHDuQaJAlOmL5eEYjI9";
+//        $cuponFijo = "in_1LDjKfHDuQaJAlOmQBHv69rT";
+//        $cuponFijoIva = "in_1LDmaZHDuQaJAlOmfLcepN7P";
+//
+//
+//        $id = $idIvaIncluido;
+//        $sk_index = 0;
+//        $customer = 'cus_LaNXVPN1J3hUiF';
+//
+//        InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', false, $customer, 'webhook');
+//
+//        die();
 
         $payload = @file_get_contents('php://input');
 
@@ -104,16 +104,24 @@ class WebhookStripe extends Controller
                 exit();
             }
 
-            $this->toolbox()->log('stripe')->error($event->data);
-
             try {
                 InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', false, $event->data->object->customer, 'webhook');
                 InvoiceStripe::log('invoice id correcto: ' . $id);
             } catch (Exception $ex) {
                 InvoiceStripe::log('invoice id error: ' . $id);
                 InvoiceStripe::sendMailError($id, serialize($ex->getMessage()));
-                var_dump($ex->getMessage());
-                http_response_code(200);
+                /*
+                 * Tenemos un bug de facturascript que cuando entran dos facturas al mismo tiempo, la segunda coge el código de la primera y luego al guardar da error.
+                 * Por tanto, si el error es ese, le mandamos un código 400 para que stripe vuelva a llamar más tarde.
+                 */
+                if ($ex->getMessage() === 'Error al generar la factura.'){
+                    http_response_code(400);
+                }
+                else{
+                    var_dump($ex->getMessage());
+                    http_response_code(200);
+                }
+
                 exit();
             }
         }

@@ -84,7 +84,7 @@ class CreateInvoiceStripe extends Controller
 
                 $code = $this->generateFSInvoice($_SESSION['id_stripe_invoice'], $this->sk_stripe_index, $mark_as_paid, $payment_method, $send_by_email);
                 if ($code !== null && $send_by_email===true)
-                    $this->exportAndSendEmail($code);
+                    InvoiceStripe::exportAndSendEmail($code);
 
                 break;
             case 'linkClient':
@@ -194,44 +194,5 @@ class CreateInvoiceStripe extends Controller
 
     }
 
-    private function exportAndSendEmail($code)
-    {
-        $factura = new FacturaCliente();
-        $factura->loadFromCode($code);
-        $cliente = new Cliente();
-        $cliente->loadFromCode($factura->codcliente);
-        if ($cliente->email === null || strlen($cliente->email) == 0 && !filter_var($cliente->email, FILTER_VALIDATE_EMAIL)) {
-            $this->toolbox()->log()->error('Se generará la factura pero no se puede enviar el email porque el cliente no tiene puesta una dirección.');
-        } else {
-            $pdf = new PDFExport();
-            $pdf->addBusinessDocPage($factura);
-            $path = FS_FOLDER . DIRECTORY_SEPARATOR . 'MyFiles' . DIRECTORY_SEPARATOR;
-            $fileName = 'factura_' . $factura->codigo . '.pdf';
-            // TODO: Borrar fichero una vez enviado
-            if (file_put_contents($path . $fileName, $pdf->getDoc())) {
-                $mail = new NewMail();
 
-                if(FS_DEBUG)
-                    $mail->addAddress('francisco@goltratec.com');
-                else
-                    $mail->addAddress($cliente->email);
-
-                $mail->title = 'Le enviamos su factura ' . $factura->codigo;
-                $mail->text = 'Estimado cliente, le enviamos la factura correspondiente al servicio. Gracias por confiar en nosotros';
-                $mail->addAttachment($path . $fileName, $fileName);
-                $mail->fromNick = $this->user->nick;
-                if ($mail->send()) {
-                    $factura->femail = date('Y-m-d');
-                    $factura->save();
-                    $this->toolbox()->log()->info('Correo enviado correctamente');
-
-                } else {
-                    $this->toolbox()->log()->info('Hubo algún error al enviar el correo');
-                }
-                unlink($path . $fileName);
-            } else {
-                $this->toolbox()->log()->error('Se generará la factura pero no se puede enviar el email porque hubo algún error al generar el fichero.');
-            }
-        }
-    }
 }

@@ -43,6 +43,13 @@
                     Producto por defecto *
                     <input type="text" id="codproducto" name="codproducto" class="form-control" value="{{ fsc.codproducto }}"/>
                 </label>
+                <label for="enviarEmail" style="flex:1; padding-right:5px">
+                    Enviar email al generar la factura *
+                    <select name="enviarEmail" id="enviarEmail" class="form-control">
+                        <option value="0" {{ (fsc.enviarEmail == 0) ? 'selected' : '' }}>No</option>
+                        <option value="1" {{ (fsc.enviarEmail == 1) ? 'selected' : ''}}>Si</option>
+                    </select>
+                </label>
                 <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
                         class="btn btn-info">Guardar
                 </button>

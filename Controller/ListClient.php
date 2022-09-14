@@ -10,6 +10,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Dinamic\Model\ClientModel;
 use FacturaScripts\Core\Lib\AssetManager;
+use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 
 class ListClient extends Controller
 {

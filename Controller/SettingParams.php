@@ -19,6 +19,7 @@ class SettingParams extends Controller
     public $series = [];
     public $codcliente = '';
     public $codproducto = '';
+    public $enviarEmail;
 
 
     public function privateCore(&$response, $user, $permissions)
@@ -79,6 +80,7 @@ class SettingParams extends Controller
     {
         $this->codcliente = SettingStripeModel::getSetting('codcliente');
         $this->codproducto = SettingStripeModel::getSetting('codproducto');
+        $this->enviarEmail = SettingStripeModel::getSetting('enviarEmail');
     }
 
     private function setSkStripe()
@@ -103,6 +105,8 @@ class SettingParams extends Controller
 
         $this->codcliente = $data['codcliente'];
         $this->codproducto = $data['codproducto'];
+        $this->enviarEmail = $data['enviarEmail'];
+
         $settings = [];
 
         if($this->codcliente !== null)
@@ -110,6 +114,10 @@ class SettingParams extends Controller
 
         if($this->codproducto !== null)
             $settings['codproducto'] = $this->codproducto;
+
+        if($this->enviarEmail !== null)
+            $settings['enviarEmail'] = $this->enviarEmail;
+
 
         SettingStripeModel::addSettings($settings);
 

@@ -12,6 +12,7 @@ use FacturaScripts\Core\Base\DataBase;
 use FacturaScripts\Core\Base\ToolBox;
 use FacturaScripts\Core\Lib\BusinessDocumentTools;
 use FacturaScripts\Core\Lib\Email\NewMail;
+use FacturaScripts\Core\Lib\Export\PDFExport;
 use FacturaScripts\Core\Model\Producto;
 use FacturaScripts\Core\Model\Serie;
 use FacturaScripts\Dinamic\Lib\Accounting\InvoiceToAccounting;
@@ -559,6 +560,20 @@ class InvoiceStripe
 
         self::log('return '.$invoiceFs->idfactura);
 
+        if ($send_by_email === true && $client->codcliente !== SettingStripeModel::getSetting('codcliente')){
+            self::log('Mandamos email');
+            try {
+                self::exportAndSendEmail($invoiceFs->idfactura);
+            }
+            catch (Exception $ex){
+                self::log('Error al mandar el email'.serialize($ex->getMessage()));
+                self::sendMailError('Error al mandar el email a la factura: '.$invoice->fs_idFactura, serialize($ex->getMessage()));
+            }
+        }
+        else{
+            self::log('No se manda email');
+        }
+
         return ['status' => $result, 'code' => $invoiceFs->idfactura ?? null];
     }
 
@@ -618,5 +633,51 @@ class InvoiceStripe
         $mail->title = 'Error al generar factura en Facturascript';
         $mail->text = 'Se ha generado un error al generar la factura '.$factura.'. <br /> El error es: '.$error;
         $mail->send();
+    }
+
+    /**
+     * Envía la factura por email
+     * @param $code
+     * @throws \PHPMailer\PHPMailer\Exception
+     */
+    static function exportAndSendEmail($code)
+    {
+        $factura = new \FacturaScripts\Core\Model\FacturaCliente();
+        $factura->loadFromCode($code);
+        $cliente = new \FacturaScripts\Core\Model\Cliente();
+        $cliente->loadFromCode($factura->codcliente);
+        if ($cliente->email === null || strlen($cliente->email) == 0 && !filter_var($cliente->email, FILTER_VALIDATE_EMAIL)) {
+            ToolBox::log()->error('Se generará la factura pero no se puede enviar el email porque el cliente no tiene puesta una dirección.');
+        } else {
+            $pdf = new PDFExport();
+            $pdf->addBusinessDocPage($factura);
+            $path = FS_FOLDER . DIRECTORY_SEPARATOR . 'MyFiles' . DIRECTORY_SEPARATOR;
+            $fileName = 'factura_' . $factura->codigo . '.pdf';
+            // TODO: Borrar fichero una vez enviado
+            if (file_put_contents($path . $fileName, $pdf->getDoc())) {
+                $mail = new NewMail();
+
+                if(FS_DEBUG)
+                    $mail->addAddress('josemgoltratec@gmail.com');
+                else
+                    $mail->addAddress($cliente->email);
+
+                $mail->title = 'Le enviamos su factura ' . $factura->codigo;
+                $mail->text = 'Estimado cliente, le enviamos la factura correspondiente al servicio. Gracias por confiar en nosotros';
+                $mail->addAttachment($path . $fileName, $fileName);
+//                $mail->fromNick = $user->nick;
+                if ($mail->send()) {
+                    $factura->femail = date('Y-m-d');
+                    $factura->save();
+                    ToolBox::log()->info('Correo enviado correctamente');
+
+                } else {
+                    ToolBox::log()->info('Hubo algún error al enviar el correo');
+                }
+                unlink($path . $fileName);
+            } else {
+                ToolBox::log()->error('Se generará la factura pero no se puede enviar el email porque hubo algún error al generar el fichero.');
+            }
+        }
     }
 }

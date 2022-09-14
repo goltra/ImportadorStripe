@@ -10,6 +10,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 use Exception;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
+use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
@@ -105,7 +106,8 @@ class WebhookStripe extends Controller
             }
 
             try {
-                InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', false, $event->data->object->customer, 'webhook');
+                $enviarEmail = SettingStripeModel::getSetting('enviarEmail') == 1;
+                InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', $enviarEmail, $event->data->object->customer, 'webhook');
                 InvoiceStripe::log('invoice id correcto: ' . $id);
             } catch (Exception $ex) {
                 InvoiceStripe::log('invoice id error: ' . $id);

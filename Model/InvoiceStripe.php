@@ -560,7 +560,7 @@ class InvoiceStripe
 
         self::log('return '.$invoiceFs->idfactura);
 
-        if ($send_by_email === true && $client->codcliente !== SettingStripeModel::getSetting('codcliente')){
+        if ($send_by_email === true && $client->codcliente !== SettingStripeModel::getSetting('codcliente') && $l['fs_product_id'] !== SettingStripeModel::getSetting('codproducto')){
             self::log('Mandamos email');
             try {
                 self::exportAndSendEmail($invoiceFs->idfactura);

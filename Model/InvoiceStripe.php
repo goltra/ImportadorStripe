@@ -521,7 +521,8 @@ class InvoiceStripe
 
         // asigno al numero2 el numero de factura de stripe
         $invoiceFs->numero2 = $invoice->numero;
-        // si hay que marcarla como pagada
+        // se marca como emitida
+        $invoiceFs->idestado = 11;
 
         if ($mark_as_paid === true && $payment_method !== null) $invoiceFs->codpago = $payment_method;
 

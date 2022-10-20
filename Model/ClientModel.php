@@ -89,4 +89,9 @@ class ClientModel
             return ['status' => false, 'message' => 'Error al obtener el cliente desde stripe ' . $ex->getMessage()];
         }
     }
+
+
+    static function addPaymentMethodInMetaData($customer_stripe_id, $sk_stripe_index, $paymentMethod){
+//        enviar datos a stripe
+    }
 }

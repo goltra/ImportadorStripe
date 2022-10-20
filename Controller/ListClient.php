@@ -10,6 +10,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Dinamic\Model\ClientModel;
 use FacturaScripts\Core\Lib\AssetManager;
+use FacturaScripts\Dinamic\Model\FormaPago;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 
 class ListClient extends Controller
@@ -19,6 +20,7 @@ class ListClient extends Controller
     public $sks_stripe = [];
     public $action = '';
     public $sk_stripe_index = null;
+    public $paymentMethods = [];
 
     public function getPageData()
     {
@@ -45,6 +47,21 @@ class ListClient extends Controller
         $this->action = $this->request->query->get('action');
         $this->sks_stripe = ClientModel::loadSkStripe();
         switch ($this->action) {
+            case('linkPaymentMethod'):
+                if (
+                    ($pm = $this->request->query->get('pm')) !== null &&
+                    ($stripe_customer_id = $this->request->query->get('stripe_customer_id')) !== null
+                ) {
+                        $res = ClientModel::addPaymentMethodInMetaData($stripe_customer_id, $_SESSION['sk_stripe_index'], $pm);
+
+//                        if ($res['status'] === true) {
+//                            $this->toolBox()->log()->info('Cliente vinculado correctamente.');
+//                        } else {
+//                            $this->toolBox()->log()->error($res['message']);
+//                        }
+
+                }
+                break;
             case('load'):
 
                 if ($this->request->request->get('sk_stripe_index') !== null) {
@@ -63,6 +80,8 @@ class ListClient extends Controller
 
                 $start = $this->request->query->get('start');
                 $limit = $this->request->query->get('limit');
+                $pm = new FormaPago();
+                $this->paymentMethods = $pm->all();
 
                 $_SESSION['sk_stripe_index'] = $this->sk_stripe_index;
 

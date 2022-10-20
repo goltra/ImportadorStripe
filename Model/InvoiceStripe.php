@@ -428,7 +428,6 @@ class InvoiceStripe
         $invoiceFs->setSubject($client);
         $invoiceFs->dtopor1 = $invoice->discount;
 
-
 //        Agregamos la serie vinculada, en caso de que no haya, cogemos la del cliente.
         $default_serie = new Serie();
         $serie = isset($sk_stripe['codserie']) && strlen($sk_stripe['codserie']) > 0 && $source == 'webhook' ? $sk_stripe['codserie'] : $client->codserie;

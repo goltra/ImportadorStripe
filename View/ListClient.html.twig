@@ -28,6 +28,7 @@
                     <th>Id</th>
                     <th>Email</th>
                     <th>Cliente FS</th>
+                    <th>Método de Pago</th>
                     <th>...</th>
                 </tr>
                 </thead>
@@ -41,10 +42,26 @@
                                    target="_blank"><i class="fas fa-eye"></i></a>
                             {% endif %}
                         </td>
+                        <td>
+                            {% if p.fs_idClient %}
+                                <form action="{{ fsc.url() }}">
+                                    <input type="hidden" name="action" value="linkPaymentMethod" />
+                                    <input type="hidden" name="stripe_customer_id" value="{{ p.id }}" />
+                                    <select name="pm" onchange="this.form.submit()">
+                                        {% for pm in fsc.paymentMethods %}
+                                            <option value="{{ pm.codpago }}">{{ pm.descripcion }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            {% endif %}
+                        </td>
 
                         <td>
                             <a href="{{ asset('SelectClient') }}?stripe_customer_id={{ p.id }}&source=ListClient&action=changing"><i
-                                        class="fas fa-plus"></i></a></td>
+                                        class="fas fa-plus"></i></a>
+
+
+                        </td>
                     </tr>
                 {% endfor %}
             </table>

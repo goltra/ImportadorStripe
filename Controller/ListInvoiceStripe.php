@@ -26,7 +26,7 @@ class ListInvoiceStripe extends Controller
     public $f_ini='';
     public $f_fin='';
 
-    public function getPageData()
+    public function getPageData():array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Facturas';

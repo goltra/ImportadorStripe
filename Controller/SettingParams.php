@@ -22,7 +22,7 @@ class SettingParams extends Controller
         parent::privateCore($response, $user, $permissions);
 
     }
-    public function getPageData()
+    public function getPageData():array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Ajustes';

@@ -16,3 +16,6 @@ en cuyo caso no se aplican impuestos.
 - El descuento aplicado por un cupón aparece en las factura de FS como dtopor1
 ## Versión 0.7
 - Correcciones PHP 7.4
+## Versión 0.8
+-- Correcciones PHP 8
+

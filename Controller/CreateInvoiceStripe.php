@@ -30,7 +30,7 @@ class CreateInvoiceStripe extends Controller
     public $error = false;
     public $payment_methods = [];
 
-    public function getPageData()
+    public function getPageData():array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Crear nueva factura desde stripe';

@@ -84,7 +84,10 @@ class SelectProduct extends ParentListProducto
     private function selectProduct()
     {
         $id = $this->request->request->get('code')[0];
-        if ($id !== null && count($id) > 0) {
+
+        var_dump($id);
+        die();
+        if ($id !== null && strlen($id) > 0) {
             $this->redirect('ListProduct?action=linkProduct&codproduct=' . $id);
         } else {
             $this->toolbox()->log()->error('No se ha podido vincular el producto de facturascript. Alguno de los valores no es correcto');

@@ -64,10 +64,11 @@ class ListInvoiceStripe extends Controller
                 $start = $this->request->query->get('start');
                 $limit = $this->request->query->get('limit');
 
-                if ($limit === null || count($limit) == 0)
+                if ($limit === null || strlen($limit) == 0)
                     $limit = 5;
-                if ($start === null || count($start) == 0)
+                if ($start === null || strlen($start) == 0)
                     $start = null;
+
 
                 $f_ini=null;
                 $f_fin=null;

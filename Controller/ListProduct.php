@@ -117,7 +117,7 @@ class ListProduct extends Controller
         try{
             $data = ProductModel::loadStripeProducts($sk_stripe_index, $start, $limit);
 
-            if ($data['status'] === false) {
+            if (isset($data['status']) && $data['status'] === false) {
                 $this->toolbox()->log()->error( 'Error: ' . $data['message']);
             } else {
                 $this->products = $data;

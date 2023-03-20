@@ -97,7 +97,7 @@ class SelectClient extends ParentListCliente
     {
         $customer_id = $this->request->request->get('code')[0];
 
-        if ($customer_id !== null && count($customer_id) > 0) {
+        if ($customer_id !== null && strlen($customer_id) > 0) {
             $this->redirect('CreateInvoiceStripe?action=clientOk&codcliente=' . $customer_id);
         } else {
             $this->toolbox()->log()->error('No se ha podido vincular el cliente de facturascript. Alguno de los valores no es correcto');

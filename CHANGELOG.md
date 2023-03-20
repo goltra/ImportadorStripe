@@ -18,4 +18,6 @@ en cuyo caso no se aplican impuestos.
 - Correcciones PHP 7.4
 ## Versión 0.8
 -- Correcciones PHP 8
+## Versión 0.9
+-- Correcciones PHP 8
 

@@ -85,8 +85,6 @@ class SelectProduct extends ParentListProducto
     {
         $id = $this->request->request->get('code')[0];
 
-        var_dump($id);
-        die();
         if ($id !== null && strlen($id) > 0) {
             $this->redirect('ListProduct?action=linkProduct&codproduct=' . $id);
         } else {

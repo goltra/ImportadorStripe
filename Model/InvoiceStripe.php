@@ -8,9 +8,9 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
+use FacturaScripts\Core\Base\Calculator;
 use FacturaScripts\Core\Base\DataBase;
 use FacturaScripts\Core\Base\ToolBox;
-use FacturaScripts\Core\Lib\BusinessDocumentTools;
 use FacturaScripts\Core\Lib\Email\NewMail;
 use FacturaScripts\Core\Lib\Export\PDFExport;
 use FacturaScripts\Core\Model\Producto;
@@ -512,11 +512,8 @@ class InvoiceStripe
         }
 
         // recalculo los totales
-        $tool = new BusinessDocumentTools();
-        $tool->recalculate($invoiceFs);
-
-        self::log('BusinessDocumentTools');
-        self::log($tool);
+        $lines = $invoiceFs->getLines();
+        Calculator::calculate($invoiceFs, $lines, true);
 
         // asigno al numero2 el numero de factura de stripe
         $invoiceFs->numero2 = $invoice->numero;

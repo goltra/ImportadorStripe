@@ -59,7 +59,6 @@ class SelectClient extends ParentListCliente
         if($action=="" && $this->request->query->get('action')){
             $action = $this->request->query->get('action');
         }
-        var_dump($action);
         switch ($action) {
             case 'invoicing':
                 $this->postAction = 'selectClient';

@@ -122,16 +122,16 @@ class ListInvoiceStripe extends Controller
 
     }
 
-    public function test(){
-        $recibo = new ReciboCliente();
-        $where = [new DataBaseWhere('idfactura',10388)];
-
-        $recibos  = $recibo->all($where);
-        var_dump($recibos);
-        /*$recibo->pagado=true;
-        if($recibo->save())
-            var_dump($recibo);
-        else
-            echo'error';*/
-    }
+//    public function test(){
+//        $recibo = new ReciboCliente();
+//        $where = [new DataBaseWhere('idfactura',10388)];
+//
+//        $recibos  = $recibo->all($where);
+//        var_dump($recibos);
+//        /*$recibo->pagado=true;
+//        if($recibo->save())
+//            var_dump($recibo);
+//        else
+//            echo'error';*/
+//    }
 }

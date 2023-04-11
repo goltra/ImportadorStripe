@@ -8,18 +8,14 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
-use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\Base\Calculator;
 use FacturaScripts\Core\Base\DataBase;
-use FacturaScripts\Core\Lib\BusinessDocumentTools;
 use FacturaScripts\Core\Model\Producto;
-use FacturaScripts\Core\Model\ReciboCliente;
 use FacturaScripts\Core\Model\Serie;
 use FacturaScripts\Dinamic\Lib\Accounting\InvoiceToAccounting;
 use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\FacturaCliente;
-use FacturaScripts\Dinamic\Model\LineaFacturaCliente;
 use Stripe\Exception\ApiErrorException;
-use Stripe\Product;
 
 class InvoiceStripe
 {
@@ -350,7 +346,7 @@ class InvoiceStripe
                 $line->pvpunitario = $l['unit_amount'];
                 $line->pvptotal = $l['amount'];
                 if ($client->regimeniva !== 'Exento') {
-                    $line->codimpuesto = $l['codiimpuesto'];
+                    $line->codimpuesto = $l['codimpuesto'];
                     $line->iva = $l['iva'];
                 }
 
@@ -365,8 +361,8 @@ class InvoiceStripe
         }
 
         // recalculo los totales
-        $tool = new BusinessDocumentTools();
-        $tool->recalculate($invoiceFs);
+        $lines = $invoiceFs->getLines();
+        Calculator::calculate($invoiceFs, $lines, true);
 
         // asigno al numero2 el numero de factura de stripe
         $invoiceFs->numero2 = $invoice->numero;

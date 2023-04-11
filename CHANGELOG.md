@@ -20,4 +20,9 @@ en cuyo caso no se aplican impuestos.
 -- Correcciones PHP 8
 ## Versión 0.9
 -- Correcciones PHP 8
+## Versión 1
+-- Correcciones PHP 8
+## Versión 1.1
+-- Sustitución clase BusinessDocumentTools por Calculator
+-- Correcciones para fs 2022.60
 

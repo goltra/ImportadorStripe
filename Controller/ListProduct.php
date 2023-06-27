@@ -20,7 +20,7 @@ class ListProduct extends Controller
     public $action = '';
     public $sk_stripe_index = null;
 
-    public function getPageData()
+    public function getPageData(): array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Productos';

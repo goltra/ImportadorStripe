@@ -19,7 +19,7 @@ use Stripe\Stripe;
 class WebhookStripe extends Controller
 {
 
-    public function getPageData()
+    public function getPageData(): array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Webhook de stripe';

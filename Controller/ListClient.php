@@ -22,7 +22,7 @@ class ListClient extends Controller
     public $sk_stripe_index = null;
     public $paymentMethods = [];
 
-    public function getPageData()
+    public function getPageData(): array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Clientes';

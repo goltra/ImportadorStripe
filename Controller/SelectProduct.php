@@ -19,7 +19,7 @@ class SelectProduct extends ParentListProducto
         parent::privateCore($response, $user, $permissions);
     }
 
-    public function getPageData()
+    public function getPageData(): array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Selecciona un artículo';

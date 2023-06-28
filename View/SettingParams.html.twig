@@ -34,17 +34,21 @@
             <p>Aquí puedes agregar un cliente y producto por defecto para cuando se generen facturas cuyo cliente / producto no esté vinculado.
             </p>
 
-            <form id="frm_settings" method="post" name="frm_settings" action="SettingParams?action=addSettings" style="display:flex">
-                <label for="name" style="flex:1; padding-right:5px">
+            <form id="frm_settings" method="post" name="frm_settings" action="SettingParams?action=addSettings" style="display:flex; gap: 20px;">
+                <label for="name" style="flex:1">
                     Cliente por defecto *
                     <input type="text" id="codcliente" name="codcliente" class="form-control" value="{{ fsc.codcliente }}"/>
                 </label>
-                <label for="sk" style="flex:2; padding-right: 5px">
+                <label for="sk" style="flex:1;">
                     Producto por defecto *
                     <input type="text" id="codproducto" name="codproducto" class="form-control" value="{{ fsc.codproducto }}"/>
                 </label>
-                <label for="enviarEmail" style="flex:1; padding-right:5px">
-                    Enviar email al generar la factura *
+                <label for="sk" style="flex:1;">
+                    Email Técnico para gestión de errores
+                    <input type="text" id="email" name="email" class="form-control" value="{{ fsc.email }}"/>
+                </label>
+                <label for="enviarEmail" style="flex:1;">
+                    Enviar email al cliente cuando se genere la factura *
                     <select name="enviarEmail" id="enviarEmail" class="form-control">
                         <option value="0" {{ (fsc.enviarEmail == 0) ? 'selected' : '' }}>No</option>
                         <option value="1" {{ (fsc.enviarEmail == 1) ? 'selected' : ''}}>Si</option>

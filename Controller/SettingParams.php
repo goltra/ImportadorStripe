@@ -11,6 +11,7 @@ use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\Base\ToolBox;
 use FacturaScripts\Dinamic\Model\Serie;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
+use FacturaScripts\Core\Session;
 
 class SettingParams extends Controller
 {
@@ -121,9 +122,7 @@ class SettingParams extends Controller
         if($this->enviarEmail !== null)
             $settings['enviarEmail'] = $this->enviarEmail;
 
-        if($this->adminEmail !== null)
-            $settings['adminEmail'] = $this->adminEmail;
-
+        $settings['adminEmail'] = strlen($this->adminEmail) > 0 ? $this->adminEmail : Session::get('user')->email;
 
         SettingStripeModel::addSettings($settings);
 

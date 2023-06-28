@@ -36,16 +36,16 @@
 
             <form id="frm_settings" method="post" name="frm_settings" action="SettingParams?action=addSettings" style="display:flex; gap: 20px;">
                 <label for="name" style="flex:1">
-                    Cliente por defecto *
+                    Código del cliente por defecto *
                     <input type="text" id="codcliente" name="codcliente" class="form-control" value="{{ fsc.codcliente }}"/>
                 </label>
                 <label for="sk" style="flex:1;">
-                    Producto por defecto *
+                    Código del producto por defecto *
                     <input type="text" id="codproducto" name="codproducto" class="form-control" value="{{ fsc.codproducto }}"/>
                 </label>
                 <label for="sk" style="flex:1;">
-                    Email Técnico para gestión de errores
-                    <input type="text" id="email" name="email" class="form-control" value="{{ fsc.email }}"/>
+                    Email técnico para gestión de errores *
+                    <input type="text" id="adminEmail" name="adminEmail" class="form-control" value="{{ fsc.adminEmail }}"/>
                 </label>
                 <label for="enviarEmail" style="flex:1;">
                     Enviar email al cliente cuando se genere la factura *

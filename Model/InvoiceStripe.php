@@ -246,8 +246,11 @@ class InvoiceStripe
                         self::log('¿El iva está incluido?: '.($vat_included ? 'si' : 'no'));
 
 
+
+
                         if ($l->price !== null && $l->price->product !== null && $l->price->product !== '') {
-                            $fs_product_id = ProductModel::getFsProductIdFromStripe($sk_stripe_index, $l->price->product->id);
+                            $product_id = $l->price->product->id ?? $l->price->product;
+                            $fs_product_id = ProductModel::getFsProductIdFromStripe($sk_stripe_index, $product_id);
 
 
                             // Compruebo si hay correlación entre producto de stripe y fs
@@ -325,7 +328,7 @@ class InvoiceStripe
                         self::log('unit precio después de impuestos: '.$unit_amount);
 
                         // Asigno a cada variable el valor que debe tener en la linea
-                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->price->product->name, 'period_start' => $period_start, 'period_end' => $period_end];
+                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->price->product, 'period_start' => $period_start, 'period_end' => $period_end];
                     }
 
                     self::log('Factura de stripe procesada correctamente');
@@ -419,7 +422,7 @@ class InvoiceStripe
         $client = new Cliente();
         $client->loadFromCode($invoice->fs_idFsCustomer);
 
-        if ($client->codcliente === SettingStripeModel::getSetting('codcliente')){
+        if ($stripe_customer !== '' && $client->codcliente === SettingStripeModel::getSetting('codcliente')){
             self::log('El cliente no está vinculado');
             $invoiceFs->observaciones = 'Cliente de Stripe no vinculado en Facturascripts ('.$stripe_customer.')';
         }

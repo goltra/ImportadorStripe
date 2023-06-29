@@ -120,8 +120,7 @@ class CreateInvoiceStripe extends Controller
 
     private function loadInvoice($id, $sk_stripe_index)
     {
-        $invoice = InvoiceStripe::loadInvoiceFromStripe($id, $sk_stripe_index);
-        return $invoice;
+        return InvoiceStripe::loadInvoiceFromStripe($id, $sk_stripe_index);
     }
 
     /**
@@ -149,8 +148,9 @@ class CreateInvoiceStripe extends Controller
     {
 
         $invoice = $this->loadInvoice($id, $sk_stripe_index); //InvoiceStripe::loadInvoiceFromStripe($id, $sk_stripe_index);
-        $stripe_customer_id = $invoice['data'][0]->customer_id;
-        $_SESSION['stripe_customer_id'] = $stripe_customer_id;
+
+        if (isset($invoice['data'][0]->customer_id))
+            $_SESSION['stripe_customer_id'] = $invoice['data'][0]->customer_id;
 
         if (isset($invoice['data'][0]->fs_idFsCustomer) && strlen($invoice['data'][0]->fs_idFsCustomer) > 0) {
             //como está vinculado, cargo el cliente de fs para mostrarlo en la vista y dar la opción de crear la factura.
@@ -165,6 +165,7 @@ class CreateInvoiceStripe extends Controller
      */
     private function setClientToStripeClient()
     {
+
         $res = ClientModel::linkFsClientToStripeCustomer($_SESSION['stripe_customer_id'], $_SESSION['sk_stripe_index'], $this->customer_id);
         if ($res['status'] === true) {
             $this->processInvoice($_SESSION['id_stripe_invoice'], $_SESSION['sk_stripe_index']);

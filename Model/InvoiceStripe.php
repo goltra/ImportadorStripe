@@ -142,7 +142,6 @@ class InvoiceStripe
                 'expand' => ['lines.data.price.product'],
             ]); //guardamos en un array porque el método que genera el objeto lo tenemos definido así
 
-
             self::log('factura descargada');
 
             try {
@@ -328,7 +327,7 @@ class InvoiceStripe
                         self::log('unit precio después de impuestos: '.$unit_amount);
 
                         // Asigno a cada variable el valor que debe tener en la linea
-                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->price->product, 'period_start' => $period_start, 'period_end' => $period_end];
+                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->price->product->name, 'period_start' => $period_start, 'period_end' => $period_end];
                     }
 
                     self::log('Factura de stripe procesada correctamente');
@@ -385,7 +384,7 @@ class InvoiceStripe
 
         self::log('vuelvo a generateFSInvoice');
 
-        // COMPROBAMOS QUE LA FACTURA DE ESTRIPE SE HA CARGADO CORRECTAMENTE
+        // COMPROBAMOS QUE LA FACTURA DE STRIPE SE HA CARGADO CORRECTAMENTE
         if (count($invoices['data']) === 0) {
             self::log('La factura de stripe ya ha sido generada');
             ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);

@@ -336,7 +336,8 @@ class InvoiceStripe
                         self::log('unit precio después de impuestos: '.$unit_amount);
 
                         // Asigno a cada variable el valor que debe tener en la linea
-                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => is_array($l->price->product) && key_exists('name', $l->price->product) ? $l->price->product->name : '', 'period_start' => $period_start, 'period_end' => $period_end];
+                        // todo: aquí tenemos una historia porque esto se carga siempre y no siempre viene el objeto del producto (porque no es necesario y no se en que caso es donde se pide sin él), entonces compruebo si es objeto y si viene esa propiedad o si no la punto a nada. revisar de donde se pide sin el producto.
+                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => is_object($l->price->product) && isset($l->price->product->name) ? $l->price->product->name : '', 'period_start' => $period_start, 'period_end' => $period_end];
                     }
 
                     self::log('Factura de stripe procesada correctamente');

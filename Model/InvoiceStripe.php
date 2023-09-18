@@ -222,7 +222,7 @@ class InvoiceStripe
                 }
                 else{
                     self::log('cliente no encontrado en facturascripts');
-                    $errors[] = ['message' => 'Cliente no encontrado en facturascripts'];
+//                    $errors[] = ['message' => 'Cliente no encontrado en facturascripts'];
                 }
 
                 $invoice->date = Helper::castTime($inv->created);
@@ -336,7 +336,7 @@ class InvoiceStripe
                         self::log('unit precio después de impuestos: '.$unit_amount);
 
                         // Asigno a cada variable el valor que debe tener en la linea
-                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => $l->price->product->name, 'period_start' => $period_start, 'period_end' => $period_end];
+                        $invoice->lines[] = ['codimpuesto' => $tax->codimpuesto, 'iva' => $tax->iva, 'recargo' => $tax->recargo, 'unit_amount' => $unit_amount, 'quantity' => $l->quantity, 'fs_product_id' => $fs_product_id, 'amount' => $amount, 'description' => is_array($l->price->product) && key_exists('name', $l->price->product) ? $l->price->product->name : '', 'period_start' => $period_start, 'period_end' => $period_end];
                     }
 
                     self::log('Factura de stripe procesada correctamente');
@@ -460,8 +460,11 @@ class InvoiceStripe
                 self::log('linea stripe');
                 /** \FacturaScripts\Core\Model\LineaFacturaCliente $line */
                 $line = $invoiceFs->getNewLine();
+
                 $line->idfactura = $invoiceFs->idfactura;
+
                 $line->descripcion = $l['description'];
+
                 if ($l['period_start']) {
                     $line->descripcion = $line->descripcion . ' desde ' . date('d-m-Y', $l['period_start']);
                 }
@@ -505,10 +508,10 @@ class InvoiceStripe
                 }
 
                 if (!$line->save()) {
-                    self::log('Ha ocurrido algun error mientras se creaban la lineas de la factura.');
+                    self::log('Ha ocurrido algún error mientras se creaban la lineas de la factura.');
                     self::log($line);
                     $database->rollback();
-                    throw new Exception('Ha ocurrido algun error mientras se creaban la lineas de la factura.');
+                    throw new Exception('Ha ocurrido algún error mientras se creaban la lineas de la factura.');
                 }
             }
 

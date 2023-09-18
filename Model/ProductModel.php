@@ -22,7 +22,7 @@ class ProductModel
         return SettingStripeModel::getSks();
     }
 
-    static public function loadStripeProducts($sk_stripe_index, $start = null, int $limit = 10)
+    static public function loadStripeProducts($sk_stripe_index, $start = null, int $limit = 1000)
     {
         $stripe_ids = self::loadSkStripe();
         // Cargo el index del sk pasado a la función
@@ -113,6 +113,7 @@ class ProductModel
         $stripe_id = $sk_stripe['sk'];
         $stripe = new \Stripe\StripeClient($stripe_id);
         $product = $stripe->products->retrieve($st_product_id);
-        return $product->metadata['fs_idProduct'] === null ? '' : $product->metadata['fs_idProduct'];
+
+        return $product->metadata['fs_idProduct'] === null ? SettingStripeModel::getSetting('codproducto') : $product->metadata['fs_idProduct'];
     }
 }

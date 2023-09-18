@@ -29,8 +29,9 @@ class CreateInvoiceStripe extends Controller
     public $action = '';
     public $error = false;
     public $payment_methods = [];
+    public $customer_id = '';
 
-    public function getPageData():array
+    public function getPageData(): array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Crear nueva factura desde stripe';
@@ -74,6 +75,7 @@ class CreateInvoiceStripe extends Controller
                 if ($id !== null) {
                     $this->processInvoice($id, $this->sk_stripe_index);
                 }
+
                 break;
             case 'createInvoice':
                 $mark_as_paid = $this->request->request->get('ck_paid') !== null && $this->request->request->get('ck_paid') !== "false";
@@ -82,9 +84,29 @@ class CreateInvoiceStripe extends Controller
 
                 $code = $this->generateFSInvoice($_SESSION['id_stripe_invoice'], $this->sk_stripe_index, $mark_as_paid, $payment_method, $send_by_email);
                 if ($code !== null && $send_by_email===true)
-                    $this->exportAndSendEmail($code);
+                    InvoiceStripe::exportAndSendEmail($code);
 
                 break;
+            case 'linkClient':
+                $customer_id = $this->request->query->get('customer_id');
+                $stripe_customer_id = $this->request->query->get('stripe_customer_id');
+
+                if (strlen($customer_id) > 0){
+                    $res = \FacturaScripts\Dinamic\Model\ClientModel::linkFsClientToStripeCustomer($stripe_customer_id, $_SESSION['sk_stripe_index'], $customer_id);
+
+                    if ($res['status'] === true) {
+                        $this->toolBox()->log()->info('Cliente vinculado correctamente.');
+                        //recibimos el cliente creado / seleccionado, modificamos el cliente, processInvoice
+                        $this->setClientToStripeClient();
+                    } else {
+                        $this->toolBox()->log()->error($res['message']);
+                    }
+                }
+                else
+                    $this->toolBox()->log()->error('Error al seleccionar el cliente');
+
+                break;
+
             case 'clientOk':
                 $this->customer_id = $this->request->query->get('codcliente');
                 if ($this->customer_id !== null) {
@@ -98,8 +120,7 @@ class CreateInvoiceStripe extends Controller
 
     private function loadInvoice($id, $sk_stripe_index)
     {
-        $invoice = InvoiceStripe::loadInvoiceFromStripe($id, $sk_stripe_index);
-        return $invoice;
+        return InvoiceStripe::loadInvoiceFromStripe($id, $sk_stripe_index);
     }
 
     /**
@@ -127,8 +148,9 @@ class CreateInvoiceStripe extends Controller
     {
 
         $invoice = $this->loadInvoice($id, $sk_stripe_index); //InvoiceStripe::loadInvoiceFromStripe($id, $sk_stripe_index);
-        $stripe_customer_id = $invoice['data'][0]->customer_id;
-        $_SESSION['stripe_customer_id'] = $stripe_customer_id;
+
+        if (isset($invoice['data'][0]->customer_id))
+            $_SESSION['stripe_customer_id'] = $invoice['data'][0]->customer_id;
 
         if (isset($invoice['data'][0]->fs_idFsCustomer) && strlen($invoice['data'][0]->fs_idFsCustomer) > 0) {
             //como está vinculado, cargo el cliente de fs para mostrarlo en la vista y dar la opción de crear la factura.
@@ -170,56 +192,5 @@ class CreateInvoiceStripe extends Controller
             $this->toolbox()->log()->error($ex->getMessage());
         }
 
-    }
-
-    private function exportAndSendEmail($code)
-    {
-        $factura = new FacturaCliente();
-        $factura->loadFromCode($code);
-        $cliente = new Cliente();
-        $cliente->loadFromCode($factura->codcliente);
-        if ($cliente->email === null || strlen($cliente->email) == 0 && !filter_var($cliente->email, FILTER_VALIDATE_EMAIL)) {
-            $this->toolbox()->log()->error('Se generará la factura pero no se puede enviar el email porque el cliente no tiene puesta una dirección.');
-        } else {
-            $pdf = new PDFExport();
-            $pdf->addBusinessDocPage($factura);
-            $path = FS_FOLDER . DIRECTORY_SEPARATOR . 'MyFiles' . DIRECTORY_SEPARATOR;
-            $fileName = 'factura_' . $factura->codigo . '.pdf';
-            // TODO: Borrar fichero una vez enviado
-            if (file_put_contents($path . $fileName, $pdf->getDoc())) {
-                $mail = new NewMail();
-
-                if(FS_DEBUG)
-                    $mail->addAddress('francisco@goltratec.com');
-                else
-                    $mail->addAddress($cliente->email);
-
-                $mail->title = 'Le enviamos su factura ' . $factura->codigo;
-                $mail->text = 'Estimado cliente, le enviamos la factura correspondiente al servicio. Gracias por confiar en nosotros';
-                $mail->addAttachment($path . $fileName, $fileName);
-                $mail->fromNick = $this->user->nick;
-                if ($mail->send()) {
-                    $factura->femail = date('Y-m-d');
-                    $factura->save();
-                    $this->toolbox()->log()->info('Correo enviado correctamente');
-                   /* $emailSent = new EmailSent();
-                    $emailSent->addressee=$mail->getToAddresses()[0];
-                    $emailSent->subject = $mail->title;
-                    $emailSent->body =$mail->text;
-                    $emailSent->date = date('Y-m-d H:i:s');
-                    $emailSent->nick = $this->user->nick;
-                    $emailSent->verificode=$mail->verificode;
-                    if(!$emailSent->save()){
-                        $this->toolbox()->log()->info('Hubo algún error al guardar el correo en la ficha del cliente');
-                    }*/
-
-                } else {
-                    $this->toolbox()->log()->info('Hubo algún error al enviar el correo');
-                }
-                unlink($path . $fileName);
-            } else {
-                $this->toolbox()->log()->error('Se generará la factura pero no se puede enviar el email porque hubo algún error al generar el fichero.');
-            }
-        }
     }
 }

@@ -8,8 +8,6 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Controller\ListCliente as ParentListCliente;
-use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
-use Stripe\Invoice;
 
 
 class SelectClient extends ParentListCliente
@@ -56,9 +54,10 @@ class SelectClient extends ParentListCliente
     protected function execPreviousAction($action)
     {
 
-        if($action=="" && $this->request->query->get('action')){
+        if($action == "" && $this->request->query->get('action')){
             $action = $this->request->query->get('action');
         }
+
         switch ($action) {
             case 'invoicing':
                 $this->postAction = 'selectClient';
@@ -105,21 +104,20 @@ class SelectClient extends ParentListCliente
 
     private function changeClient()
     {
-
         $customer_id = $this->request->request->get('code')[0];
         $stripe_customer_id = $this->request->query->get('stripe_customer_id');
-        $sk_stripe_index = $this->request->query->get('sk_stripe_index');
 
-        if ($customer_id === null || $stripe_customer_id === null || $sk_stripe_index === null) {
-            throw new \Exception('No se puede cambiar el cliente. No se han enviado los parametros necesario');
-        }
+        switch ($this->request->query->get('source')) {
+            case 'ListClient':
+                $this->redirect('ListClient?action=linkClient&customer_id='.$customer_id.'&stripe_customer_id='.$stripe_customer_id);
+                break;
+            case 'ListInvoiceStripe':
+                $this->redirect('ListInvoiceStripe?action=linkClient&customer_id='.$customer_id.'&stripe_customer_id='.$stripe_customer_id);
+                break;
 
-        $res = InvoiceStripe::setFsIdCustomer($stripe_customer_id, $sk_stripe_index, $customer_id);
-        if(!isset($res['status']) || $res['status']===false){
-            $this->toolbox()->log()->error('Hubo algún problema al cambiar el cliente.');
-        }else{
-            $this->toolbox()->log()->info('Cliente cambiado correctamente.');
-            $this->redirect('ListInvoiceStripe');
+            case 'CreateInvoiceStripe':
+                $this->redirect('CreateInvoiceStripe?action=linkClient&customer_id='.$customer_id.'&stripe_customer_id='.$stripe_customer_id);
+                break;
         }
     }
 

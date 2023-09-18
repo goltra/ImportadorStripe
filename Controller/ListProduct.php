@@ -20,7 +20,7 @@ class ListProduct extends Controller
     public $action = '';
     public $sk_stripe_index = null;
 
-    public function getPageData():array
+    public function getPageData(): array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Productos';
@@ -117,7 +117,7 @@ class ListProduct extends Controller
         try{
             $data = ProductModel::loadStripeProducts($sk_stripe_index, $start, $limit);
 
-            if (isset($data['status']) && $data['status'] === false) {
+            if (array_key_exists('status', $data) && $data['status'] === false) {
                 $this->toolbox()->log()->error( 'Error: ' . $data['message']);
             } else {
                 $this->products = $data;

@@ -25,4 +25,6 @@ en cuyo caso no se aplican impuestos.
 ## Versión 1.1
 -- Sustitución clase BusinessDocumentTools por Calculator
 -- Correcciones para fs 2022.60
+## Versión 1.2
+- Webhook para generar las facturas directamente desde stripe
 

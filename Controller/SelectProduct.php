@@ -8,6 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Controller\ListProducto as ParentListProducto;
+use FacturaScripts\Core\Model\Variante;
 
 
 class SelectProduct extends ParentListProducto
@@ -18,7 +19,7 @@ class SelectProduct extends ParentListProducto
         parent::privateCore($response, $user, $permissions);
     }
 
-    public function getPageData():array
+    public function getPageData(): array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Selecciona un artículo';

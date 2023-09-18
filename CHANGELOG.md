@@ -14,6 +14,17 @@ y no por cada linea. Si es necesario se cambiará en futuras versiones.
 - A la hora de generar una factura en FS se tiene en cuenta si el cliente en el campo "regimen iva" tiene el varlo "Exencto"
 en cuyo caso no se aplican impuestos.
 - El descuento aplicado por un cupón aparece en las factura de FS como dtopor1
+## Versión 0.7
+- Correcciones PHP 7.4
 ## Versión 0.8
+-- Correcciones PHP 8
+## Versión 0.9
+-- Correcciones PHP 8
+## Versión 1
+-- Correcciones PHP 8
+## Versión 1.1
+-- Sustitución clase BusinessDocumentTools por Calculator
+-- Correcciones para fs 2022.60
+## Versión 1.2
 - Webhook para generar las facturas directamente desde stripe
-- 
+

@@ -16,7 +16,6 @@ use FacturaScripts\Core\Model\Cliente;
 use FacturaScripts\Core\Model\EmailSent;
 use FacturaScripts\Core\Model\FacturaCliente;
 use FacturaScripts\Core\Model\FormaPago;
-use FacturaScripts\Plugins\ImportadorStripe\Model\ClientModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Core\Lib\ExportManager;
 
@@ -25,6 +24,7 @@ class CreateInvoiceStripe extends Controller
 {
     public $existClient = false;
     public $clientFs;
+    private $fs_idFsCustomer = '';
     public $sk_stripe_index = null;
     public $action = '';
     public $error = false;
@@ -165,8 +165,7 @@ class CreateInvoiceStripe extends Controller
      */
     private function setClientToStripeClient()
     {
-
-        $res = ClientModel::linkFsClientToStripeCustomer($_SESSION['stripe_customer_id'], $_SESSION['sk_stripe_index'], $this->customer_id);
+        $res = InvoiceStripe::setFsIdCustomer($_SESSION['stripe_customer_id'], $_SESSION['sk_stripe_index'], $this->customer_id);
         if ($res['status'] === true) {
             $this->processInvoice($_SESSION['id_stripe_invoice'], $_SESSION['sk_stripe_index']);
             $this->toolBox()->log()->info('Cliente vinculador correctamente.');
@@ -194,6 +193,4 @@ class CreateInvoiceStripe extends Controller
         }
 
     }
-
-
 }

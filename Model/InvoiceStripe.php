@@ -77,7 +77,7 @@ class InvoiceStripe
     {
         try {
             //fuerzo este valor
-            $limit = 100;
+            $limit = 100000;
             // Cargo los las secretKeys de las cuentas de script que hay dadas de alta en los settings de fs
 
             $stripe_ids = self::loadSkStripe();
@@ -100,12 +100,11 @@ class InvoiceStripe
 
             $_data = [];
 
-            foreach ($stripe_response->autoPagingIterator() as $inv) {
-                // Do something with $customer
+            array_filter($stripe_response->data, function ($inv) use (&$_data) {
                 if ($inv->amount_paid > 0 && (!isset($inv->metadata['fs_idFactura']) || $inv->metadata['fs_idFactura'] == '')) {
                     $_data[] = $inv;
                 }
-            }
+            });
 
             $data = self::processInvoicesObject($_data, $sk_stripe_index);
 
@@ -159,9 +158,25 @@ class InvoiceStripe
             self::sendMailError($id, serialize($ex->getMessage()));
             return ['status' => false, 'message' => 'Error al obtener la factura desde stripe ' . $ex->getMessage()];
         }
+    }
 
-
-
+    static public function setFsIdCustomer(string $stripe_customer_id, int $sk_stripe_index, string $fs_idFsCustomer)
+    {
+        $stripe_ids = self::loadSkStripe();
+        $sk_stripe = $stripe_ids[$sk_stripe_index];
+        if ($sk_stripe === '') {
+            return ['status' => false, 'message' => 'No ha indicado el sk de stripe que desea consultar'];
+        }
+        $stripe_id = $sk_stripe['sk'];
+        try {
+            $stripe = new \Stripe\StripeClient($stripe_id);
+            $customer = $stripe->customers->update($stripe_customer_id, [
+                'metadata' => ['fs_idFsCustomer' => $fs_idFsCustomer]
+            ]);
+            return ['status' => true, 'data' => $customer];
+        } catch (\Exception $ex) {
+            return ['status' => false, 'message' => 'Error al obtener el cliente desde stripe ' . $ex->getMessage()];
+        }
     }
 
     /**
@@ -176,7 +191,6 @@ class InvoiceStripe
         $res = [];
         $errors = [];
 
-
         foreach ($data as $inv) {
             //obtengo el cliente de stripe.
             $customer = self::getStripeClient($inv->customer, $sk_stripe_index);
@@ -190,7 +204,6 @@ class InvoiceStripe
             self::log('Comprobamos si ya se ha pagado la factura o si ya ha sido descargada');
 
             if ($inv->amount_paid > 0 && (!isset($inv->metadata['fs_idFactura']) || $inv->metadata['fs_idFactura'] == '')) {
-
                 $invoice = new InvoiceStripe();
                 $invoice->id = $inv->id;
                 $invoice->numero = $inv->number;
@@ -201,7 +214,6 @@ class InvoiceStripe
                 $_fs_idCustomer = isset($customer->metadata['fs_idFsCustomer']) ? $customer->metadata['fs_idFsCustomer'] : SettingStripeModel::getSetting('codcliente');
                 $fs_customer = new \FacturaScripts\Core\Model\Cliente();
                 $fs_customer->loadFromCode($_fs_idCustomer);
-
 
                 if ($_fs_idCustomer !== null && $fs_customer->exists()) {
                     $invoice->fs_idFsCustomer = $_fs_idCustomer;
@@ -235,7 +247,6 @@ class InvoiceStripe
 
                         if ($vat_perc === null && isset($inv->default_tax_rates[0]->percentage))
                             $vat_perc = $inv->default_tax_rates[0]->percentage;
-
 
                         $vat_included = null;
 
@@ -276,12 +287,10 @@ class InvoiceStripe
                             $errors[] = ['message' => 'No se ha podido cargar el producto desde stripe', 'data' => $l];
                         }
 
-
                         // Obtengo el precio de la linea
                         $unit_amount = $l->amount / 100;
 
                         self::log('Precio antes de impuestos '.$unit_amount);
-
 
 
 //                        // Aplico los descuentos que trae la linea, siempre van a ser porcentaje. Por tanto si el descuento es una cantidad fija, se calcula el porcentaje respecto al precio final.
@@ -408,10 +417,8 @@ class InvoiceStripe
 
         $invoiceFs = new FacturaCliente();
 
-
         $stripe_ids = self::loadSkStripe();
         $sk_stripe = $stripe_ids[$sk_stripe_index];
-
 
         /**
          * COMPROBAMOS QUE EL CLIENTE ASOCIADO EN FS EXISTE.
@@ -425,7 +432,6 @@ class InvoiceStripe
             self::log('El cliente no está vinculado');
             $invoiceFs->observaciones = 'Cliente de Stripe no vinculado en Facturascripts ('.$stripe_customer.')';
         }
-
 
         $invoiceFs->setSubject($client);
         $invoiceFs->dtopor1 = $invoice->discount;
@@ -446,8 +452,6 @@ class InvoiceStripe
         }
         else
             self::log('serie da error.');
-
-
 
         // Si se crea la factura, entonces creo las lineas.
         if ($invoiceFs->save()) {
@@ -495,8 +499,10 @@ class InvoiceStripe
                 $line->cantidad = $l['quantity'];
                 $line->pvpunitario = $l['unit_amount'];
                 $line->pvptotal = $l['amount'];
-                $line->iva = $l['iva'];
-                $line->codimpuesto = $l['codimpuesto'];
+                if ($client->regimeniva !== 'Exento') {
+                    $line->codimpuesto = $l['codimpuesto'];
+                    $line->iva = $l['iva'];
+                }
 
                 if (!$line->save()) {
                     self::log('Ha ocurrido algun error mientras se creaban la lineas de la factura.');
@@ -510,7 +516,7 @@ class InvoiceStripe
             self::log($invoiceFs);
             self::log('Ha ocurrido algun error mientras se creaba la factura.');
             $database->rollback();
-            throw new Exception('Error al generar la factura.');
+            throw new Exception('Ha ocurrido algun error mientras se creaba la factura.');
         }
 
         // recalculo los totales
@@ -656,7 +662,7 @@ class InvoiceStripe
             if (file_put_contents($path . $fileName, $pdf->getDoc())) {
                 $mail = new NewMail();
 
-                if(FS_DEBUG)
+                if( FS_DEBUG )
                     $mail->addAddress(SettingStripeModel::getSetting('adminEmail'));
                 else
                     $mail->addAddress($cliente->email);

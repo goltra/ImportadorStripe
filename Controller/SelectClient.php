@@ -8,8 +8,6 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Controller\ListCliente as ParentListCliente;
-use FacturaScripts\Plugins\ImportadorStripe\Model\ClientModel;
-use Stripe\Invoice;
 
 
 class SelectClient extends ParentListCliente
@@ -96,7 +94,6 @@ class SelectClient extends ParentListCliente
     private function selectClient()
     {
         $customer_id = $this->request->request->get('code')[0];
-
 
         if ($customer_id !== null && strlen($customer_id) > 0) {
             $this->redirect('CreateInvoiceStripe?action=clientOk&codcliente=' . $customer_id);

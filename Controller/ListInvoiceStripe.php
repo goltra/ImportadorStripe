@@ -16,8 +16,6 @@ use FacturaScripts\Dinamic\Model\ClientModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\Helper;
 use \FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Core\Lib\AssetManager;
-use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
-use mysql_xdevapi\BaseResult;
 
 class ListInvoiceStripe extends Controller
 {
@@ -75,8 +73,9 @@ class ListInvoiceStripe extends Controller
                 if ($start === null || count($start) == 0)
                     $start = null;
 
-                $f_ini=null;
-                $f_fin=null;
+                $f_ini = null;
+                $f_fin = null;
+
                 // OBTENGO FECHAS SIN VIENEN EN EL POST Y LAS CONVIERTO A TIMESTAMP
                 if ($this->request->request->get('f-ini-date')) {
                     $this->f_ini = $this->request->request->get('f-ini-date');

@@ -501,6 +501,7 @@ class InvoiceStripe
                 $line->idproducto = $l['fs_product_id'];
                 $line->referencia = $productCode;
                 $line->cantidad = $l['quantity'];
+
                 $line->pvpunitario = $l['unit_amount'];
                 $line->pvptotal = $l['amount'];
                 if ($client->regimeniva !== 'Exento') {

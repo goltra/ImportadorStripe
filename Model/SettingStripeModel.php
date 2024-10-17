@@ -7,14 +7,13 @@
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
-use FacturaScripts\Core\App\AppSettings;
+use FacturaScripts\Core\Tools;
 
 class SettingStripeModel
 {
     public static function getSks()
     {
-        $app = new AppSettings();
-        $sk_serialized = $app->get('stripe', 'sks');
+        $sk_serialized = Tools::settings('stripe', 'sks');
         return ($sk_serialized !== null) ? unserialize($sk_serialized) : [];
     }
 
@@ -24,7 +23,8 @@ class SettingStripeModel
      * @param $name
      * @return mixed|null
      */
-    public static function getSkIndexByName($name){
+    public static function getSkIndexByName($name)
+    {
         $res = null;
 
         foreach (self::getSks() as $index => $sk){
@@ -40,7 +40,7 @@ class SettingStripeModel
         $sks = self::getSks();
         foreach ($sks as $sk) {
             if ($sk['name'] === $name) {
-                $index = array_search($sk,$sks);
+                $index = array_search($sk, $sks);
                 unset($sks[$index]);
                 break;
             }
@@ -52,20 +52,24 @@ class SettingStripeModel
     {
         $sks = self::getSks();
         if (is_array($sks)) {
-            $sks[] = ['name' => $name, 'sk' => $sk, 'codserie' => $serie, 'token' => md5($name.date('now'))];
+            $sks[] = ['name' => $name, 'sk' => $sk, 'codserie' => $serie, 'token' => md5($name . date('now'))];
             self::save($sks, 'sks');
         }
     }
 
 
-    public static function getSetting($setting){
-        $app = new AppSettings();
-        $settings_serialized = $app->get('stripe', 'settings');
-
+    /**
+     * @param $setting
+     * @return mixed|string
+     */
+    public static function getSetting($setting)
+    {
+        $settings_serialized = Tools::settings('stripe', 'settings');
         return ($settings_serialized !== null) ? unserialize($settings_serialized)[$setting] : '';
     }
 
-    public static function addSettings($settings){
+    public static function addSettings($settings)
+    {
         if (is_array($settings)) {
             self::save($settings, 'settings');
         }
@@ -73,8 +77,7 @@ class SettingStripeModel
 
     private static function save($data, $type)
     {
-        $app = new AppSettings();
-        $app->set('stripe', $type, serialize($data));
-        $app->save();
+        Tools::settingsSet('stripe', $type, serialize($data));
+        Tools::settingsSave();
     }
 }

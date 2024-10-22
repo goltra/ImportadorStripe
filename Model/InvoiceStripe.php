@@ -10,11 +10,11 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 use Exception;
 use FacturaScripts\Core\Base\Calculator;
 use FacturaScripts\Core\Base\DataBase;
-use FacturaScripts\Core\Base\ToolBox;
 use FacturaScripts\Core\Lib\Email\NewMail;
 use FacturaScripts\Core\Lib\Export\PDFExport;
 use FacturaScripts\Core\Model\Producto;
 use FacturaScripts\Core\Model\Serie;
+use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Lib\Accounting\InvoiceToAccounting;
 use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\FacturaCliente;
@@ -197,7 +197,7 @@ class InvoiceStripe
 
             if ($customer === null) {
                 self::log('cliente No se ha podido cargar el cliente de stripe correspondiente a la factura');
-                ToolBox::log('stripe')->error('invoice id error: ' . $sk_stripe_index);
+                Tools::log('stripe')->error('invoice id error: ' . $sk_stripe_index);
                 throw new \Exception('No se ha podido cargar el cliente de stripe correspondiente a la factura ' . $inv->id);
             }
 
@@ -329,8 +329,8 @@ class InvoiceStripe
 
 
                         // Multiplico por las unidades para obtener el total de la linea
-                        $amount = round($unit_amount * $l->quantity, ToolBox::appSettings()->get('default', 'decimals'));
-                        $unit_amount = round($unit_amount * $l->quantity, ToolBox::appSettings()->get('default', 'decimals'));
+                        $amount = round($unit_amount * $l->quantity, Tools::settings('default', 'decimals'));
+                        $unit_amount = round($unit_amount * $l->quantity, Tools::settings('default', 'decimals'));
 
                         self::log('precio después de impuestos: '.$amount);
                         self::log('unit precio después de impuestos: '.$unit_amount);
@@ -349,7 +349,7 @@ class InvoiceStripe
                     $res[] = $invoice;
                 else{
                     self::log('errors: '.serialize($errors));
-                    ToolBox::log('stripe')->error('invoice id error: ' . $inv->id);
+                    Tools::log('stripe')->error('invoice id error: ' . $inv->id);
                     throw new Exception(serialize($errors));
                 }
             }
@@ -397,7 +397,7 @@ class InvoiceStripe
         // COMPROBAMOS QUE LA FACTURA DE STRIPE SE HA CARGADO CORRECTAMENTE
         if (count($invoices['data']) === 0) {
             self::log('La factura de stripe ya ha sido generada');
-            ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
+            Tools::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
             throw new Exception('La factura de stripe ya ha sido generada');
         }
 
@@ -406,7 +406,7 @@ class InvoiceStripe
         // COMPROBAMOS QUE LA FACTURA DE STRIPE NO ESTE VINCULADA YA A UNA FACTURA DE FS
         if (isset($invoice->fs_idFactura) && ($invoice->fs_idFactura === null || $invoice->fs_idFactura !== '')) {
             self::log('La factura de stripe ya está vinculada a la factura de FS ' . $invoice->fs_idFactura);
-            ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
+            Tools::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
             throw new Exception('La factura de stripe ya está vinculada a la factura de FS ' . $invoice->fs_idFactura);
         }
 
@@ -539,7 +539,7 @@ class InvoiceStripe
         //Genero el asiento contable
         if (!self::generateAccounting($invoiceFs)) {
             self::log('No se ha podido generar la factura porque hubo un error al generar el asiento contable');
-            ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
+            Tools::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
             $database->rollback();
             throw new Exception('No se ha podido generar la factura porque hubo un error al generar el asiento contable');
         }
@@ -550,7 +550,7 @@ class InvoiceStripe
                 if (!$receipt->save()) {
                     $database->rollback();
                     self::log('No se ha podido generar la factura porque hubo un error al darla por pagada');
-                    ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
+                    Tools::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
                     throw new Exception('No se ha podido generar la factura porque hubo un error al darla por pagada');
                 }
             }
@@ -562,7 +562,7 @@ class InvoiceStripe
             $database->rollback();
             self::log('No se ha podido crear la factura porque ha fallado al actualizar el documento de stripe');
             self::sendMailError($invoice->fs_idFactura, serialize($ex->getMessage()));
-            ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
+            Tools::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
             throw new Exception('No se ha podido crear la factura porque ha fallado al actualizar el documento de stripe');
         }
         // Si todo ha ido bien hago un commit
@@ -611,7 +611,7 @@ class InvoiceStripe
                 $id_invoice_stripe,
                 ['metadata' => ['fs_idFactura' => $fs_idFactura]]);
         } catch (Exception $ex) {
-            ToolBox::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
+            Tools::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
             self::sendMailError($id_invoice_stripe, serialize($ex->getMessage()));
             throw new Exception('Error al vincular la factura de FS a la de Stripe ' . $ex->getMessage());
         }
@@ -657,7 +657,7 @@ class InvoiceStripe
         $cliente = new \FacturaScripts\Core\Model\Cliente();
         $cliente->loadFromCode($factura->codcliente);
         if ($cliente->email === null || strlen($cliente->email) == 0 && !filter_var($cliente->email, FILTER_VALIDATE_EMAIL)) {
-            ToolBox::log()->error('Se generará la factura pero no se puede enviar el email porque el cliente no tiene puesta una dirección.');
+            Tools::log()->error('Se generará la factura pero no se puede enviar el email porque el cliente no tiene puesta una dirección.');
         } else {
             $pdf = new PDFExport();
             $pdf->addBusinessDocPage($factura);
@@ -679,14 +679,14 @@ class InvoiceStripe
                 if ($mail->send()) {
                     $factura->femail = date('Y-m-d');
                     $factura->save();
-                    ToolBox::log()->info('Correo enviado correctamente');
+                    Tools::log()->info('Correo enviado correctamente');
 
                 } else {
-                    ToolBox::log()->info('Hubo algún error al enviar el correo');
+                    Tools::log()->info('Hubo algún error al enviar el correo');
                 }
                 unlink($path . $fileName);
             } else {
-                ToolBox::log()->error('Se generará la factura pero no se puede enviar el email porque hubo algún error al generar el fichero.');
+                Tools::log()->error('Se generará la factura pero no se puede enviar el email porque hubo algún error al generar el fichero.');
             }
         }
     }

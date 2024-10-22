@@ -28,50 +28,44 @@
                     <br>
 
                     <form action="{{ asset('CreateInvoiceStripe') }}?action=createInvoice" method="post">
-                        <div class="form-row">
+                        <div class="row">
                             <legend class="text-info mt-3">
                                 Pago de factura
                             </legend>
-                            <div class="col-md">
-                                <div class="form-group">
-                                    <label>Pagada</label>
-                                    <select class="form-control" name="ck_paid" id="ck_paid">
-                                        <option value=true selected>Si</option>
-                                        <option value=false>No</option>
-                                    </select>
-                                </div>
+                            <div class="col-md mb-3">
+                                <label>Pagada</label>
+                                <select class="form-control" name="ck_paid" id="ck_paid">
+                                    <option value=true selected>Si</option>
+                                    <option value=false>No</option>
+                                </select>
                             </div>
-                            <div class="col-md">
-                                <div class="form-group">
-                                    <label for="payment_method">
-                                        Forma de pago
-                                    </label>
-                                    <select class="form-control" id="payment_method" name="payment_method">
-                                        {% for key,value in fsc.payment_methods %}
-                                            <option value="{{ key }}">
-                                                {{ value }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+                            <div class="col-md mb-3">
+                                <label for="payment_method">
+                                    Forma de pago
+                                </label>
+                                <select class="form-control" id="payment_method" name="payment_method">
+                                    {% for key,value in fsc.payment_methods %}
+                                        <option value="{{ key }}">
+                                            {{ value }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
 
-                        <div class="form-row">
+                        <div class="row">
                             <legend class="text-info mt-3">Notificación</legend>
-                            <div class="col-md">
-                                <div class="form-group">
-                                    <label>Enviar factura por email</label>
-                                    <select class="form-control" name="send_email" id="send_email">
-                                        <option value=true selected>Si</option>
-                                        <option value=false>No</option>
-                                    </select>
-                                </div>
+                            <div class="col-md mb-3">
+                                <label>Enviar factura por email</label>
+                                <select class="form-control" name="send_email" id="send_email">
+                                    <option value=true selected>Si</option>
+                                    <option value=false>No</option>
+                                </select>
                             </div>
                         </div>
                         <br>
                         <div class="row">
-                            <div class="col text-right">
+                            <div class="col text-end">
                                 <a class="btn btn-danger" href="{{ asset('ListInvoiceStripe') }}">Cancelar.</a>
                                 <input type="submit" class="btn btn-primary" value="Crear Factura.">
                             </div>

@@ -8,7 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
-use FacturaScripts\Core\Base\Calculator;
+use FacturaScripts\Core\Lib\Calculator;
 use FacturaScripts\Core\Base\DataBase;
 use FacturaScripts\Core\Lib\Email\NewMail;
 use FacturaScripts\Core\Lib\Export\PDFExport;

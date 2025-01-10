@@ -22,6 +22,7 @@ class SettingParams extends Controller
     public $codproducto = '';
     public $enviarEmail;
     public $adminEmail = '';
+    public $mostrarStripeCus;
 
 
     public function privateCore(&$response, $user, $permissions)
@@ -84,6 +85,7 @@ class SettingParams extends Controller
         $this->codproducto = SettingStripeModel::getSetting('codproducto');
         $this->enviarEmail = SettingStripeModel::getSetting('enviarEmail');
         $this->adminEmail = SettingStripeModel::getSetting('adminEmail');
+        $this->mostrarStripeCus = SettingStripeModel::getSetting('mostrarStripeCus');
     }
 
     private function setSkStripe()
@@ -110,6 +112,7 @@ class SettingParams extends Controller
         $this->codproducto = $data['codproducto'];
         $this->enviarEmail = $data['enviarEmail'];
         $this->adminEmail = $data['adminEmail'];
+        $this->mostrarStripeCus = $data['mostrarStripeCus'];
 
         $settings = [];
 
@@ -121,6 +124,9 @@ class SettingParams extends Controller
 
         if($this->enviarEmail !== null)
             $settings['enviarEmail'] = $this->enviarEmail;
+
+        if($this->mostrarStripeCus !== null)
+            $settings['mostrarStripeCus'] = $this->mostrarStripeCus;
 
         $settings['adminEmail'] = strlen($this->adminEmail) > 0 ? $this->adminEmail : Session::get('user')->email;
 

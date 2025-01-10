@@ -54,6 +54,13 @@
                         <option value="1" {{ (fsc.enviarEmail == 1) ? 'selected' : ''}}>Si</option>
                     </select>
                 </label>
+                <label for="mostrarStripeCus" style="flex:1;">
+                    Mostrar el cliente de stripe en la factura *
+                    <select name="mostrarStripeCus" id="mostrarStripeCus" class="form-control">
+                        <option value="0" {{ (fsc.mostrarStripeCus == 0) ? 'selected' : '' }}>No</option>
+                        <option value="1" {{ (fsc.mostrarStripeCus == 1) ? 'selected' : ''}}>Si</option>
+                    </select>
+                </label>
                 <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
                         class="btn btn-info">Guardar
                 </button>

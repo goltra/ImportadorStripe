@@ -517,6 +517,16 @@ class InvoiceStripe
                 }
             }
 
+            //  Agrego una nueva línea sin coste con la referencia del cliente de stripe
+            if (SettingStripeModel::getSetting('mostrarStripeCus') == 1){
+                $line = $invoiceFs->getNewLine();
+                $line->idfactura = $invoiceFs->idfactura;
+                $line->descripcion = 'Referencia: '.$invoice->customer_id;
+                $line->codimpuesto = null;
+                $line->iva = 0;
+                $line->save();
+            }
+
         } else {
             self::log($invoiceFs);
             self::log('Ha ocurrido algun error mientras se creaba la factura.');

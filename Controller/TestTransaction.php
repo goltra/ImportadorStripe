@@ -30,7 +30,7 @@ class TestTransaction extends Controller
     }
 
     public function init(){
-        
+
 //        Documentación de lo que hay que hacer aquí: https://github.com/goltra/ImportadorStripe/issues/3
 
         $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';

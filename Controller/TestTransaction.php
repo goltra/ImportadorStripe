@@ -89,8 +89,7 @@ class TestTransaction extends Controller
 
                     $reciboCliente = new ReciboCliente();
 
-                    //      todo: pueden haber varios recibos para la misma factura, entonces tengo que ver con Fran mañana como cuadro eso por si acaso.
-                    $reciboCliente->loadFromCode('', [new DataBaseWhere('idfactura', $facturaId)]);
+                    $reciboCliente->loadFromCode('', [new DataBaseWhere('idfactura', $facturaId), new DataBaseWhere('pagado', false)]);
 
                     if (!$reciboCliente->idrecibo){
                         $errors[$invoice['id']] = 'La factura asignada no tiene recibos';

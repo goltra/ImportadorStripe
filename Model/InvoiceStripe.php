@@ -242,7 +242,7 @@ class InvoiceStripe
                         // - Iva del artículo de FS
 
                         $vat_perc = $inv->tax_percent!==null ? $inv->tax_percent : null; //Impuesto aplicado a factura
-                        $vat_perc = (count($l->tax_rates)>0 && isset($l->tax_rates[0]['percentage'])) ? $l->tax_rates[0]['percentage'] : $vat_perc; //Impuesto aplicado a linea
+                        $vat_perc = ( is_array($l->tax_rates) && count($l->tax_rates)>0 && isset($l->tax_rates[0]['percentage'])) ? $l->tax_rates[0]['percentage'] : $vat_perc; //Impuesto aplicado a linea
 
 
                         if ($vat_perc === null && isset($inv->default_tax_rates[0]->percentage))
@@ -550,8 +550,9 @@ class InvoiceStripe
         if (!self::generateAccounting($invoiceFs)) {
             self::log('No se ha podido generar la factura porque hubo un error al generar el asiento contable');
             Tools::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
-            $database->rollback();
-            throw new Exception('No se ha podido generar la factura porque hubo un error al generar el asiento contable');
+            self::sendMailError($invoice->fs_idFactura, 'Error al generar el asiento contable, la factura está generada.');
+//            $database->rollback();
+//            throw new Exception('No se ha podido generar la factura porque hubo un error al generar el asiento contable');
         }
 
         if ($mark_as_paid === true && $payment_method !== null) {
@@ -601,6 +602,8 @@ class InvoiceStripe
     {
         $generator = new InvoiceToAccounting();
         $generator->generate($invoice);
+        self::log('Genero asiento contable');
+        self::log(serialize($generator));
         if (empty($invoice->idasiento) || !$invoice->save()) {
             return false;
         }

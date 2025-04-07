@@ -250,7 +250,7 @@ class InvoiceStripe
 
                         $vat_included = null;
 
-                        if (count($l->tax_amounts) > 0)
+                        if (is_array($l->tax_amounts) && count($l->tax_amounts) > 0)
                             $vat_included = $l->tax_amounts[0]['inclusive'];
 
                         self::log('¿El iva está incluido?: '.($vat_included ? 'si' : 'no'));

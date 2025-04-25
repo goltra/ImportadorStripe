@@ -23,6 +23,7 @@ class SettingParams extends Controller
     public $enviarEmail;
     public $adminEmail = '';
     public $mostrarStripeCus;
+    public $remesasSEPA = false;
 
 
     public function privateCore(&$response, $user, $permissions)
@@ -86,6 +87,7 @@ class SettingParams extends Controller
         $this->enviarEmail = SettingStripeModel::getSetting('enviarEmail');
         $this->adminEmail = SettingStripeModel::getSetting('adminEmail');
         $this->mostrarStripeCus = SettingStripeModel::getSetting('mostrarStripeCus');
+        $this->remesasSEPA = SettingStripeModel::getSetting('remesasSEPA');
     }
 
     private function setSkStripe()
@@ -113,6 +115,7 @@ class SettingParams extends Controller
         $this->enviarEmail = $data['enviarEmail'];
         $this->adminEmail = $data['adminEmail'];
         $this->mostrarStripeCus = $data['mostrarStripeCus'];
+        $this->remesasSEPA = $data['remesasSEPA'];
 
         $settings = [];
 
@@ -127,6 +130,9 @@ class SettingParams extends Controller
 
         if($this->mostrarStripeCus !== null)
             $settings['mostrarStripeCus'] = $this->mostrarStripeCus;
+
+        if($this->remesasSEPA !== null)
+            $settings['remesasSEPA'] = $this->remesasSEPA;
 
         $settings['adminEmail'] = strlen($this->adminEmail) > 0 ? $this->adminEmail : Session::get('user')->email;
 

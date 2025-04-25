@@ -66,8 +66,6 @@ class WebhookStripe extends Controller
         }
 
         $sk = InvoiceStripe::loadSkStripe()[$sk_index];
-        InvoiceStripe::log('sk: '.serialize($sk));
-
 
         Stripe::setApiKey($sk['sk']);
 

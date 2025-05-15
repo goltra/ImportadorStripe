@@ -96,6 +96,7 @@ class InvoiceStripe
             $params = ['status' => 'paid', 'limit' => $limit, 'created' => ['lte' => $endDate, 'gte' => $initDate]];
 
             $stripe = new \Stripe\StripeClient($stripe_id);
+            \Stripe\Stripe::$apiVersion = '2020-08-27';
             $stripe_response = $stripe->invoices->all($params);
 
             $_data = [];
@@ -601,6 +602,10 @@ class InvoiceStripe
     {
         $generator = new InvoiceToAccounting();
         $generator->generate($invoice);
+
+        self::log('Factura una vez generado el asiento contable. Si no hay idasiento, quiere decir que ha dado error interno y no se ha generado el asiento.');
+        self::log(serialize($invoice));
+
         if (empty($invoice->idasiento) || !$invoice->save()) {
             return false;
         }

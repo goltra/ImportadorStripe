@@ -8,7 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
-use FacturaScripts\Core\Lib\Calculator;
+use FacturaScripts\Core\Base\Calculator;
 use FacturaScripts\Core\Base\DataBase;
 use FacturaScripts\Core\Lib\Email\NewMail;
 use FacturaScripts\Core\Lib\Export\PDFExport;
@@ -256,11 +256,8 @@ class InvoiceStripe
 
                         self::log('¿El iva está incluido?: '.($vat_included ? 'si' : 'no'));
 
-
-
-
-                        if ($l->price !== null && $l->price->product !== null && $l->price->product !== '') {
-                            $product_id = $l->price->product->id ?? $l->price->product;
+                        if (($l->price !== null && $l->price->product !== null && $l->price->product !== '') || $l->pricing->price_details->product !== '') {
+                            $product_id = $l->price->product->id ?? $l->price->product ?? $l->pricing->price_details->product;
                             $fs_product_id = ProductModel::getFsProductIdFromStripe($sk_stripe_index, $product_id);
 
 
@@ -280,7 +277,6 @@ class InvoiceStripe
 
                                     if ($vat_perc !== null)
                                         $tax->iva = $vat_perc;
-
                                 }
 
                             }

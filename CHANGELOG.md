@@ -1,3 +1,9 @@
+2024-10-15: Version 1.6
+
+    Corrección:
+    * Se da soporte para la versión 2025-05-28.basil de la api de stripe
+    * Cambiamos url de la clase Calculator.
+
 2024-10-15: Version 1.3
 
     Corrección:

@@ -1,9 +1,12 @@
 <?php
 namespace FacturaScripts\Plugins\MyPlugin;
 
-class Cron extends \FacturaScripts\Core\Base\CronClass
+use FacturaScripts\Core\Template\CronClass;
+
+class Cron extends CronClass
 {
-    public function run() {
+    public function run(): void
+    {
         /*
         if ($this->isTimeForJob("my-job-name", "6 hours")) {
             /// su código aquí

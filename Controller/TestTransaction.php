@@ -42,7 +42,7 @@ class TestTransaction extends Controller
     }
 
     public function init(){
-
+        echo '<pre>';
 //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
         $payoutId = 'po_1R1clUHDuQaJAlOmPOZRnWtO';
         $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
@@ -63,7 +63,7 @@ class TestTransaction extends Controller
 
         // TODO: el código de cuenta tiene que ir automático.
         $remesa->codcuenta = 1;
-        $remesa->save();
+//        $remesa->save();
 
         // Pido el balance transaction
         $balanceTransaction = $stripe->balanceTransactions->all([
@@ -81,10 +81,8 @@ class TestTransaction extends Controller
                 continue;
             }
 
-            if (!($invoice = $this->getInvoiceFromTransaction($stripe, $transaction['source'], $errors))) {
-                $errors[] = 'No se puede obtener la factura de stripe. Source: ' . $transaction['source'];
+            if (!($invoice = $this->getInvoiceFromTransaction($stripe, $transaction['source'], $errors)))
                 continue;
-            }
 
 
             $total += $invoice['amount_paid'] / 100;
@@ -98,15 +96,11 @@ class TestTransaction extends Controller
 
             $reciboCliente = new ReciboCliente();
 
-            $where = [
-                new DataBaseWhere('idfactura', $facturaId),
-                new DataBaseWhere('pagado', false),
-            ];
-
-            $reciboCliente->loadFromData($where);
+            $where = [new DataBaseWhere('idfactura', $facturaId), new DataBaseWhere('pagado', false)];
+            $reciboCliente->loadFromCode('', $where);
 
             if (!$reciboCliente->idrecibo){
-                $errors[$invoice['id']] = 'La factura asignada no tiene recibos';
+                $errors[$invoice['id']] = 'La factura no tiene un recibo o ya está pagado';
                 continue;
             }
 
@@ -115,9 +109,9 @@ class TestTransaction extends Controller
                 continue;
             }
 
-            $reciboCliente->idremesa = $remesa->idremesa;
+//            $reciboCliente->idremesa = $remesa->idremesa;
             $reciboCliente->pagado = true;
-            $reciboCliente->save();
+//            $reciboCliente->save();
 
             var_dump($invoice['id'] . ' - ' . $facturaId . ' - ' . $invoice['amount_paid'] / 100);
         }
@@ -144,7 +138,6 @@ class TestTransaction extends Controller
      */
     private function getInvoiceFromTransaction(StripeClient $stripe, string $source, array &$errors): ?Invoice
     {
-        // Caso: cargo (charge)
         if (str_starts_with($source, 'ch_')) {
             $charge = $stripe->charges->retrieve($source, []);
 
@@ -156,7 +149,6 @@ class TestTransaction extends Controller
             return $stripe->invoices->retrieve($charge->invoice, []);
         }
 
-        // Caso: factura directa (invoice)
         if (str_starts_with($source, 'in_')) {
             return $stripe->invoices->retrieve($source, []);
         }
@@ -177,8 +169,10 @@ class TestTransaction extends Controller
     private function sendMail($errors, $total): void
     {
         $subject = 'Nueva remesa de cobro de stripe creada';
-        $body = "Total transferencia: " . $total . "\n\n";
-        $body .= "Errores:\n" . implode("\n", $errors);
+        $body = "Total transferencia: " . $total . "€\n\n";
+
+        if (count($errors) > 0)
+            $body .= "Errores:\n" . implode("\n", $errors);
 
         $mail = NewMail::create()
             ->to(SettingStripeModel::getSetting('adminEmail'))

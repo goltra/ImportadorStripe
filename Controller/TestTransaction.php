@@ -63,7 +63,7 @@ class TestTransaction extends Controller
 
         // TODO: el código de cuenta tiene que ir automático.
         $remesa->codcuenta = 1;
-//        $remesa->save();
+        $remesa->save();
 
         // Pido el balance transaction
         $balanceTransaction = $stripe->balanceTransactions->all([
@@ -83,9 +83,6 @@ class TestTransaction extends Controller
 
             if (!($invoice = $this->getInvoiceFromTransaction($stripe, $transaction['source'], $errors)))
                 continue;
-
-
-            $total += $invoice['amount_paid'] / 100;
 
             $facturaId = $invoice->metadata['fs_idFactura'];
 
@@ -109,20 +106,22 @@ class TestTransaction extends Controller
                 continue;
             }
 
-//            $reciboCliente->idremesa = $remesa->idremesa;
+
+            $reciboCliente->idremesa = $remesa->idremesa;
             $reciboCliente->pagado = true;
-//            $reciboCliente->save();
 
-            var_dump($invoice['id'] . ' - ' . $facturaId . ' - ' . $invoice['amount_paid'] / 100);
+            if ($reciboCliente->save())
+                $total += $invoice['amount_paid'] / 100;
         }
-
-        var_dump($errors);
-        var_dump('total transferencia: '. $total);
 
 
         if (SettingStripeModel::getSetting('adminEmail'))
             $this->sendMail($errors, $total);
 
+        echo 'Importación completada con éxito <br />';
+        echo 'Errores: <br />';
+        var_dump($errors);
+        echo 'Total transferencia: ' . $total . ' €';
 
     }
 

@@ -42,6 +42,13 @@ class TestTransaction extends Controller
     }
 
     public function init(){
+        if (!SettingStripeModel::getSetting('remesasSEPA')){
+            echo 'Debes activar las remesas en Stripe >> Ajustes';
+            return;
+        }
+
+
+
         echo '<pre>';
 //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
         $payoutId = 'po_1R1clUHDuQaJAlOmPOZRnWtO';
@@ -87,7 +94,7 @@ class TestTransaction extends Controller
             $facturaId = $invoice->metadata['fs_idFactura'];
 
             if (!isset($facturaId)){
-                $errors[$invoice['id']] = 'La factura no está vinculada en stripe.';
+                $errors[$invoice['id']] = '- La factura ' . $facturaId. ' no está vinculada en stripe.';
                 continue;
             }
 
@@ -97,14 +104,15 @@ class TestTransaction extends Controller
             $reciboCliente->loadFromCode('', $where);
 
             if (!$reciboCliente->idrecibo){
-                $errors[$invoice['id']] = 'La factura no tiene un recibo o ya está pagado';
+                $errors[$invoice['id']] = '- La factura ' . $facturaId. ' no tiene un recibo o ya está pagado';
                 continue;
             }
 
-            if ($reciboCliente->idremesa){
-                $errors[$invoice['id']] = 'La factura ya tiene una remesa asignada';
-                continue;
-            }
+
+//            if ($reciboCliente->idremesa){
+//                $errors[$invoice['id']] = '- La factura ' . $facturaId. ' ya tiene una remesa asignada';
+//                continue;
+//            }
 
 
             $reciboCliente->idremesa = $remesa->idremesa;

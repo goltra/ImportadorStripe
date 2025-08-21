@@ -8,7 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Core\Base\ToolBox;
+use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Serie;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use FacturaScripts\Core\Session;
@@ -63,7 +63,7 @@ class SettingParams extends Controller
                 if ($name !== null)
                     $this->delSkStripe($name);
                 else
-                    $this->toolBox()->log()->error('No se ha recibido el parametro necesario (name)');
+                    Tools::log()->info('No se ha recibido el parametro necesario (name)');
 
                 $this->getAllSettings();
 
@@ -98,9 +98,9 @@ class SettingParams extends Controller
         if ($name !== null & $sk !== null) {
             SettingStripeModel::addSk($name, $sk, $codserie);
             $this->getAllSks();
-            $this->toolBox()->log()->info('Guardado correctamente');
+            Tools::log()->info('Guardado correctamente');
         } else {
-            $this->toolbox()->log()->error('No se pudo guardar el SK');
+            Tools::log()->info('No se pudo guardar el SK');
         }
 
     }
@@ -141,6 +141,6 @@ class SettingParams extends Controller
     {
         SettingStripeModel::removeSk($name);
         $this->getAllSks();
-        $this->toolBox()->log()->info('Eliminado correctamente');
+        Tools::log()->info('Eliminado correctamente');
     }
 }

@@ -13,6 +13,7 @@ use FacturaScripts\Dinamic\Lib\Email\NewMail;
 use FacturaScripts\Dinamic\Model\ReciboCliente;
 use FacturaScripts\Dinamic\Model\RemesaSEPA;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
+use FacturaScripts\Plugins\RemesasSEPA\Model\RemesaSEPA as RemesaSEPAAlias;
 use PHPMailer\PHPMailer\Exception;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Invoice;
@@ -67,6 +68,7 @@ class TestTransaction extends Controller
         $remesa->descripcion = 'Pago Enero CJL';
         $remesa->fecha = date('Y-m-d H:i:s');
         $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);
+        $remesa->estado = RemesaSEPAAlias::STATUS_REVIEW;
 
         // TODO: el código de cuenta tiene que ir automático.
         $remesa->codcuenta = 1;
@@ -116,7 +118,9 @@ class TestTransaction extends Controller
 
 
             $reciboCliente->idremesa = $remesa->idremesa;
-            $reciboCliente->pagado = true;
+
+//            todo cuando la remesa se pasa a pagada, se tiene que poner.
+            //            $reciboCliente->pagado = true;
 
             if ($reciboCliente->save())
                 $total += $invoice['amount_paid'] / 100;
@@ -176,7 +180,7 @@ class TestTransaction extends Controller
     private function sendMail($errors, $total): void
     {
         $subject = 'Nueva remesa de cobro de stripe creada';
-        $body = "Total transferencia: " . $total . "€\n\n";
+        $body = "Total facturas correctas en la transferencia: " . $total . "€\n\n";
 
         if (count($errors) > 0)
             $body .= "Errores:\n" . implode("\n", $errors);

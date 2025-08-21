@@ -79,10 +79,16 @@
         <p>Claves de Stripe dadas de alta ( por seguridad solo se muestra el identificador que le pusiste al
             crearlo):</p>
         {% for sk in fsc.sks_stripe %}
-            <li>{{ sk.name }} - (Serie: {{ sk.codserie }}) - (Webhook: {{ asset('WebhookStripe') }}?source={{ sk.token }})
-                <a href="{{ asset('SettingParams') }}?action=del&name={{ sk.name }}">
+            <li> <a href="{{ asset('SettingParams') }}?action=del&name={{ sk.name }}">
                     <i class="fa fa-trash"></i>
                 </a>
+                {{ sk.name }} (Serie: {{ sk.codserie }}) :
+                <ul>
+                    <li>Webhook Facturas: {{ asset('WebhookStripe') }}?source={{ sk.token }}</li>
+                    {% if fsc.remesasSEPA == 1 %}
+                        <li>Webhook Remesas: {{ asset('TestTransaction') }}?source={{ sk.token }}</li>
+                    {% endif %}
+                </ul>
             </li>
         {% endfor %}
     </div>

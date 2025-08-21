@@ -10,6 +10,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Dinamic\Lib\Email\NewMail;
+use FacturaScripts\Dinamic\Model\InvoiceStripe;
 use FacturaScripts\Dinamic\Model\ReciboCliente;
 use FacturaScripts\Dinamic\Model\RemesaSEPA;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
@@ -49,16 +50,53 @@ class TestTransaction extends Controller
         }
 
 
+        $payload = @file_get_contents('php://input');
 
-        echo '<pre>';
+        if(!$payload){
+            http_response_code(400);
+            exit();
+        }
+
+        $data = json_decode($payload);
+
+        if(!isset($_GET['source'])){
+            http_response_code(400);
+            exit();
+        }
+
+        $source = $_GET['source'];
+        $sk = InvoiceStripe::loadSkStripeByToken($source);
+        $payoutId = $data->id;
+
 //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
-        $payoutId = 'po_1R1clUHDuQaJAlOmPOZRnWtO';
-        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
+//        $payoutId = 'po_1R1clUHDuQaJAlOmPOZRnWtO';
+//        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
 
+        $this->processPayout($sk, $payoutId);
+
+    }
+
+
+    /**
+     * @param $sk
+     * @param $payoutId
+     * @return void
+     * @throws ApiErrorException
+     * @throws Exception
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     */
+    private function processPayout($sk, $payoutId): void
+    {
+        echo '<pre>';
         $stripe = new StripeClient($sk);
 
         //  Pido los datos del pago
         $payout = $stripe->payouts->retrieve($payoutId, []);
+
+
+        $totalIngreso = $payout['amount'] / 100;
 
         //  Creo la remesa
         $remesa = new RemesaSEPA();
@@ -110,25 +148,20 @@ class TestTransaction extends Controller
                 continue;
             }
 
-
-//            if ($reciboCliente->idremesa){
-//                $errors[$invoice['id']] = '- La factura ' . $facturaId. ' ya tiene una remesa asignada';
-//                continue;
-//            }
-
+            if ($reciboCliente->idremesa){
+                $errors[$invoice['id']] = '- La factura ' . $facturaId. ' ya tiene una remesa asignada';
+                continue;
+            }
 
             $reciboCliente->idremesa = $remesa->idremesa;
 
-//            todo cuando la remesa se pasa a pagada, se tiene que poner.
-            //            $reciboCliente->pagado = true;
-
             if ($reciboCliente->save())
-                $total += $invoice['amount_paid'] / 100;
+                $total += $reciboCliente->importe;
         }
 
 
         if (SettingStripeModel::getSetting('adminEmail'))
-            $this->sendMail($errors, $total);
+            $this->sendMail($errors, $total, $totalIngreso, $remesa->idremesa);
 
         echo 'Importación completada con éxito <br />';
         echo 'Errores: <br />';
@@ -171,19 +204,23 @@ class TestTransaction extends Controller
      * Método que va a mandar un email
      * @param $errors
      * @param $total
+     * @param $totalIngreso
+     * @param $idRemesa
      * @return void
      * @throws Exception
      * @throws LoaderError
      * @throws RuntimeError
      * @throws SyntaxError
      */
-    private function sendMail($errors, $total): void
+    private function sendMail($errors, $total, $totalIngreso, $idRemesa): void
     {
         $subject = 'Nueva remesa de cobro de stripe creada';
-        $body = "Total facturas correctas en la transferencia: " . $total . "€\n\n";
+        $body = "Hola, \r\n Se ha creado la remesa $idRemesa de forma automática por un pago de stripe. \r\n";
+        $body .= "Total de la remesa: $total €\r\n";
+        $body .= "Total del ingreso: $totalIngreso €\n";
 
         if (count($errors) > 0)
-            $body .= "Errores:\n" . implode("\n", $errors);
+            $body .= "Errores:\r\n" . implode("\r\n", $errors);
 
         $mail = NewMail::create()
             ->to(SettingStripeModel::getSetting('adminEmail'))

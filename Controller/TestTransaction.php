@@ -5,6 +5,8 @@
  * @author Francisco José García Alonso
  */
 
+//stripe listen --forward-to localhost:8081/TestTransaction
+
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
@@ -16,8 +18,10 @@ use FacturaScripts\Dinamic\Model\RemesaSEPA;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use FacturaScripts\Plugins\RemesasSEPA\Model\RemesaSEPA as RemesaSEPAAlias;
 use PHPMailer\PHPMailer\Exception;
+use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Invoice;
+use Stripe\Stripe;
 use Stripe\StripeClient;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
@@ -58,21 +62,44 @@ class TestTransaction extends Controller
         }
 
         $data = json_decode($payload);
+//
+//        if(!isset($_GET['source'])){
+//            http_response_code(400);
+//            exit();
+//        }
 
-        if(!isset($_GET['source'])){
+//        $source = $_GET['source'];
+        $source = '09a4a97e1a06e66dff6047a963ee5b48';
+        $sk_index = InvoiceStripe::loadSkStripeByToken($source);
+
+        if ($sk_index === -1){
             http_response_code(400);
             exit();
         }
 
-        $source = $_GET['source'];
-        $sk = InvoiceStripe::loadSkStripeByToken($source);
-        $payoutId = $data->id;
+        $sk = InvoiceStripe::loadSkStripe()[$sk_index];
+        Stripe::setApiKey($sk['sk']);
 
-//        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
-//        $payoutId = 'po_1R1clUHDuQaJAlOmPOZRnWtO';
-//        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
+        try {
+            $event = Event::retrieve($data->id);
+        } catch(ApiErrorException $e) {
 
-        $this->processPayout($sk, $payoutId);
+            http_response_code(400);
+            exit();
+        }
+
+        if($event->type == 'payout.paid') {
+
+            $payoutId = $event->data->object->id;;
+
+    //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
+    //        $payoutId = 'po_1R1clUHDuQaJAlOmPOZRnWtO';
+    //        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
+
+            $this->processPayout($sk, $payoutId);
+        }
+
+        http_response_code(200);
 
     }
 

@@ -110,6 +110,9 @@ class SettingParams extends Controller
     private function setSettings(){
         $data = $this->request->request->all();
 
+        if (!$data) return;
+
+
         $this->codcliente = $data['codcliente'];
         $this->codproducto = $data['codproducto'];
         $this->enviarEmail = $data['enviarEmail'];

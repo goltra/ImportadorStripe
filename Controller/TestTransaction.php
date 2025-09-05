@@ -41,22 +41,24 @@ class TestTransaction extends Controller
         return $pageData;
     }
 
-    public function privateCore(&$response, $user, $permissions)
+    public function publicCore(&$response)
     {
-        parent::privateCore($response, $user, $permissions);
         $this->init();
     }
 
     public function init(){
+        InvoiceStripe::log('entro al init', 'transaction');
+
         if (!SettingStripeModel::getSetting('remesasSEPA')){
+            InvoiceStripe::log('No tienes remesas activadas en los ajustes del plugin', 'transaction');
             echo 'Debes activar las remesas en Stripe >> Ajustes';
             return;
         }
 
-
         $payload = @file_get_contents('php://input');
 
         if(!$payload){
+            InvoiceStripe::log('No viene payload', 'transaction');
             http_response_code(400);
             exit();
         }
@@ -72,16 +74,20 @@ class TestTransaction extends Controller
         $source = '09a4a97e1a06e66dff6047a963ee5b48';
         $sk_index = InvoiceStripe::loadSkStripeByToken($source);
 
+
+
         if ($sk_index === -1){
             http_response_code(400);
             exit();
         }
 
         $sk = InvoiceStripe::loadSkStripe()[$sk_index];
+        InvoiceStripe::log('SK '. $sk, 'transaction');
         Stripe::setApiKey($sk['sk']);
 
         try {
             $event = Event::retrieve($data->id);
+            InvoiceStripe::log('Generamos event', 'transaction');
         } catch(ApiErrorException $e) {
 
             http_response_code(400);
@@ -91,6 +97,7 @@ class TestTransaction extends Controller
         if($event->type == 'payout.paid') {
 
             $payoutId = $event->data->object->id;;
+            InvoiceStripe::log('payout id: ' . $payoutId, 'transaction');
 
     //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
     //        $payoutId = 'po_1R1clUHDuQaJAlOmPOZRnWtO';
@@ -116,6 +123,7 @@ class TestTransaction extends Controller
      */
     private function processPayout($sk, $payoutId): void
     {
+        InvoiceStripe::log('Entra a processPayout', 'transaction');
         echo '<pre>';
         $stripe = new StripeClient($sk);
 
@@ -124,6 +132,7 @@ class TestTransaction extends Controller
 
 
         $totalIngreso = $payout['amount'] / 100;
+        InvoiceStripe::log('Total ingreso: ' . $totalIngreso, 'transaction');
 
         //  Creo la remesa
         $remesa = new RemesaSEPA();
@@ -139,6 +148,8 @@ class TestTransaction extends Controller
         $remesa->codcuenta = 1;
         $remesa->save();
 
+        InvoiceStripe::log('Se genera la remesa. ', 'transaction');
+
         // Pido el balance transaction
         $balanceTransaction = $stripe->balanceTransactions->all([
             'payout' => $payoutId,
@@ -149,18 +160,25 @@ class TestTransaction extends Controller
         $errors = [];
 
 
+        InvoiceStripe::log('El pago trae ' . count($balanceTransaction->data) . 'cargos.', 'transaction');
+
+
         foreach ($balanceTransaction->data as $transaction) {
 
             if (empty($transaction['source'])){
+                InvoiceStripe::log('No viene source en transaction', 'transaction');
                 continue;
             }
 
-            if (!($invoice = $this->getInvoiceFromTransaction($stripe, $transaction['source'], $errors)))
+            if (!($invoice = $this->getInvoiceFromTransaction($stripe, $transaction['source'], $errors))){
+                InvoiceStripe::log('El cargo no tiene factura. ', 'transaction');
                 continue;
+            }
 
             $facturaId = $invoice->metadata['fs_idFactura'];
 
             if (!isset($facturaId)){
+                InvoiceStripe::log('La factura ' . $facturaId. ' no está vinculada en stripe.', 'transaction');
                 $errors[$invoice['id']] = '- La factura ' . $facturaId. ' no está vinculada en stripe.';
                 continue;
             }
@@ -171,19 +189,23 @@ class TestTransaction extends Controller
             $reciboCliente->loadFromCode('', $where);
 
             if (!$reciboCliente->idrecibo){
+                InvoiceStripe::log('La factura ' . $facturaId. ' no tiene un recibo o ya está pagado', 'transaction');
                 $errors[$invoice['id']] = '- La factura ' . $facturaId. ' no tiene un recibo o ya está pagado';
                 continue;
             }
 
             if ($reciboCliente->idremesa){
+                InvoiceStripe::log('La factura ' . $facturaId. ' ya tiene una remesa asignada', 'transaction');
                 $errors[$invoice['id']] = '- La factura ' . $facturaId. ' ya tiene una remesa asignada';
                 continue;
             }
 
             $reciboCliente->idremesa = $remesa->idremesa;
 
-            if ($reciboCliente->save())
+            if ($reciboCliente->save()){
+                InvoiceStripe::log('Se genera linea de remesa con la factura:  ' . $facturaId, 'transaction');
                 $total += $reciboCliente->importe;
+            }
         }
 
 

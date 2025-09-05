@@ -631,23 +631,32 @@ class InvoiceStripe
     }
 
 
-    static function log($valor){
-        $is_dev = true;
+    static function log($valor, $flag = 'invoice'){
 
-        if($is_dev){
-            $dir =  'invoice-log.txt';
-            $fecha = date('d-m-Y H:i:s');
-
-            if (is_object($valor))
-                $valor = serialize($valor);
-
-            if(is_array($valor))
-                $valor = serialize($valor);
-
-            $file = fopen($dir, "a");
-            $a = fwrite($file, $fecha . ' - ' . $valor . PHP_EOL);
-            fclose($file);
+        switch ($flag) {
+            case 'invoice':
+                $dir = 'invoice-log.txt';
+                break;
+            case 'transaction':
+                $dir = 'transaction-log.txt';
+                break;
+            default:
+                $dir = 'stripe-log.txt';
+                break;
         }
+
+        $fecha = date('d-m-Y H:i:s');
+
+        if (is_object($valor))
+            $valor = serialize($valor);
+
+        if(is_array($valor))
+            $valor = serialize($valor);
+
+        $file = fopen($dir, "a");
+
+        fwrite($file, $fecha . ' - ' . $valor . PHP_EOL);
+        fclose($file);
     }
 
     static function sendMailError($factura, $error){

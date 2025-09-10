@@ -46,65 +46,81 @@ class TestTransaction extends Controller
         $this->init();
     }
 
+
     public function init(){
-        InvoiceStripe::log('entro al init', 'transaction');
-
-        if (!SettingStripeModel::getSetting('remesasSEPA')){
-            InvoiceStripe::log('No tienes remesas activadas en los ajustes del plugin', 'transaction');
-            echo 'Debes activar las remesas en Stripe >> Ajustes';
-            return;
-        }
-
-        $payload = @file_get_contents('php://input');
-
-        if(!$payload){
-            InvoiceStripe::log('No viene payload', 'transaction');
-            http_response_code(400);
-            exit();
-        }
-
-        $data = json_decode($payload);
+//        InvoiceStripe::log('entro al init', 'transaction');
+//
+//        if (!SettingStripeModel::getSetting('remesasSEPA')){
+//            InvoiceStripe::log('No tienes remesas activadas en los ajustes del plugin', 'transaction');
+//             $this->sendMailError();
+//            echo 'Debes activar las remesas en Stripe >> Ajustes';
+//            return;
+//        }
+//
+//        $payload = @file_get_contents('php://input');
+//
+//        if(!$payload){
+//            InvoiceStripe::log('No viene payload', 'transaction');
+//            $this->sendMailError();
+//            http_response_code(400);
+//            exit();
+//        }
+//
+//        $data = json_decode($payload);
 //
 //        if(!isset($_GET['source'])){
+//            InvoiceStripe::log('Nohay source', 'transaction');
+//            $this->sendMailError();
 //            http_response_code(400);
 //            exit();
 //        }
 
 //        $source = $_GET['source'];
-        $source = '09a4a97e1a06e66dff6047a963ee5b48';
+        $source = 'd4d9a56531e84cd5b842e208b3ee65ef';
         $sk_index = InvoiceStripe::loadSkStripeByToken($source);
-
-
-
-        if ($sk_index === -1){
-            http_response_code(400);
-            exit();
-        }
-
+//
+//
+//
+//        if ($sk_index === -1){
+//            InvoiceStripe::log('No hay sk_index', 'transaction');
+//            $this->sendMailError();
+//            http_response_code(400);
+//            exit();
+//        }
+//
         $sk = InvoiceStripe::loadSkStripe()[$sk_index];
-        InvoiceStripe::log('SK '. $sk, 'transaction');
-        Stripe::setApiKey($sk['sk']);
+//        InvoiceStripe::log('SK '. $sk['sk'], 'transaction');
+//        Stripe::setApiKey($sk['sk']);
+//
+//        try {
+//            $event = Event::retrieve($data->id);
+//            InvoiceStripe::log('Generamos event', 'transaction');
+//        } catch(ApiErrorException $e) {
+//
+//            http_response_code(400);
+//            exit();
+//        }
 
-        try {
-            $event = Event::retrieve($data->id);
-            InvoiceStripe::log('Generamos event', 'transaction');
-        } catch(ApiErrorException $e) {
+//        if($event->type == 'payout.paid') {
 
-            http_response_code(400);
-            exit();
-        }
-
-        if($event->type == 'payout.paid') {
-
-            $payoutId = $event->data->object->id;;
-            InvoiceStripe::log('payout id: ' . $payoutId, 'transaction');
+//            $payoutId = $event->data->object->id;;
+//            InvoiceStripe::log('payout id: ' . $payoutId, 'transaction');
 
     //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
-    //        $payoutId = 'po_1R1clUHDuQaJAlOmPOZRnWtO';
+            $payoutId = 'po_1S3xnSHDuQaJAlOmOfcCD9RU';
     //        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
 
-            $this->processPayout($sk, $payoutId);
+        try {
+            $this->processPayout($sk['sk'], $payoutId);
         }
+        catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
+            $this->sendMailError(serialize($e->getMessage()));
+        }
+
+        echo ' todo ok';
+//        }
+
+
 
         http_response_code(200);
 
@@ -131,8 +147,8 @@ class TestTransaction extends Controller
         $payout = $stripe->payouts->retrieve($payoutId, []);
 
 
-        $totalIngreso = $payout['amount'] / 100;
-        InvoiceStripe::log('Total ingreso: ' . $totalIngreso, 'transaction');
+        $totalIngresoStripe = $payout['amount'] / 100;
+        InvoiceStripe::log('Total ingreso: ' . $totalIngresoStripe, 'transaction');
 
         //  Creo la remesa
         $remesa = new RemesaSEPA();
@@ -156,7 +172,6 @@ class TestTransaction extends Controller
             'limit' => 10000,
         ]);
 
-        $total = 0;
         $errors = [];
 
 
@@ -204,18 +219,19 @@ class TestTransaction extends Controller
 
             if ($reciboCliente->save()){
                 InvoiceStripe::log('Se genera linea de remesa con la factura:  ' . $facturaId, 'transaction');
-                $total += $reciboCliente->importe;
             }
         }
 
+        // Calculamos los totales de la remesa
+        $remesa->updateTotal();
 
         if (SettingStripeModel::getSetting('adminEmail'))
-            $this->sendMail($errors, $total, $totalIngreso, $remesa->idremesa);
+            $this->sendMail($errors, $remesa->total, $totalIngresoStripe, $remesa->idremesa);
 
         echo 'Importación completada con éxito <br />';
         echo 'Errores: <br />';
         var_dump($errors);
-        echo 'Total transferencia: ' . $total . ' €';
+        echo 'Total transferencia: ' . $remesa->total . ' €';
 
     }
 
@@ -250,10 +266,37 @@ class TestTransaction extends Controller
     }
 
     /**
+     * @param string $error
+     * @return void
+     * @throws Exception
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     */
+    private function sendMailError(string $error = ''): void
+    {
+        $subject = 'Error al generar la remesa de cobro de stripe';
+        $body = "Hola, \r\n La llamada de stripe para generar una remesa ha dado error: . \r\n";
+
+        if ($error)
+            $body .= $error;
+
+
+        $mail = NewMail::create()
+            ->to(SettingStripeModel::getSetting('adminEmail'))
+            ->subject($subject)
+            ->body(nl2br($body));
+
+        $mail->send();
+
+    }
+
+
+    /**
      * Método que va a mandar un email
      * @param $errors
-     * @param $total
-     * @param $totalIngreso
+     * @param $totalRemesa
+     * @param $totalIngresoStripe
      * @param $idRemesa
      * @return void
      * @throws Exception
@@ -261,12 +304,12 @@ class TestTransaction extends Controller
      * @throws RuntimeError
      * @throws SyntaxError
      */
-    private function sendMail($errors, $total, $totalIngreso, $idRemesa): void
+    private function sendMail($errors, $totalRemesa, $totalIngresoStripe, $idRemesa): void
     {
         $subject = 'Nueva remesa de cobro de stripe creada';
         $body = "Hola, \r\n Se ha creado la remesa $idRemesa de forma automática por un pago de stripe. \r\n";
-        $body .= "Total de la remesa: $total €\r\n";
-        $body .= "Total del ingreso: $totalIngreso €\n";
+        $body .= "Total de la remesa: $totalRemesa €\r\n";
+        $body .= "Total del ingreso: $totalIngresoStripe €\n";
 
         if (count($errors) > 0)
             $body .= "Errores:\r\n" . implode("\r\n", $errors);

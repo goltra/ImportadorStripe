@@ -94,9 +94,10 @@ class TestTransaction extends Controller
 //
 //        try {
 //            $event = Event::retrieve($data->id);
-//            InvoiceStripe::log('Generamos event', 'transaction');
+//            InvoiceStripe::log('Recuperamos event', 'transaction');
 //        } catch(ApiErrorException $e) {
-//
+//              InvoiceStripe::log('Error al recuperar el evento', 'transaction');
+//           $this->sendMailError();
 //            http_response_code(400);
 //            exit();
 //        }

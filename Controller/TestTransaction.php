@@ -160,9 +160,7 @@ class TestTransaction extends Controller
         $remesa->fecha = date('Y-m-d H:i:s');
         $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);
         $remesa->estado = RemesaSEPAAlias::STATUS_REVIEW;
-
-        // TODO: el código de cuenta tiene que ir automático.
-        $remesa->codcuenta = SettingStripeModel::getSetting('cuentaRemesaSEPA');
+        $remesa->codcuenta = (int)SettingStripeModel::getSetting('cuentaRemesaSEPA');
         $remesa->save();
 
         InvoiceStripe::log('Se genera la remesa. ', 'transaction');

@@ -154,7 +154,7 @@ class TestTransaction extends Controller
         //  Creo la remesa
         $remesa = new RemesaSEPA();
 
-        $remesa->nombre = 'Pago Stripe: '.$payoutId;
+        $remesa->nombre = 'Pago de Stripe: '.$payoutId;
         $remesa->descripcion = 'Pago Enero CJL';
         $remesa->fecha = date('Y-m-d H:i:s');
         $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);

@@ -162,7 +162,7 @@ class TestTransaction extends Controller
         $remesa->estado = RemesaSEPAAlias::STATUS_REVIEW;
 
         // TODO: el código de cuenta tiene que ir automático.
-        $remesa->codcuenta = 1;
+        $remesa->codcuenta = SettingStripeModel::getSetting('cuentaRemesaSEPA');
         $remesa->save();
 
         InvoiceStripe::log('Se genera la remesa. ', 'transaction');

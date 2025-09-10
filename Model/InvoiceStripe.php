@@ -661,7 +661,7 @@ class InvoiceStripe
 
     static function sendMailError($factura, $error){
         $mail = new NewMail();
-        $mail->addAddress(SettingStripeModel::getSetting('adminEmail'), 'Goltratec');
+        $mail->addAddress(SettingStripeModel::getSetting('adminEmail'));
         $mail->title = 'Error al generar factura en Facturascript';
         $mail->text = 'Se ha generado un error al crear la factura '.$factura.'. <br /> El error es: '.$error;
         $mail->send();

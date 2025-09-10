@@ -8,6 +8,8 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\Internal\Plugin;
+use FacturaScripts\Core\Plugins;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Serie;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
@@ -24,6 +26,7 @@ class SettingParams extends Controller
     public $adminEmail = '';
     public $mostrarStripeCus;
     public $remesasSEPA = false;
+    public $cuentaRemesaSEPA = '';
 
 
     public function privateCore(&$response, $user, $permissions)
@@ -88,6 +91,7 @@ class SettingParams extends Controller
         $this->adminEmail = SettingStripeModel::getSetting('adminEmail');
         $this->mostrarStripeCus = SettingStripeModel::getSetting('mostrarStripeCus');
         $this->remesasSEPA = SettingStripeModel::getSetting('remesasSEPA');
+        $this->cuentaRemesaSEPA = SettingStripeModel::getSetting('cuentaRemesaSEPA') ?? '';
     }
 
     private function setSkStripe()
@@ -102,7 +106,7 @@ class SettingParams extends Controller
             $this->getAllSks();
             Tools::log()->info('Guardado correctamente.');
         } else {
-            Tools::log()->info('No se pudo guardar el SK.');
+            Tools::log()->error('No se pudo guardar el SK.');
         }
 
     }
@@ -116,6 +120,7 @@ class SettingParams extends Controller
         $this->adminEmail = $data['adminEmail'];
         $this->mostrarStripeCus = $data['mostrarStripeCus'];
         $this->remesasSEPA = $data['remesasSEPA'];
+        $this->cuentaRemesaSEPA = $data['cuentaRemesaSEPA'];
 
         $settings = [];
 
@@ -131,15 +136,33 @@ class SettingParams extends Controller
         if($this->mostrarStripeCus !== null)
             $settings['mostrarStripeCus'] = $this->mostrarStripeCus;
 
-        if($this->remesasSEPA !== null)
+        if($this->remesasSEPA !== null){
+
+            if ($this->remesasSEPA !== '0') {
+                if (!Plugins::isInstalled('RemesasSEPA')){
+                    Tools::log()->error('No tienes instalado el plugin Remesas SEPA.');
+                    return;
+                }
+                if (!Plugins::isEnabled('RemesasSEPA')){
+                    Tools::log()->error('No tienes activado el plugin Remesas SEPA.');
+                    return;
+                }
+            }
+
             $settings['remesasSEPA'] = $this->remesasSEPA;
+        }
+
+
+
+        if($this->cuentaRemesaSEPA !== null)
+            $settings['cuentaRemesaSEPA'] = $this->cuentaRemesaSEPA;
+
 
         $settings['adminEmail'] = strlen($this->adminEmail) > 0 ? $this->adminEmail : Session::get('user')->email;
 
         SettingStripeModel::addSettings($settings);
 
-//        sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk
-
+        Tools::log()->info('Guardado correctamente.');
 
     }
 

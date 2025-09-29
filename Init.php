@@ -1,8 +1,8 @@
 <?php
 
 namespace FacturaScripts\Plugins\ImportadorStripe;
-
 use FacturaScripts\Core\Template\InitClass;
+
 require_once __DIR__ . '/vendor/autoload.php';
 
 class Init extends InitClass

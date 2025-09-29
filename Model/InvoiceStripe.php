@@ -8,7 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
-use FacturaScripts\Core\Base\Calculator;
+use FacturaScripts\Core\Lib\Calculator;
 use FacturaScripts\Core\Base\DataBase;
 use FacturaScripts\Core\Lib\Email\NewMail;
 use FacturaScripts\Core\Lib\Export\PDFExport;
@@ -73,7 +73,7 @@ class InvoiceStripe
      * @return array
      *
      */
-    static function loadInvoicesNotProcessed(int $sk_stripe_index, $start = null, int $limit = 5, int $initDate = 631200892, int $endDate = null)
+    static function loadInvoicesNotProcessed(int $sk_stripe_index, $start = null, int $limit = 5, int $initDate = 631200892, ?int $endDate = null)
     {
         try {
             //fuerzo este valor
@@ -244,7 +244,6 @@ class InvoiceStripe
 
                         $vat_perc = $inv->tax_percent!==null ? $inv->tax_percent : null; //Impuesto aplicado a factura
                         $vat_perc = ( is_array($l->tax_rates) && count($l->tax_rates)>0 && isset($l->tax_rates[0]['percentage']) ) ? $l->tax_rates[0]['percentage'] : $vat_perc; //Impuesto aplicado a linea
-
 
                         if ($vat_perc === null && isset($inv->default_tax_rates[0]->percentage))
                             $vat_perc = $inv->default_tax_rates[0]->percentage;
@@ -601,7 +600,6 @@ class InvoiceStripe
 
         self::log('Factura una vez generado el asiento contable. Si no hay idasiento, quiere decir que ha dado error interno y no se ha generado el asiento.');
         self::log(serialize($invoice));
-
         if (empty($invoice->idasiento) || !$invoice->save()) {
             return false;
         }
@@ -629,28 +627,37 @@ class InvoiceStripe
     }
 
 
-    static function log($valor){
-        $is_dev = true;
+    static function log($valor, $flag = 'invoice'){
 
-        if($is_dev){
-            $dir =  'invoice-log.txt';
-            $fecha = date('d-m-Y H:i:s');
-
-            if (is_object($valor))
-                $valor = serialize($valor);
-
-            if(is_array($valor))
-                $valor = serialize($valor);
-
-            $file = fopen($dir, "a");
-            $a = fwrite($file, $fecha . ' - ' . $valor . PHP_EOL);
-            fclose($file);
+        switch ($flag) {
+            case 'invoice':
+                $dir = 'invoice-log.txt';
+                break;
+            case 'remesa':
+                $dir = 'remesa-sepa-log.txt';
+                break;
+            default:
+                $dir = 'stripe-log.txt';
+                break;
         }
+
+        $fecha = date('d-m-Y H:i:s');
+
+        if (is_object($valor))
+            $valor = serialize($valor);
+
+        if(is_array($valor))
+            $valor = serialize($valor);
+
+        $file = fopen($dir, "a");
+
+        fwrite($file, $fecha . ' - ' . $valor . PHP_EOL);
+        fclose($file);
     }
 
     static function sendMailError($factura, $error){
         $mail = new NewMail();
-        $mail->addAddress(SettingStripeModel::getSetting('adminEmail'), 'Goltratec');
+        $mail->addAddress(SettingStripeModel::getSetting('adminEmail'));
         $mail->title = 'Error al generar factura en Facturascript';
         $mail->text = 'Se ha generado un error al crear la factura '.$factura.'. <br /> El error es: '.$error;
         $mail->send();

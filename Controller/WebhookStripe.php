@@ -58,7 +58,6 @@ class WebhookStripe extends Controller
         InvoiceStripe::log('source: '.$source);
         InvoiceStripe::log('sk_index: '.$sk_index);
 
-
         if ($sk_index === -1){
             InvoiceStripe::log('El source recibido no corresponde a ninguno de stripe');
             http_response_code(400);

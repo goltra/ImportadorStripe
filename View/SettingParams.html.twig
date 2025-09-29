@@ -34,36 +34,59 @@
             <p>Aquí puedes agregar un cliente y producto por defecto para cuando se generen facturas cuyo cliente / producto no esté vinculado.
             </p>
 
-            <form id="frm_settings" method="post" name="frm_settings" action="SettingParams?action=addSettings" style="display:flex; gap: 20px;">
-                <label for="name" style="flex:1">
-                    Código del cliente por defecto *
-                    <input type="text" id="codcliente" name="codcliente" class="form-control" value="{{ fsc.codcliente }}"/>
-                </label>
-                <label for="sk" style="flex:1;">
-                    Código del producto por defecto *
-                    <input type="text" id="codproducto" name="codproducto" class="form-control" value="{{ fsc.codproducto }}"/>
-                </label>
-                <label for="sk" style="flex:1;">
-                    Email técnico para gestión de errores *
-                    <input type="text" id="adminEmail" name="adminEmail" class="form-control" value="{{ fsc.adminEmail }}"/>
-                </label>
-                <label for="enviarEmail" style="flex:1;">
-                    Enviar email al cliente cuando se genere la factura *
-                    <select name="enviarEmail" id="enviarEmail" class="form-control">
-                        <option value="0" {{ (fsc.enviarEmail == 0) ? 'selected' : '' }}>No</option>
-                        <option value="1" {{ (fsc.enviarEmail == 1) ? 'selected' : ''}}>Si</option>
-                    </select>
-                </label>
-                <label for="mostrarStripeCus" style="flex:1;">
-                    Mostrar el cliente de stripe en la factura *
-                    <select name="mostrarStripeCus" id="mostrarStripeCus" class="form-control">
-                        <option value="0" {{ (fsc.mostrarStripeCus == 0) ? 'selected' : '' }}>No</option>
-                        <option value="1" {{ (fsc.mostrarStripeCus == 1) ? 'selected' : ''}}>Si</option>
-                    </select>
-                </label>
-                <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
-                        class="btn btn-info">Guardar
-                </button>
+            <form id="frm_settings" method="post" name="frm_settings" action="SettingParams?action=addSettings">
+                <div style="display:flex; gap: 20px; margin-bottom: 20px;">
+                    <label for="name" style="flex:1">
+                        Código del cliente por defecto *
+                        <input type="text" id="codcliente" name="codcliente" class="form-control" value="{{ fsc.codcliente }}"/>
+                    </label>
+                    <label for="sk" style="flex:1;">
+                        Código del producto por defecto *
+                        <input type="text" id="codproducto" name="codproducto" class="form-control" value="{{ fsc.codproducto }}"/>
+                    </label>
+
+                    <label for="enviarEmail" style="flex:1;">
+                        Enviar email al cliente cuando se genere la factura *
+                        <select name="enviarEmail" id="enviarEmail" class="form-control">
+                            <option value="0" {{ (fsc.enviarEmail == 0) ? 'selected' : '' }}>No</option>
+                            <option value="1" {{ (fsc.enviarEmail == 1) ? 'selected' : ''}}>Si</option>
+                        </select>
+                    </label>
+
+                    <label for="mostrarStripeCus" style="flex:1;">
+                        Mostrar el cliente de stripe en la factura *
+                        <select name="mostrarStripeCus" id="mostrarStripeCus" class="form-control">
+                            <option value="0" {{ (fsc.mostrarStripeCus == 0) ? 'selected' : '' }}>No</option>
+                            <option value="1" {{ (fsc.mostrarStripeCus == 1) ? 'selected' : ''}}>Si</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div style="display:flex; gap: 20px;">
+                    <label for="sk" style="flex:1;">
+                        Email técnico para las comunicaciones de los webhooks *
+                        <input type="text" id="adminEmail" name="adminEmail" class="form-control" value="{{ fsc.adminEmail }}"/>
+                    </label>
+
+                    <label for="remesasSEPA" style="flex:1;">
+                        Generar remesa con las facturas pagadas. Necesitas tener instalado el plugin RemesasSEPA.
+                        <select name="remesasSEPA" id="remesasSEPA" class="form-control">
+                            <option value="0" {{ (fsc.remesasSEPA == 0) ? 'selected' : '' }}>No</option>
+                            <option value="1" {{ (fsc.remesasSEPA == 1) ? 'selected' : ''}}>Si</option>
+                        </select>
+                    </label>
+
+                    <label for="cuentaRemesaSepa" style="flex:1;">
+                        Id de la cuenta bancaria donde llegan las transferencias de stripe
+                        <input type="text" id="cuentaRemesaSEPA" name="cuentaRemesaSEPA" class="form-control" value="{{ fsc.cuentaRemesaSEPA }}"/>
+                    </label>
+
+                    <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
+                            class="btn btn-info">Guardar
+                    </button>
+
+                </div>
+
             </form>
         </div>
 
@@ -72,10 +95,16 @@
         <p>Claves de Stripe dadas de alta ( por seguridad solo se muestra el identificador que le pusiste al
             crearlo):</p>
         {% for sk in fsc.sks_stripe %}
-            <li>{{ sk.name }} - (Serie: {{ sk.codserie }}) - (Webhook: {{ asset('WebhookStripe') }}?source={{ sk.token }})
-                <a href="{{ asset('SettingParams') }}?action=del&name={{ sk.name }}">
+            <li> <a href="{{ asset('SettingParams') }}?action=del&name={{ sk.name }}">
                     <i class="fa fa-trash"></i>
                 </a>
+                {{ sk.name }} (Serie: {{ sk.codserie }}) :
+                <ul>
+                    <li>Webhook Facturas: {{ asset('WebhookStripe') }}?source={{ sk.token }}</li>
+                    {% if fsc.remesasSEPA == 1 %}
+                        <li>Webhook Remesas: {{ asset('TestTransaction') }}?source={{ sk.token }}</li>
+                    {% endif %}
+                </ul>
             </li>
         {% endfor %}
     </div>

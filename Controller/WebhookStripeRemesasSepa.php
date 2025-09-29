@@ -28,6 +28,10 @@ use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 
 
+/**
+ * Controlador que va a hacer de webservice para crear remesas en base a los payout de stripe.
+ * El funcionamiento es que por cada transferencia que haga Stripe, llamará aquí y se creará una remesa con todas las facturas asociadas a esa transferencia
+ */
 class WebhookStripeRemesasSepa extends Controller
 {
 

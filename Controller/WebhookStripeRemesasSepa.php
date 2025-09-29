@@ -28,13 +28,13 @@ use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 
 
-class TestTransaction extends Controller
+class WebhookStripeRemesasSepa extends Controller
 {
 
     public function getPageData(): array
     {
         $pageData = parent::getPageData();
-        $pageData['title'] = 'Webhook de stripe';
+        $pageData['title'] = 'Webhook de stripe para remesas sepa';
         $pageData['menu'] = 'Stripe';
         $pageData['icon'] = 'fas fa-search';
         $pageData['showonmenu'] = false;
@@ -48,78 +48,81 @@ class TestTransaction extends Controller
 
 
     public function init(){
-//        InvoiceStripe::log('entro al init', 'transaction');
-//
-//        if (!SettingStripeModel::getSetting('remesasSEPA')){
-//            InvoiceStripe::log('No tienes remesas activadas en los ajustes del plugin', 'transaction');
-//             $this->sendMailError();
-//            echo 'Debes activar las remesas en Stripe >> Ajustes';
-//            return;
-//        }
-//
-//        $payload = @file_get_contents('php://input');
-//
-//        if(!$payload){
-//            InvoiceStripe::log('No viene payload', 'transaction');
-//            $this->sendMailError();
-//            http_response_code(400);
-//            exit();
-//        }
-//
-//        $data = json_decode($payload);
-//
-//        if(!isset($_GET['source'])){
-//            InvoiceStripe::log('Nohay source', 'transaction');
-//            $this->sendMailError();
-//            http_response_code(400);
-//            exit();
-//        }
+        InvoiceStripe::log('entro al init', 'remesa');
 
-//        $source = $_GET['source'];
-        $source = 'd4d9a56531e84cd5b842e208b3ee65ef';
+        if (!SettingStripeModel::getSetting('remesasSEPA')){
+            InvoiceStripe::log('No tienes remesas activadas en los ajustes del plugin', 'remesa');
+            $this->sendMailError();
+            echo 'Debes activar las remesas en Stripe >> Ajustes';
+            return;
+        }
+
+        $payload = @file_get_contents('php://input');
+
+        if(!$payload){
+            InvoiceStripe::log('No viene payload', 'remesa');
+            $this->sendMailError();
+            http_response_code(400);
+            exit();
+        }
+
+        $data = json_decode($payload);
+
+        if(!isset($_GET['source'])){
+            InvoiceStripe::log('No viene source', 'remesa');
+            $this->sendMailError();
+            http_response_code(400);
+            exit();
+        }
+
+        $source = $_GET['source'];
+        // $source = 'd4d9a56531e84cd5b842e208b3ee65ef';
         $sk_index = InvoiceStripe::loadSkStripeByToken($source);
-//
-//
-//
-//        if ($sk_index === -1){
-//            InvoiceStripe::log('No hay sk_index', 'transaction');
-//            $this->sendMailError();
-//            http_response_code(400);
-//            exit();
-//        }
-//
+
+
+
+        if ($sk_index === -1){
+            InvoiceStripe::log('No hay sk_index', 'remesa');
+            $this->sendMailError();
+            http_response_code(400);
+            exit();
+        }
+
         $sk = InvoiceStripe::loadSkStripe()[$sk_index];
-//        InvoiceStripe::log('SK '. $sk['sk'], 'transaction');
-//        Stripe::setApiKey($sk['sk']);
-//
-//        try {
-//            $event = Event::retrieve($data->id);
-//            InvoiceStripe::log('Recuperamos event', 'transaction');
-//        } catch(ApiErrorException $e) {
-//              InvoiceStripe::log('Error al recuperar el evento', 'transaction');
-//           $this->sendMailError();
-//            http_response_code(400);
-//            exit();
-//        }
 
-//        if($event->type == 'payout.paid') {
+        InvoiceStripe::log('SK '. serialize($sk), 'remesa');
 
-//            $payoutId = $event->data->object->id;;
-//            InvoiceStripe::log('payout id: ' . $payoutId, 'transaction');
-
-    //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
-            $payoutId = 'po_1S3xnSHDuQaJAlOmOfcCD9RU';
-    //        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
+        Stripe::setApiKey($sk['sk']);
 
         try {
-            $this->processPayout($sk['sk'], $payoutId);
-        }
-        catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
-            $this->sendMailError(serialize($e->getMessage()));
+            $event = Event::retrieve($data->id);
+            InvoiceStripe::log('Recuperamos event', 'remesa');
+        } catch(ApiErrorException $e) {
+            InvoiceStripe::log('Error al recuperar el evento', 'remesa');
+            $this->sendMailError();
+
+            http_response_code(400);
+            exit();
         }
 
-        echo ' todo ok';
-//        }
+        if($event->type == 'payout.paid') {
+
+            $payoutId = $event->data->object->id;;
+            InvoiceStripe::log('payout id: ' . $payoutId, 'remesa');
+
+            //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
+            // $payoutId = 'po_1S3xnSHDuQaJAlOmOfcCD9RU';
+            //        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
+
+            try {
+                $this->processPayout($sk['sk'], $payoutId);
+            }
+            catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
+                $this->sendMailError(serialize($e->getMessage()));
+            }
+
+            echo ' todo ok';
+        }
 
 
 
@@ -140,7 +143,7 @@ class TestTransaction extends Controller
      */
     private function processPayout($sk, $payoutId): void
     {
-        InvoiceStripe::log('Entra a processPayout', 'transaction');
+        InvoiceStripe::log('Entra a processPayout', 'remesa');
         echo '<pre>';
         $stripe = new StripeClient($sk);
 
@@ -149,7 +152,7 @@ class TestTransaction extends Controller
 
 
         $totalIngresoStripe = $payout['amount'] / 100;
-        InvoiceStripe::log('Total ingreso: ' . $totalIngresoStripe, 'transaction');
+        InvoiceStripe::log('Total ingreso: ' . $totalIngresoStripe, 'remesa');
 
         //  Creo la remesa
         $remesa = new RemesaSEPA();
@@ -162,7 +165,7 @@ class TestTransaction extends Controller
         $remesa->codcuenta = (int)SettingStripeModel::getSetting('cuentaRemesaSEPA');
         $remesa->save();
 
-        InvoiceStripe::log('Se genera la remesa. ', 'transaction');
+        InvoiceStripe::log('Se genera la remesa. ', 'remesa');
 
         // Pido el balance transaction
         $balanceTransaction = $stripe->balanceTransactions->all([
@@ -173,25 +176,25 @@ class TestTransaction extends Controller
         $errors = [];
 
 
-        InvoiceStripe::log('El pago trae ' . count($balanceTransaction->data) . 'cargos.', 'transaction');
+        InvoiceStripe::log('El pago trae ' . count($balanceTransaction->data) . 'cargos.', 'remesa');
 
 
         foreach ($balanceTransaction->data as $transaction) {
 
             if (empty($transaction['source'])){
-                InvoiceStripe::log('No viene source en transaction', 'transaction');
+                InvoiceStripe::log('No viene source en transaction', 'remesa');
                 continue;
             }
 
             if (!($invoice = $this->getInvoiceFromTransaction($stripe, $transaction['source'], $errors))){
-                InvoiceStripe::log('El cargo no tiene factura. ', 'transaction');
+                InvoiceStripe::log('El cargo no tiene factura. ', 'remesa');
                 continue;
             }
 
             $facturaId = $invoice->metadata['fs_idFactura'];
 
             if (!isset($facturaId)){
-                InvoiceStripe::log('La factura ' . $facturaId. ' no está vinculada en stripe.', 'transaction');
+                InvoiceStripe::log('La factura ' . $facturaId. ' no está vinculada en stripe.', 'remesa');
                 $errors[$invoice['id']] = '- La factura ' . $facturaId. ' no está vinculada en stripe.';
                 continue;
             }
@@ -202,13 +205,13 @@ class TestTransaction extends Controller
             $reciboCliente->loadFromCode('', $where);
 
             if (!$reciboCliente->idrecibo){
-                InvoiceStripe::log('La factura ' . $facturaId. ' no tiene un recibo o ya está pagado', 'transaction');
+                InvoiceStripe::log('La factura ' . $facturaId. ' no tiene un recibo o ya está pagado', 'remesa');
                 $errors[$invoice['id']] = '- La factura ' . $facturaId. ' no tiene un recibo o ya está pagado';
                 continue;
             }
 
             if ($reciboCliente->idremesa){
-                InvoiceStripe::log('La factura ' . $facturaId. ' ya tiene una remesa asignada', 'transaction');
+                InvoiceStripe::log('La factura ' . $facturaId. ' ya tiene una remesa asignada', 'remesa');
                 $errors[$invoice['id']] = '- La factura ' . $facturaId. ' ya tiene una remesa asignada';
                 continue;
             }
@@ -216,7 +219,7 @@ class TestTransaction extends Controller
             $reciboCliente->idremesa = $remesa->idremesa;
 
             if ($reciboCliente->save()){
-                InvoiceStripe::log('Se genera linea de remesa con la factura:  ' . $facturaId, 'transaction');
+                InvoiceStripe::log('Se genera linea de remesa con la factura:  ' . $facturaId, 'remesa');
             }
         }
 

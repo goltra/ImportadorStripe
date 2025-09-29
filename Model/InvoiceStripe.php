@@ -637,8 +637,8 @@ class InvoiceStripe
             case 'invoice':
                 $dir = 'invoice-log.txt';
                 break;
-            case 'transaction':
-                $dir = 'transaction-log.txt';
+            case 'remesa':
+                $dir = 'remesa-sepa-log.txt';
                 break;
             default:
                 $dir = 'stripe-log.txt';

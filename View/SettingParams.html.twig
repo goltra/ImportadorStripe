@@ -102,7 +102,7 @@
                 <ul>
                     <li>Webhook Facturas: {{ asset('WebhookStripe') }}?source={{ sk.token }}</li>
                     {% if fsc.remesasSEPA == 1 %}
-                        <li>Webhook Remesas: {{ asset('TestTransaction') }}?source={{ sk.token }}</li>
+                        <li>Webhook Remesas: {{ asset('WebhookStripeRemesasSepa') }}?source={{ sk.token }}</li>
                     {% endif %}
                 </ul>
             </li>

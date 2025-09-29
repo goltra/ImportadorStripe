@@ -5,7 +5,7 @@
  * @author Francisco José García Alonso
  */
 
-//stripe listen --forward-to localhost:8081/TestTransaction
+//stripe listen --forward-to localhost:8081/WebhookStripeRemesasSepa
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 

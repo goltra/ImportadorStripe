@@ -8,7 +8,6 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Core\Internal\Plugin;
 use FacturaScripts\Core\Plugins;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Serie;
@@ -170,6 +169,6 @@ class SettingParams extends Controller
     {
         SettingStripeModel::removeSk($name);
         $this->getAllSks();
-        Tools::log()->info('Eliminado correctamente.');
+        Tools::log()->info('Eliminado correctamente');
     }
 }

@@ -73,7 +73,7 @@ class InvoiceStripe
      * @return array
      *
      */
-    static function loadInvoicesNotProcessed(int $sk_stripe_index, $start = null, int $limit = 5, int $initDate = 631200892, int $endDate = null)
+    static function loadInvoicesNotProcessed(int $sk_stripe_index, $start = null, int $limit = 5, int $initDate = 631200892, ?int $endDate = null)
     {
         try {
             //fuerzo este valor
@@ -96,6 +96,7 @@ class InvoiceStripe
             $params = ['status' => 'paid', 'limit' => $limit, 'created' => ['lte' => $endDate, 'gte' => $initDate]];
 
             $stripe = new \Stripe\StripeClient($stripe_id);
+            \Stripe\Stripe::$apiVersion = '2020-08-27';
             $stripe_response = $stripe->invoices->all($params);
 
             $_data = [];
@@ -242,24 +243,20 @@ class InvoiceStripe
                         // - Iva del artículo de FS
 
                         $vat_perc = $inv->tax_percent!==null ? $inv->tax_percent : null; //Impuesto aplicado a factura
-                        $vat_perc = ( is_array($l->tax_rates) && count($l->tax_rates)>0 && isset($l->tax_rates[0]['percentage'])) ? $l->tax_rates[0]['percentage'] : $vat_perc; //Impuesto aplicado a linea
-
+                        $vat_perc = ( is_array($l->tax_rates) && count($l->tax_rates)>0 && isset($l->tax_rates[0]['percentage']) ) ? $l->tax_rates[0]['percentage'] : $vat_perc; //Impuesto aplicado a linea
 
                         if ($vat_perc === null && isset($inv->default_tax_rates[0]->percentage))
                             $vat_perc = $inv->default_tax_rates[0]->percentage;
 
                         $vat_included = null;
 
-                        if (count($l->tax_amounts) > 0)
+                        if (is_array($l->tax_amounts) && count($l->tax_amounts) > 0)
                             $vat_included = $l->tax_amounts[0]['inclusive'];
 
                         self::log('¿El iva está incluido?: '.($vat_included ? 'si' : 'no'));
 
-
-
-
-                        if ($l->price !== null && $l->price->product !== null && $l->price->product !== '') {
-                            $product_id = $l->price->product->id ?? $l->price->product;
+                        if (($l->price !== null && $l->price->product !== null && $l->price->product !== '') || $l->pricing->price_details->product !== '') {
+                            $product_id = $l->price->product->id ?? $l->price->product ?? $l->pricing->price_details->product;
                             $fs_product_id = ProductModel::getFsProductIdFromStripe($sk_stripe_index, $product_id);
 
 
@@ -279,7 +276,6 @@ class InvoiceStripe
 
                                     if ($vat_perc !== null)
                                         $tax->iva = $vat_perc;
-
                                 }
 
                             }
@@ -550,9 +546,8 @@ class InvoiceStripe
         if (!self::generateAccounting($invoiceFs)) {
             self::log('No se ha podido generar la factura porque hubo un error al generar el asiento contable');
             Tools::log('stripe')->error('invoice id error: ' . $id_invoice_stripe);
-            self::sendMailError($invoice->fs_idFactura, 'Error al generar el asiento contable, la factura está generada.');
-//            $database->rollback();
-//            throw new Exception('No se ha podido generar la factura porque hubo un error al generar el asiento contable');
+            $database->rollback();
+            throw new Exception('No se ha podido generar la factura porque hubo un error al generar el asiento contable');
         }
 
         if ($mark_as_paid === true && $payment_method !== null) {
@@ -602,8 +597,9 @@ class InvoiceStripe
     {
         $generator = new InvoiceToAccounting();
         $generator->generate($invoice);
-        self::log('Genero asiento contable');
-        self::log(serialize($generator));
+
+        self::log('Factura una vez generado el asiento contable. Si no hay idasiento, quiere decir que ha dado error interno y no se ha generado el asiento.');
+        self::log(serialize($invoice));
         if (empty($invoice->idasiento) || !$invoice->save()) {
             return false;
         }

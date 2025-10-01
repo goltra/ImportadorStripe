@@ -161,8 +161,8 @@ class WebhookStripeRemesasSepa extends Controller
         //  Creo la remesa
         $remesa = new RemesaSEPA();
 
-        $remesa->nombre = 'Pago de Stripe: '.$payoutId;
-        $remesa->descripcion = 'Pago Enero CJL';
+        $remesa->nombre = $payoutId;
+        $remesa->descripcion = 'Pago CJL';
         $remesa->fecha = date('Y-m-d H:i:s');
         $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);
         $remesa->estado = RemesaSEPAAlias::STATUS_REVIEW;

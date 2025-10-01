@@ -8,6 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Controller\ListCliente as ParentListCliente;
+use FacturaScripts\Core\Tools;
 
 
 class SelectClient extends ParentListCliente
@@ -98,7 +99,7 @@ class SelectClient extends ParentListCliente
         if ($customer_id !== null && strlen($customer_id) > 0) {
             $this->redirect('CreateInvoiceStripe?action=clientOk&codcliente=' . $customer_id);
         } else {
-            $this->toolbox()->log()->error('No se ha podido vincular el cliente de facturascript. Alguno de los valores no es correcto');
+            Tools::log()->error('No se ha podido vincular el cliente de facturascript. Alguno de los valores no es correcto');
         }
     }
 

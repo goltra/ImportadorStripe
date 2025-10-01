@@ -8,6 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\ClientModel;
 use FacturaScripts\Core\Lib\AssetManager;
 use FacturaScripts\Dinamic\Model\FormaPago;
@@ -55,9 +56,9 @@ class ListClient extends Controller
                         $res = ClientModel::addPaymentMethodInMetaData($stripe_customer_id, $_SESSION['sk_stripe_index'], $pm);
 
 //                        if ($res['status'] === true) {
-//                            $this->toolBox()->log()->info('Cliente vinculado correctamente.');
+//                            Tools::log()->info('Cliente vinculado correctamente.');
 //                        } else {
-//                            $this->toolBox()->log()->error($res['message']);
+//                            Tools::log()->error($res['message']);
 //                        }
 
                 }
@@ -74,7 +75,7 @@ class ListClient extends Controller
                     /*echo 'session';*/
                     $this->sk_stripe_index = $_SESSION['sk_stripe_index'];
                 } else {
-                    $this->toolBox()->log()->error('No se ha recibido el sk correspondiente');
+                    Tools::log()->error('No se ha recibido el sk correspondiente');
                     return false;
                 }
 
@@ -101,13 +102,13 @@ class ListClient extends Controller
                     $res = ClientModel::linkFsClientToStripeCustomer($stripe_customer_id, $_SESSION['sk_stripe_index'], $customer_id);
 
                     if ($res['status'] === true) {
-                        $this->toolBox()->log()->info('Cliente vinculado correctamente.');
+                        Tools::log()->info('Cliente vinculado correctamente.');
                     } else {
-                        $this->toolBox()->log()->error($res['message']);
+                        Tools::log()->error($res['message']);
                     }
                 }
                 else
-                    $this->toolBox()->log()->error('Error al seleccionar el cliente');
+                    Tools::log()->error('Error al seleccionar el cliente');
 
                 break;
 
@@ -124,12 +125,12 @@ class ListClient extends Controller
             $data = ClientModel::loadStripeCustomers($sk_stripe_index, $start, $limit);
 
             if (array_key_exists('status', $data) && $data['status'] === false) {
-                $this->toolbox()->log()->error( 'Error: ' . $data['message']);
+                Tools::log()->error( 'Error: ' . $data['message']);
             } else {
                 $this->clients = $data;
             }
         } catch (\Exception $ex){
-            $this->toolbox()->log()->error( 'Error: ' . $ex->getMessage());
+            Tools::log()->error( 'Error: ' . $ex->getMessage());
         }
 
 

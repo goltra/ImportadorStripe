@@ -9,6 +9,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Controller\ListProducto as ParentListProducto;
 use FacturaScripts\Core\Model\Variante;
+use FacturaScripts\Core\Tools;
 
 
 class SelectProduct extends ParentListProducto
@@ -64,7 +65,7 @@ class SelectProduct extends ParentListProducto
             case 'selectProduct':
                 $st_product_id = $this->request->query->get('st_product_id');
                 if ($st_product_id === null || strlen($st_product_id) == 0) {
-                    $this->toolbox()->log()->error('No se ha recibo el código del producto de stripe');
+                    Tools::log()->error('No se ha recibo el código del producto de stripe');
                     break;
                 }
                 $_SESSION['st_product_id'] = $st_product_id;
@@ -89,7 +90,7 @@ class SelectProduct extends ParentListProducto
         if ($id !== null && strlen($id) > 0) {
             $this->redirect('ListProduct?action=linkProduct&codproduct=' . $id);
         } else {
-            $this->toolbox()->log()->error('No se ha podido vincular el producto de facturascript. Alguno de los valores no es correcto');
+            Tools::log()->error('No se ha podido vincular el producto de facturascript. Alguno de los valores no es correcto');
         }
     }
 

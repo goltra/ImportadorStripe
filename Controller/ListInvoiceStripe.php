@@ -12,6 +12,7 @@ use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\Model\Cliente;
 use FacturaScripts\Core\Model\ReciboCliente;
+use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\ClientModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\Helper;
 use \FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
@@ -61,7 +62,7 @@ class ListInvoiceStripe extends Controller
                 } elseif ($this->request->query->get('sk_stripe_index') !== null) {
                     $this->sk_stripe_index = $this->request->query->get('sk_stripe_index');
                 } else {
-                    $this->toolBox()->log()->error('No se ha recibido el sk correspondiente');
+                    Tools::log()->error('No se ha recibido el sk correspondiente');
                     return false;
                 }
 
@@ -100,11 +101,11 @@ class ListInvoiceStripe extends Controller
                     if ($res['status'] === true) {
                         $this->toolBox()->log()->info('Cliente vinculado correctamente.');
                     } else {
-                        $this->toolBox()->log()->error($res['message']);
+                        Tools::log()->error($res['message']);
                     }
                 }
                 else
-                    $this->toolBox()->log()->error('Error al seleccionar el cliente');
+                    Tools::log()->error('Error al seleccionar el cliente');
 
 
                 break;
@@ -131,12 +132,12 @@ class ListInvoiceStripe extends Controller
             $data = InvoiceStripe::loadInvoicesNotProcessed($sk_stripe_index, $start, $limit, $f_ini, $f_fin);
 
             if ($data['status'] === false) {
-                $this->toolbox()->log()->error('No se han podido cargar las facturas ' . $data['message']);
+                Tools::log()->error('No se han podido cargar las facturas ' . $data['message']);
             } else {
                 $this->invoices = $data;
             }
         } catch (Exception $e) {
-            $this->toolbox()->log()->error('No se han podido cargar las facturas ' . $e->getMessage());
+            Tools::log()->error('No se han podido cargar las facturas ' . $e->getMessage());
         }
 
     }

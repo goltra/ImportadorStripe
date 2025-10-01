@@ -16,6 +16,7 @@ use FacturaScripts\Core\Model\Cliente;
 use FacturaScripts\Core\Model\EmailSent;
 use FacturaScripts\Core\Model\FacturaCliente;
 use FacturaScripts\Core\Model\FormaPago;
+use FacturaScripts\Core\Tools;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Core\Lib\ExportManager;
 
@@ -56,11 +57,11 @@ class CreateInvoiceStripe extends Controller
         $this->paymentMethods();
 
         /* if ($this->>action === null) {
-            $this->toolbox()->log()->error('No se ha definido la acción');
+            Tools::log()->error('No se ha definido la acción');
             return false;
         } */
         if ($this->sk_stripe_index === null) {
-            $this->toolbox()->log()->error('No se ha definido el sk');
+            Tools::log()->error('No se ha definido el sk');
             return false;
         }
 
@@ -99,11 +100,11 @@ class CreateInvoiceStripe extends Controller
                         //recibimos el cliente creado / seleccionado, modificamos el cliente, processInvoice
                         $this->setClientToStripeClient();
                     } else {
-                        $this->toolBox()->log()->error($res['message']);
+                        Tools::log()->error($res['message']);
                     }
                 }
                 else
-                    $this->toolBox()->log()->error('Error al seleccionar el cliente');
+                    Tools::log()->error('Error al seleccionar el cliente');
 
                 break;
 
@@ -113,7 +114,7 @@ class CreateInvoiceStripe extends Controller
                     //recibimos el cliente creado / seleccionado, modificamos el cliente, processInvoice
                     $this->setClientToStripeClient();
                 } else
-                    $this->toolbox()->log()->error('No se pudo ejecutar la acción ');
+                    Tools::log()->error('No se pudo ejecutar la acción ');
                 break;
         }
     }
@@ -168,9 +169,9 @@ class CreateInvoiceStripe extends Controller
         $res = InvoiceStripe::setFsIdCustomer($_SESSION['stripe_customer_id'], $_SESSION['sk_stripe_index'], $this->customer_id);
         if ($res['status'] === true) {
             $this->processInvoice($_SESSION['id_stripe_invoice'], $_SESSION['sk_stripe_index']);
-            $this->toolBox()->log()->info('Cliente vinculador correctamente.');
+            Tools::log()->info('Cliente vinculador correctamente.');
         } else {
-            $this->toolBox()->log()->error($res['message']);
+            Tools::log()->error($res['message']);
         }
     }
 
@@ -189,7 +190,7 @@ class CreateInvoiceStripe extends Controller
             return $res['code'];
         } catch (\Exception $ex) {
             $this->error = true;
-            $this->toolbox()->log()->error($ex->getMessage());
+            Tools::log()->error($ex->getMessage());
         }
 
     }

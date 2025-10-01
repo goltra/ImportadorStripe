@@ -8,6 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\Tools;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Plugins\ImportadorStripe\Model\ProductModel;
 use FacturaScripts\Core\Lib\AssetManager;
@@ -58,7 +59,7 @@ class ListProduct extends Controller
                     /*echo 'session';*/
                     $this->sk_stripe_index = $_SESSION['sk_stripe_index'];
                 } else {
-                    $this->toolBox()->log()->error('No se ha recibido el sk correspondiente');
+                    Tools::log()->error('No se ha recibido el sk correspondiente');
                     return false;
                 }
 
@@ -77,15 +78,15 @@ class ListProduct extends Controller
             case('linkProduct'):
                 $codproduct = $this->request->query->get('codproduct');
                 if ($codproduct === null || strlen($codproduct) == 0) {
-                    $this->toolbox()->log()->error('No se ha podido enlazar el producto, no se ha definido el producto de FS');
+                    Tools::log()->error('No se ha podido enlazar el producto, no se ha definido el producto de FS');
                     break;
                 }
                 if (!isset($_SESSION['sk_stripe_index'])) {
-                    $this->toolbox()->log()->error('No se ha podido enlazar el producto, no se ha definido la cuenta de stripe');
+                    Tools::log()->error('No se ha podido enlazar el producto, no se ha definido la cuenta de stripe');
                     break;
                 }
                 if (!isset($_SESSION['st_product_id'])) {
-                    $this->toolbox()->log()->error('No se ha podido enlazar el producto, no se ha definido el producto de stripe');
+                    Tools::log()->error('No se ha podido enlazar el producto, no se ha definido el producto de stripe');
                     break;
                 }
 
@@ -96,7 +97,7 @@ class ListProduct extends Controller
                     ProductModel::linkFsProductToStripeProduct($this->sk_stripe_index, $codproduct, $st_product_id);
                     $this->redirect('ListProduct?action=load',0);
                 } catch (\Exception $e) {
-                    $this->toolbox()->log()->error('No se ha podido enlazar el producto' . $e->getMessage());
+                    Tools::log()->error('No se ha podido enlazar el producto' . $e->getMessage());
                 }
                 break;
             default:
@@ -118,12 +119,12 @@ class ListProduct extends Controller
             $data = ProductModel::loadStripeProducts($sk_stripe_index, $start, $limit);
 
             if (array_key_exists('status', $data) && $data['status'] === false) {
-                $this->toolbox()->log()->error( 'Error: ' . $data['message']);
+                Tools::log()->error( 'Error: ' . $data['message']);
             } else {
                 $this->products = $data;
             }
         } catch (\Exception $ex){
-            $this->toolbox()->log()->error( 'Error: ' . $ex->getMessage());
+            Tools::log()->error( 'Error: ' . $ex->getMessage());
         }
 
 

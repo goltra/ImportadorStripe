@@ -293,7 +293,7 @@ class InvoiceStripe
                         if(isset($inv->total_discount_amounts) && isset($inv->subtotal) && count($inv->total_discount_amounts) > 0) {
                             $discount = 0;
                             foreach ($inv->total_discount_amounts as $d){
-                                $discount += round($d->amount / $inv->subtotal * 100, 2);
+                                $discount += round($d->amount / $inv->subtotal * 100, 2, PHP_ROUND_HALF_UP);
                             }
 //
                             $invoice->discount = $discount;
@@ -317,7 +317,6 @@ class InvoiceStripe
                             self::log('El cliente tiene iva');
 
 
-
                         if ($tax->iva !== 0 && ($vat_included === null || $vat_included )){
                             $unit_amount = $unit_amount / (1 + ($tax->iva / 100));
                             self::log('Le restamos el iva que viene de stripe: '.$tax->iva);
@@ -325,8 +324,8 @@ class InvoiceStripe
 
 
                         // Multiplico por las unidades para obtener el total de la linea
-                        $amount = round($unit_amount * $l->quantity, Tools::settings('default', 'decimals'));
-                        $unit_amount = round($unit_amount * $l->quantity, Tools::settings('default', 'decimals'));
+                        $amount = round($unit_amount * $l->quantity, Tools::settings('default', 'decimals') ?? 0, PHP_ROUND_HALF_UP);
+                        $unit_amount = round($unit_amount * $l->quantity, Tools::settings('default', 'decimals') ?? 0, PHP_ROUND_HALF_UP);
 
                         self::log('precio después de impuestos: '.$amount);
                         self::log('unit precio después de impuestos: '.$unit_amount);

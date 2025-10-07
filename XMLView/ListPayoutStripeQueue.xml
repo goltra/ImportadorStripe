@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view>
+    <!-- Columnas del listado -->
+    <columns>
+        <column name="Pago de stripe" order="110" display="left">
+            <widget type="text" fieldname="payout_id" />
+        </column>
+
+        <column name="Cargo" order="120" display="left">
+            <widget type="text" fieldname="charge_id" />
+        </column>
+
+        <column name="Remesa" order="130" display="center">
+            <widget type="text" fieldname="remesa_id" />
+        </column>
+
+        <column name="Estado" order="140" display="center">
+            <!-- mapear valores a colores (ok / error). Para filas pendientes (NULL) no habrá opción y no coloreará -->
+            <widget type="text" fieldname="status">
+                <option color="success" fieldname="status">ok</option>
+                <option color="danger" fieldname="status">error</option>
+            </widget>
+        </column>
+
+        <column name="Fecha" order="150" display="center">
+            <widget type="datetime" fieldname="created_at" />
+        </column>
+    </columns>
+
+    <!-- Opciones especiales por fila: coloreado y botones de acción -->
+    <rows>
+        <!-- Coloreado de filas según valor de 'status' -->
+        <row type="status">
+            <option color="success" fieldname="status">ok</option>
+            <option color="danger" fieldname="status">error</option>
+        </row>
+
+        <!-- Botones por fila (ejecutan acciones del controlador) -->
+<!--        <row type="actions">-->
+<!--            &lt;!&ndash; 'action' debe corresponder a un método/action que implementes en el controlador &ndash;&gt;-->
+<!--            <button action="process" color="success" icon="fas fa-play" label="Procesar" type="action" />-->
+<!--            <button action="mark_error" color="danger" icon="fas fa-exclamation-triangle" label="Marcar error" type="action" />-->
+<!--        </row>-->
+    </rows>
+</view>

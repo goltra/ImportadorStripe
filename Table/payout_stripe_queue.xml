@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<table>
+    <column>
+        <name>id</name>
+        <type>serial</type>
+        <null>NO</null>
+    </column>
+
+    <column>
+        <name>payout_id</name>
+        <type>character varying(50)</type>
+        <null>NO</null>
+    </column>
+
+    <column>
+        <name>charge_id</name>
+        <type>character varying(50)</type>
+        <null>NO</null>
+    </column>
+
+    <column>
+        <name>remesa_id</name>
+        <type>integer</type>
+        <null>YES</null>
+    </column>
+
+    <column>
+        <name>created_at</name>
+        <type>timestamp</type>
+        <null>NO</null>
+    </column>
+
+    <column>
+        <name>status</name>
+        <type>integer</type>
+        <null>YES</null>
+    </column>
+
+    <column>
+        <name>nota</name>
+        <type>text</type>
+        <null>YES</null>
+    </column>
+
+    <constraint>
+        <name>payout_stripe_queue_pkey</name>
+        <type>PRIMARY KEY (id)</type>
+    </constraint>
+</table>

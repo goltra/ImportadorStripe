@@ -52,85 +52,94 @@ class WebhookStripeRemesasSepa extends Controller
 
 
     public function init(){
-        InvoiceStripe::log('entro al init', 'remesa');
+//        InvoiceStripe::log('entro al init', 'remesa');
+//
+//        if (!SettingStripeModel::getSetting('remesasSEPA')){
+//            InvoiceStripe::log('No tienes remesas activadas en los ajustes del plugin', 'remesa');
+//            $this->sendMailError();
+//            echo 'Debes activar las remesas en Stripe >> Ajustes';
+//            return;
+//        }
+//
+//        $payload = @file_get_contents('php://input');
+//
+//        if(!$payload){
+//            InvoiceStripe::log('No viene payload', 'remesa');
+//            $this->sendMailError();
+//            http_response_code(400);
+//            exit();
+//        }
+//
+//        $data = json_decode($payload);
+//
+//        if(!isset($_GET['source'])){
+//            InvoiceStripe::log('No viene source', 'remesa');
+//            $this->sendMailError();
+//            http_response_code(400);
+//            exit();
+//        }
+//
+//        $source = $_GET['source'];
+//        // $source = 'd4d9a56531e84cd5b842e208b3ee65ef';
+//        $sk_index = InvoiceStripe::loadSkStripeByToken($source);
+//
+//
+//
+//        if ($sk_index === -1){
+//            InvoiceStripe::log('No hay sk_index', 'remesa');
+//            $this->sendMailError();
+//            http_response_code(400);
+//            exit();
+//        }
+//
+//        $sk = InvoiceStripe::loadSkStripe()[$sk_index];
+//
+//        InvoiceStripe::log('SK '. serialize($sk), 'remesa');
+//
+//        Stripe::setApiKey($sk['sk']);
+//
+//        try {
+//            $event = Event::retrieve($data->id);
+//            InvoiceStripe::log('Recuperamos event', 'remesa');
+//        } catch(ApiErrorException $e) {
+//            InvoiceStripe::log('Error al recuperar el evento', 'remesa');
+//            $this->sendMailError();
+//
+//            http_response_code(400);
+//            exit();
+//        }
+//
+//        if($event->type == 'payout.paid') {
+//
+//            $payoutId = $event->data->object->id;;
+//            InvoiceStripe::log('payout id: ' . $payoutId, 'remesa');
+//
+//            //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
+//            // $payoutId = 'po_1S3xnSHDuQaJAlOmOfcCD9RU';
+//            //        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
+//
+//            try {
+//                $this->processPayout($sk['sk'], $payoutId);
+//            }
+//            catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
+//                $this->sendMailError(serialize($e->getMessage()));
+//            }
+//
+//            echo ' todo ok';
+//        }
+//
+//
+//
+//        http_response_code(200);
 
-        if (!SettingStripeModel::getSetting('remesasSEPA')){
-            InvoiceStripe::log('No tienes remesas activadas en los ajustes del plugin', 'remesa');
-            $this->sendMailError();
-            echo 'Debes activar las remesas en Stripe >> Ajustes';
-            return;
-        }
-
-        $payload = @file_get_contents('php://input');
-
-        if(!$payload){
-            InvoiceStripe::log('No viene payload', 'remesa');
-            $this->sendMailError();
-            http_response_code(400);
-            exit();
-        }
-
-        $data = json_decode($payload);
-
-        if(!isset($_GET['source'])){
-            InvoiceStripe::log('No viene source', 'remesa');
-            $this->sendMailError();
-            http_response_code(400);
-            exit();
-        }
-
-        $source = $_GET['source'];
-        // $source = 'd4d9a56531e84cd5b842e208b3ee65ef';
-        $sk_index = InvoiceStripe::loadSkStripeByToken($source);
-
-
-
-        if ($sk_index === -1){
-            InvoiceStripe::log('No hay sk_index', 'remesa');
-            $this->sendMailError();
-            http_response_code(400);
-            exit();
-        }
-
-        $sk = InvoiceStripe::loadSkStripe()[$sk_index];
-
-        InvoiceStripe::log('SK '. serialize($sk), 'remesa');
-
-        Stripe::setApiKey($sk['sk']);
-
-        try {
-            $event = Event::retrieve($data->id);
-            InvoiceStripe::log('Recuperamos event', 'remesa');
-        } catch(ApiErrorException $e) {
-            InvoiceStripe::log('Error al recuperar el evento', 'remesa');
-            $this->sendMailError();
-
-            http_response_code(400);
-            exit();
-        }
-
-        if($event->type == 'payout.paid') {
-
-            $payoutId = $event->data->object->id;;
-            InvoiceStripe::log('payout id: ' . $payoutId, 'remesa');
-
-            //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
-            // $payoutId = 'po_1S3xnSHDuQaJAlOmOfcCD9RU';
-            //        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
-
-            try {
-                $this->processPayout($sk['sk'], $payoutId);
-            }
-            catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
-                $this->sendMailError(serialize($e->getMessage()));
-            }
-
-            echo ' todo ok';
-        }
-
-
-
-        http_response_code(200);
+        /**
+         * todo flujo:
+         * Recibo el payout_id
+         * Comprobamos que ese pago no esté ya registrado
+         * Creo la remesa y me guardo el id de la remesa
+         * Leo el payout_id y meto todos los cargos junto a la remesa en la base de datos.
+         * Mando un email avisando que se ha recibido el cargo.
+         */
 
     }
 
@@ -179,9 +188,7 @@ class WebhookStripeRemesasSepa extends Controller
 
         $errors = [];
 
-
         InvoiceStripe::log('El pago trae ' . count($balanceTransaction->data) . 'cargos.', 'remesa');
-
 
         foreach ($balanceTransaction->data as $transaction) {
 
@@ -240,35 +247,7 @@ class WebhookStripeRemesasSepa extends Controller
 
     }
 
-    /**
-     *  En un pago pueden venir varias procedencias de cobro.
-     *  ch >> Es mediante cargo, que es la que nos interesa
-     *  in >> Es una factura
-     * @param StripeClient $stripe
-     * @param string $source
-     * @param array $errors
-     * @return Invoice|null
-     * @throws ApiErrorException
-     */
-    private function getInvoiceFromTransaction(StripeClient $stripe, string $source, array &$errors): ?Invoice
-    {
-        if (str_starts_with($source, 'ch_')) {
-            $charge = $stripe->charges->retrieve($source, []);
 
-            if (empty($charge->invoice)) {
-                $errors[] = 'El cargo ' . $source . ' no tiene factura';
-                return null;
-            }
-
-            return $stripe->invoices->retrieve($charge->invoice, []);
-        }
-
-        if (str_starts_with($source, 'in_')) {
-            return $stripe->invoices->retrieve($source, []);
-        }
-
-        return null;
-    }
 
     /**
      * @param string $error

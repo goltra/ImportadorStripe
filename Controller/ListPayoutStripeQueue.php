@@ -29,7 +29,14 @@ class ListPayoutStripeQueue extends ListController
         $this->setSettings($viewName, 'btnNew', false);
         $this->setSettings($viewName, 'btnDelete', false);
 
-        
+        /**
+         * todo funcionalidades
+         * - filtro por payout
+         * - filtro por remesa
+         * - filtro por estado
+         * - botón para procesar una linea y que a su vez compruebe si finaliza.
+         * - color de linea dependiendo del estado
+         */
     }
 
 

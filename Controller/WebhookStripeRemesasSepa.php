@@ -115,15 +115,16 @@ class WebhookStripeRemesasSepa extends Controller
 //            InvoiceStripe::log('payout id: ' . $payoutId, 'remesa');
 //
 //            //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
-//            // $payoutId = 'po_1S3xnSHDuQaJAlOmOfcCD9RU';
-//            //        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
-//
-//            try {
+            $payoutId = 'po_1S3xnSHDuQaJAlOmOfcCD9RU';
+            $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
+
+            try {
 //                $this->processPayout($sk['sk'], $payoutId);
-//            }
-//            catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
-//                $this->sendMailError(serialize($e->getMessage()));
-//            }
+                $this->processPayout($sk, $payoutId);
+            }
+            catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
+                $this->sendMailError(serialize($e->getMessage()));
+            }
 //
 //            echo ' todo ok';
 //        }
@@ -174,7 +175,7 @@ class WebhookStripeRemesasSepa extends Controller
         $remesa->descripcion = 'Pago CJL';
         $remesa->fecha = date('Y-m-d H:i:s');
         $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);
-        $remesa->estado = RemesaSEPAAlias::STATUS_REVIEW;
+        $remesa->estado = RemesaSEPAAlias::STATUS_WAIT;
         $remesa->codcuenta = (int)SettingStripeModel::getSetting('cuentaRemesaSEPA');
         $remesa->save();
 
@@ -197,53 +198,18 @@ class WebhookStripeRemesasSepa extends Controller
                 continue;
             }
 
-            if (!($invoice = $this->getInvoiceFromTransaction($stripe, $transaction['source'], $errors))){
-                InvoiceStripe::log('El cargo no tiene factura. ', 'remesa');
-                continue;
-            }
 
-            $facturaId = $invoice->metadata['fs_idFactura'];
-
-            if (!isset($facturaId)){
-                InvoiceStripe::log('La factura ' . $facturaId. ' no está vinculada en stripe.', 'remesa');
-                $errors[$invoice['id']] = '- La factura ' . $facturaId. ' no está vinculada en stripe.';
-                continue;
-            }
-
-            $reciboCliente = new ReciboCliente();
-
-            $where = [new DataBaseWhere('idfactura', $facturaId), new DataBaseWhere('pagado', false)];
-            $reciboCliente->loadFromCode('', $where);
-
-            if (!$reciboCliente->idrecibo){
-                InvoiceStripe::log('La factura ' . $facturaId. ' no tiene un recibo o ya está pagado', 'remesa');
-                $errors[$invoice['id']] = '- La factura ' . $facturaId. ' no tiene un recibo o ya está pagado';
-                continue;
-            }
-
-            if ($reciboCliente->idremesa){
-                InvoiceStripe::log('La factura ' . $facturaId. ' ya tiene una remesa asignada', 'remesa');
-                $errors[$invoice['id']] = '- La factura ' . $facturaId. ' ya tiene una remesa asignada';
-                continue;
-            }
-
-            $reciboCliente->idremesa = $remesa->idremesa;
-
-            if ($reciboCliente->save()){
-                InvoiceStripe::log('Se genera linea de remesa con la factura:  ' . $facturaId, 'remesa');
-            }
         }
 
-        // Calculamos los totales de la remesa
-        $remesa->updateTotal();
 
-        if (SettingStripeModel::getSetting('adminEmail'))
-            $this->sendMail($errors, $remesa->total, $totalIngresoStripe, $remesa->idremesa);
 
-        echo 'Importación completada con éxito <br />';
-        echo 'Errores: <br />';
-        var_dump($errors);
-        echo 'Total transferencia: ' . $remesa->total . ' €';
+//        if (SettingStripeModel::getSetting('adminEmail'))
+//            $this->sendMail($errors, $remesa->total, $totalIngresoStripe, $remesa->idremesa);
+
+//        echo 'Importación completada con éxito <br />';
+//        echo 'Errores: <br />';
+//        var_dump($errors);
+//        echo 'Total transferencia: ' . $remesa->total . ' €';
 
     }
 

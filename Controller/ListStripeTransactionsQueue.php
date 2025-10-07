@@ -3,7 +3,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Dinamic\Lib\ExtendedController\ListController;
 
-class ListPayoutStripeQueue extends ListController
+class ListStripeTransactionsQueue extends ListController
 {
     public function getPageData(): array
     {

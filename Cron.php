@@ -2,7 +2,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe;
 
 use FacturaScripts\Core\Template\CronClass;
-use FacturaScripts\Plugins\ImportadorStripe\Model\PayoutStripeQueue;
+use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
 
 class Cron extends CronClass
 {
@@ -11,7 +11,7 @@ class Cron extends CronClass
         $this->job('procesar-cola-pagos-stripe')
             ->every('1 hour')
             ->run(function () {
-                PayoutStripeQueue::processQueue();
+                StripeTransactionsQueue::processQueue();
             });
     }
 }

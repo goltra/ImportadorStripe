@@ -196,4 +196,19 @@ class StripeTransactionsQueue extends ModelClass
 
         return null;
     }
+
+    /**
+     * Comprueba si existe una fila con el mismo objectId.
+     *
+     * @param string $objectId
+     * @param int $event
+     * @return bool
+     */
+    public static function existsObjectId(string $objectId, int $event): bool
+    {
+        $model = new self();
+        $model->object_id = $objectId;
+        $model->event = $event;
+        return $model->exists();
+    }
 }

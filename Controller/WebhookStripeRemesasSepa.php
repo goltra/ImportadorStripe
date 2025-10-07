@@ -15,7 +15,9 @@ use FacturaScripts\Dinamic\Lib\Email\NewMail;
 use FacturaScripts\Dinamic\Model\InvoiceStripe;
 use FacturaScripts\Dinamic\Model\ReciboCliente;
 use FacturaScripts\Dinamic\Model\RemesaSEPA;
+use FacturaScripts\Dinamic\Model\StripeTransactionsQueue;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
+use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue as StripeTransactionsQueueAlias;
 use FacturaScripts\Plugins\RemesasSEPA\Model\RemesaSEPA as RemesaSEPAAlias;
 use PHPMailer\PHPMailer\Exception;
 use Stripe\Event;
@@ -119,8 +121,13 @@ class WebhookStripeRemesasSepa extends Controller
             $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
 
             try {
+
+                if (StripeTransactionsQueue::existsObjectId($payoutId, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID)){
+                    echo 'Ya está registrado el payout id';
+                }
+                else
+                    $this->processPayout($sk, $payoutId);
 //                $this->processPayout($sk['sk'], $payoutId);
-                $this->processPayout($sk, $payoutId);
             }
             catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
                 $this->sendMailError(serialize($e->getMessage()));

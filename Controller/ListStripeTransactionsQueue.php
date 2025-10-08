@@ -2,6 +2,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Dinamic\Lib\ExtendedController\ListController;
+use FacturaScripts\Dinamic\Model\StripeTransactionsQueue;
 
 class ListStripeTransactionsQueue extends ListController
 {
@@ -20,14 +21,23 @@ class ListStripeTransactionsQueue extends ListController
         $this->createViewsProject();
     }
 
-    protected function createViewsProject(string $viewName = 'ListPayoutStripeQueue'): void
+    protected function createViewsProject(string $viewName = 'ListStripeTransactionsQueue'): void
     {
-        $this->addView($viewName, 'PayoutStripeQueue', 'Pagos de stripe')
+        $this->addView($viewName, 'StripeTransactionsQueue', 'Pagos de stripe')
             ->addOrderBy(['created_at'], 'fecha')
             ->addSearchFields(['created_at']);
 
         $this->setSettings($viewName, 'btnNew', false);
         $this->setSettings($viewName, 'btnDelete', false);
+
+        // 5) filtro por status (valores fijos)
+        $this->addFilterSelect(
+            $viewName,
+            'status',
+            'Estado',
+            'status',
+            StripeTransactionsQueue::getStatusValues()
+        );
 
         /**
          * todo funcionalidades

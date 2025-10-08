@@ -36,12 +36,22 @@ class StripeTransactionsQueue extends ModelClass
     CONST EVENT_PAYOUT_PAID = 1;
     CONST EVENT_INVOICE_PAYMENT_SUCCEEDED = 2;
 
+    static $eventOptions = [
+        self::EVENT_PAYOUT_PAID => 'Pago stripe',
+        self::EVENT_INVOICE_PAYMENT_SUCCEEDED => 'Pago suscripción',
+    ];
+
+    static function eventToString($event)
+    {
+        return self::$eventOptions[$event] ?? '';
+    }
+
 
     /**
      * Tipo de transacción que vamos a proccesar
      */
     CONST TRANSACTION_TYPE_CHARGE = 1;
-    CONST TRANSACTION_TYPE_INVOICE = 2;
+    CONST TRANSACTION_TYPE_PAYMENT_INTENT = 2;
 
 
     /**
@@ -57,6 +67,18 @@ class StripeTransactionsQueue extends ModelClass
     CONST STATUS_SUCCESS = 1; // Procesado correctamente
     CONST STATUS_ERROR = 2; // Ha dado error al ser procesado.
 
+    public static function getStatusValues(){
+     return [
+         self::STATUS_PENDING => 'Pendiente',
+         self::STATUS_SUCCESS => 'Ok',
+         self::STATUS_ERROR   => 'Error',
+     ];
+    }
+
+//    public static function getStatusValues(int $status): string
+//    {
+//        return self::$statusOptions[$status] ?? '';
+//    }
 
     public function clear(): void
     {
@@ -118,10 +140,7 @@ class StripeTransactionsQueue extends ModelClass
 
     private function niIdeaAun()
     {
-//        if (!($invoice = $this->getInvoiceFromTransaction($stripe, $transaction['source'], $errors))){
-//            InvoiceStripe::log('El cargo no tiene factura. ', 'remesa');
-//            continue;
-//        }
+
 //
 //        $facturaId = $invoice->metadata['fs_idFactura'];
 //
@@ -177,7 +196,7 @@ class StripeTransactionsQueue extends ModelClass
      * @return Invoice|null
      * @throws ApiErrorException
      */
-    private function getInvoiceFromTransaction(StripeClient $stripe, string $source, array &$errors): ?Invoice
+    static function getInvoiceFromTransaction(StripeClient $stripe, string $source, array &$errors): ?Invoice
     {
         if (str_starts_with($source, 'ch_')) {
             $charge = $stripe->charges->retrieve($source, []);
@@ -206,9 +225,31 @@ class StripeTransactionsQueue extends ModelClass
      */
     public static function existsObjectId(string $objectId, int $event): bool
     {
-        $model = new self();
-        $model->object_id = $objectId;
-        $model->event = $event;
-        return $model->exists();
+        return static::count([
+                new DataBaseWhere('object_id', $objectId),
+                new DataBaseWhere('event', $event)
+            ]) > 0;
     }
+
+
+    static function setStripeTransaction(
+        $event,
+        $object_id,
+        $object_date,
+        $transaction_type,
+        $transaction_id,
+        $destination,
+        $destination_id,
+    ) {
+        $model = new StripeTransactionsQueue();
+        $model->event = $event;
+        $model->object_id = $object_id;
+        $model->object_date = $object_date;
+        $model->transaction_type = $transaction_type;
+        $model->transaction_id = $transaction_id;
+        $model->destination = $destination;
+        $model->destination_id = $destination_id;
+        return $model->save();
+    }
+
 }

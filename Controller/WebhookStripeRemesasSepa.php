@@ -116,9 +116,10 @@ class WebhookStripeRemesasSepa extends Controller
 //            $payoutId = $event->data->object->id;;
 //            InvoiceStripe::log('payout id: ' . $payoutId, 'remesa');
 //
-//            //        $payoutId = 'po_1QhK6gHDuQaJAlOmouHWIs8M';
-            $payoutId = 'po_1S3xnSHDuQaJAlOmOfcCD9RU';
-            $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
+
+        $payoutId = '';
+
+        $sk = '';
 
             try {
 
@@ -126,7 +127,7 @@ class WebhookStripeRemesasSepa extends Controller
                     echo 'Ya está registrado el payout id';
                 }
                 else
-                    $this->processPayout($sk, $payoutId);
+                    $this->processPayout($sk, $payoutId, 4);
 //                $this->processPayout($sk['sk'], $payoutId);
             }
             catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
@@ -162,7 +163,7 @@ class WebhookStripeRemesasSepa extends Controller
      * @throws RuntimeError
      * @throws SyntaxError
      */
-    private function processPayout($sk, $payoutId): void
+    private function processPayout($sk, $payoutId, $remesaId): void
     {
         InvoiceStripe::log('Entra a processPayout', 'remesa');
         echo '<pre>';
@@ -171,42 +172,63 @@ class WebhookStripeRemesasSepa extends Controller
         //  Pido los datos del pago
         $payout = $stripe->payouts->retrieve($payoutId, []);
 
-
         $totalIngresoStripe = $payout['amount'] / 100;
         InvoiceStripe::log('Total ingreso: ' . $totalIngresoStripe, 'remesa');
 
         //  Creo la remesa
-        $remesa = new RemesaSEPA();
-
-        $remesa->nombre = $payoutId;
-        $remesa->descripcion = 'Pago CJL';
-        $remesa->fecha = date('Y-m-d H:i:s');
-        $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);
-        $remesa->estado = RemesaSEPAAlias::STATUS_WAIT;
-        $remesa->codcuenta = (int)SettingStripeModel::getSetting('cuentaRemesaSEPA');
-        $remesa->save();
+//        $remesa = new RemesaSEPA();
+//
+//        $remesa->nombre = $payoutId;
+//        $remesa->descripcion = 'Pago CJL';
+//        $remesa->fecha = date('Y-m-d H:i:s');
+//        $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);
+//        $remesa->estado = RemesaSEPAAlias::STATUS_WAIT;
+//        $remesa->codcuenta = (int)SettingStripeModel::getSetting('cuentaRemesaSEPA');
+//        $remesa->save();
 
         InvoiceStripe::log('Se genera la remesa. ', 'remesa');
 
         // Pido el balance transaction
-        $balanceTransaction = $stripe->balanceTransactions->all([
-            'payout' => $payoutId,
-            'limit' => 10000,
-        ]);
+        $balanceTransactions = $this->getAllBalanceTransactions($stripe, $payoutId, 50);
 
         $errors = [];
 
-        InvoiceStripe::log('El pago trae ' . count($balanceTransaction->data) . 'cargos.', 'remesa');
+        InvoiceStripe::log('El pago trae ' . count($balanceTransactions) . 'cargos.', 'remesa');
+        $cont = 0;
 
-        foreach ($balanceTransaction->data as $transaction) {
+        foreach ($balanceTransactions as $transaction) {
 
-            if (empty($transaction['source'])){
-                InvoiceStripe::log('No viene source en transaction', 'remesa');
+            if (empty($transaction['source']) || $transaction['type'] === 'payout' || !in_array($transaction['type'], ['payment', 'charge'])){
                 continue;
             }
 
+            $cont++;
+
+            StripeTransactionsQueue::setStripeTransaction(
+                StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID,
+                $payoutId,
+                date('Y-m-d H:i:s'),
+                $transaction['type'] === 'charge' ? StripeTransactionsQueueAlias::TRANSACTION_TYPE_CHARGE : StripeTransactionsQueueAlias::TRANSACTION_TYPE_PAYMENT_INTENT,
+                $transaction['source'],
+                StripeTransactionsQueueAlias::DESTINATION_REMESA,
+                $remesaId,
+            );
+
+
+//            if (!($invoice = StripeTransactionsQueue::getInvoiceFromTransaction($stripe, $transaction['source'], $errors))){
+////                var_dump($transaction['source'] . 'salgo invoice');
+//                InvoiceStripe::log('El cargo no tiene factura. ', 'remesa');
+//                 continue;
+//            }
+
+
+
+//            var_dump($invoice['id']);
+
 
         }
+
+        var_dump('total cargos: ' . $cont);
 
 
 
@@ -219,6 +241,46 @@ class WebhookStripeRemesasSepa extends Controller
 //        echo 'Total transferencia: ' . $remesa->total . ' €';
 
     }
+
+
+    /**
+     * @param $stripe
+     * @param $payoutId
+     * @param int $limitPerRequest
+     * @param string $startingAfter
+     * @param array $accumulated
+     * @return array
+     */
+    private function getAllBalanceTransactions($stripe, $payoutId, int $limitPerRequest = 50, string $startingAfter = '', array $accumulated = []): array
+    {
+        // Stripe permite un máximo de 100 por request
+        $limit = min($limitPerRequest, 100);
+
+        $params = [
+            'payout' => $payoutId,
+            'limit'  => $limit,
+        ];
+
+        if ($startingAfter) {
+            $params['starting_after'] = $startingAfter;
+        }
+
+        // Hacemos la llamada a Stripe
+        $response = $stripe->balanceTransactions->all($params);
+
+        // Acumulamos los resultados
+        $accumulated = array_merge($accumulated, $response->data);
+
+        // Si hay más páginas, seguimos recursivamente
+        if ($response->has_more) {
+            $lastId = end($response->data)->id;
+            return $this->getAllBalanceTransactions($stripe, $payoutId, $limitPerRequest, $lastId, $accumulated);
+        }
+
+        // Si no hay más páginas, devolvemos todos los resultados acumulados
+        return $accumulated;
+    }
+
 
 
 

@@ -27,23 +27,56 @@ class ListStripeTransactionsQueue extends ListController
             ->addOrderBy(['created_at'], 'fecha')
             ->addSearchFields(['created_at']);
 
+        //   Quito botones por defecto
         $this->setSettings($viewName, 'btnNew', false);
         $this->setSettings($viewName, 'btnDelete', false);
 
-        // 5) filtro por status (valores fijos)
+        $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_PENDING, 'warning', 'Pendiente');
+        $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_ERROR, 'danger', 'Pendiente');
+
+        // Filtros
+        $this->addFilterSelect(
+            $viewName,
+            'event',
+            'Tipo de evento',
+            'Event',
+            StripeTransactionsQueue::$eventOptions
+        );
+
+        $this->addFilterSelect(
+            $viewName,
+            'object_id',
+            'Evento',
+            'object_id',
+            $this->getDistinctPayouts()
+        );
+
+        $this->addFilterSelect(
+            $viewName,
+            'transaction_type',
+            'Transaccion',
+            'transaction_type',
+            StripeTransactionsQueue::$tansactionTypeOptions
+        );
+
+        $this->addFilterSelect(
+            $viewName,
+            'destination',
+            'Destino',
+            'destination',
+            StripeTransactionsQueue::$destinoOptions
+        );
+
         $this->addFilterSelect(
             $viewName,
             'status',
             'Estado',
             'status',
-            StripeTransactionsQueue::getStatusValues()
+            StripeTransactionsQueue::$statusOptions
         );
 
         /**
          * todo funcionalidades
-         * - filtro por payout
-         * - filtro por remesa
-         * - filtro por estado
          * - botón para procesar una linea y que a su vez compruebe si finaliza.
          * - color de linea dependiendo del estado
          */
@@ -53,13 +86,13 @@ class ListStripeTransactionsQueue extends ListController
     /**
      * Listado de payouts que hay en la tabla para el filtro
      */
-//    protected function getDistinctPayouts(): array
-//    {
-//        $items = PayoutStripeQueue::all();
-//        $ret = [];
-//        foreach ($items as $line) {
-//            $ret[$line->payout_id] = $line->payout_id;
-//        }
-//        return $ret;
-//    }
+    protected function getDistinctPayouts(): array
+    {
+        $items = StripeTransactionsQueue::all();
+        $ret = [];
+        foreach ($items as $line) {
+            $ret[$line->object_id] = $line->object_id;
+        }
+        return $ret;
+    }
 }

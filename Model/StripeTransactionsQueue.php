@@ -13,7 +13,7 @@ class StripeTransactionsQueue extends ModelClass
 {
     use ModelTrait;
 
-    public int $id;
+    public $id;
     public $event; // Evento (payout, invoice)
     public $object_id; // id del objecto del evento (po_xxx, inv_xxx)
     public $object_date; // fecha en la que se produjo el objecto del evento
@@ -30,47 +30,51 @@ class StripeTransactionsQueue extends ModelClass
      * Origen de los datos de la cola.
      * Ahora mismo tenemos dos, cuando se realiza un payout y cuando se cobra una factura en stripe
      */
-    CONST EVENT_PAYOUT_PAID = 1;
-    CONST EVENT_INVOICE_PAYMENT_SUCCEEDED = 2;
+    CONST EVENT_PAYOUT_PAID = 'Pago';
+    CONST EVENT_INVOICE_PAYMENT_SUCCEEDED = 'Suscripción';
+
 
     static $eventOptions = [
-        self::EVENT_PAYOUT_PAID => 'Pago stripe',
-        self::EVENT_INVOICE_PAYMENT_SUCCEEDED => 'Pago suscripción',
+        self::EVENT_PAYOUT_PAID => self::EVENT_PAYOUT_PAID,
+        self::EVENT_INVOICE_PAYMENT_SUCCEEDED => self::EVENT_INVOICE_PAYMENT_SUCCEEDED,
     ];
-
-    static function eventToString($event)
-    {
-        return self::$eventOptions[$event] ?? '';
-    }
 
 
     /**
      * Tipo de transacción que vamos a proccesar
      */
-    CONST TRANSACTION_TYPE_CHARGE = 1;
-    CONST TRANSACTION_TYPE_PAYMENT_INTENT = 2;
+    CONST TRANSACTION_TYPE_CHARGE = 'Cargo';
+    CONST TRANSACTION_TYPE_PAYMENT_INTENT = 'Payment intent';
+
+    static $tansactionTypeOptions = [
+        self::TRANSACTION_TYPE_CHARGE => self::TRANSACTION_TYPE_CHARGE,
+        self::TRANSACTION_TYPE_PAYMENT_INTENT => self::TRANSACTION_TYPE_PAYMENT_INTENT,
+    ];
 
 
     /**
      * Tipo de destino donde vamos a procesar los datos
      */
-    CONST DESTINATION_REMESA = 1;
-    CONST DESTINATION_INVOICE = 2;
+    CONST DESTINATION_REMESA = 'Remesa';
+    CONST DESTINATION_INVOICE = 'Factura';
+
+    static $destinoOptions = [
+        self::DESTINATION_REMESA => self::DESTINATION_REMESA,
+        self::DESTINATION_INVOICE => self::DESTINATION_INVOICE,
+    ];
 
     /**
      * Estado la linea en la cola
      */
-    CONST STATUS_PENDING = 0; // Pendiente a ser procesado
-    CONST STATUS_SUCCESS = 1; // Procesado correctamente
-    CONST STATUS_ERROR = 2; // Ha dado error al ser procesado.
+    CONST STATUS_PENDING = 'Pendiente'; // Pendiente a ser procesado
+    CONST STATUS_SUCCESS = 'Procesado'; // Procesado correctamente
+    CONST STATUS_ERROR = 'Error'; // Ha dado error al ser procesado.
 
-    public static function getStatusValues(){
-     return [
-         self::STATUS_PENDING => 'Pendiente',
-         self::STATUS_SUCCESS => 'Ok',
-         self::STATUS_ERROR   => 'Error',
-     ];
-    }
+    static $statusOptions = [
+        self::STATUS_PENDING => self::STATUS_PENDING,
+        self::STATUS_SUCCESS => self::STATUS_SUCCESS,
+        self::STATUS_ERROR => self::STATUS_ERROR,
+    ];
 
 //    public static function getStatusValues(int $status): string
 //    {
@@ -217,10 +221,10 @@ class StripeTransactionsQueue extends ModelClass
      * Comprueba si existe una fila con el mismo objectId.
      *
      * @param string $objectId
-     * @param int $event
+     * @param string $event
      * @return bool
      */
-    public static function existsObjectId(string $objectId, int $event): bool
+    public static function existsObjectId(string $objectId, string $event): bool
     {
         return static::count([
                 new DataBaseWhere('object_id', $objectId),

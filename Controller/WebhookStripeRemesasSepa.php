@@ -205,19 +205,6 @@ class WebhookStripeRemesasSepa extends Controller
                 StripeTransactionsQueueAlias::DESTINATION_REMESA,
                 $remesaId,
             );
-
-
-//            if (!($invoice = StripeTransactionsQueue::getInvoiceFromTransaction($stripe, $transaction['source'], $errors))){
-////                var_dump($transaction['source'] . 'salgo invoice');
-//                InvoiceStripe::log('El cargo no tiene factura. ', 'remesa');
-//                 continue;
-//            }
-
-
-
-//            var_dump($invoice['id']);
-
-
         }
 
         var_dump('total cargos: ' . $cont);
@@ -226,11 +213,6 @@ class WebhookStripeRemesasSepa extends Controller
 
 //        if (SettingStripeModel::getSetting('adminEmail'))
 //            $this->sendMail($errors, $remesa->total, $totalIngresoStripe, $remesa->idremesa);
-
-//        echo 'Importación completada con éxito <br />';
-//        echo 'Errores: <br />';
-//        var_dump($errors);
-//        echo 'Total transferencia: ' . $remesa->total . ' €';
 
     }
 

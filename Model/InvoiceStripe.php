@@ -348,6 +348,10 @@ class InvoiceStripe
      * @param $customer_id
      * @param $sk_stripe_index
      * @return mixed || null
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     * @throws \PHPMailer\PHPMailer\Exception
      */
     static private function getStripeClient($customer_id, $sk_stripe_index): mixed
     {

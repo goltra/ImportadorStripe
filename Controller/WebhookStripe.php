@@ -11,6 +11,8 @@ use Exception;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
+use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
+use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue as StripeTransactionsQueueAlias;
 use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
@@ -90,23 +92,32 @@ class WebhookStripe extends Controller
             }
 
             try {
-                $enviarEmail = SettingStripeModel::getSetting('enviarEmail') == 1;
-                InvoiceStripe::generateFSInvoice($id, $sk_index, false, 'TARJETA', $enviarEmail, $event->data->object->customer, 'webhook');
+                StripeTransactionsQueue::setStripeTransaction(
+                    $sk['name'],
+                    StripeTransactionsQueueAlias::EVENT_INVOICE_PAYMENT_SUCCEEDED,
+                    $id,
+                    date('Y-m-d H:i:s'),
+                    StripeTransactionsQueue::TRANSACTION_TYPE_INVOICE,
+                    $id,
+                    StripeTransactionsQueueAlias::DESTINATION_CUSTOMER,
+                    $event->data->object->customer,
+                );
+
                 InvoiceStripe::log('invoice id correcto: ' . $id);
             } catch (Exception $ex) {
-                InvoiceStripe::log('invoice id error: ' . $id);
-                InvoiceStripe::sendMailError($id, serialize($ex->getMessage()));
-                /*
-                 * Tenemos un bug de facturascript que cuando entran dos facturas al mismo tiempo, la segunda coge el código de la primera y luego al guardar da error.
-                 * Por tanto, si el error es ese, le mandamos un código 400 para que stripe vuelva a llamar más tarde.
-                 */
-                if ($ex->getMessage() === 'Error al generar la factura.'){
-                    http_response_code(400);
-                }
-                else{
-                    var_dump($ex->getMessage());
-                    http_response_code(200);
-                }
+//                InvoiceStripe::log('invoice id error: ' . $id);
+//                InvoiceStripe::sendMailError($id, serialize($ex->getMessage()));
+//                /*
+//                 * Tenemos un bug de facturascript que cuando entran dos facturas al mismo tiempo, la segunda coge el código de la primera y luego al guardar da error.
+//                 * Por tanto, si el error es ese, le mandamos un código 400 para que stripe vuelva a llamar más tarde.
+//                 */
+//                if ($ex->getMessage() === 'Error al generar la factura.'){
+//                    http_response_code(400);
+//                }
+//                else{
+//                    var_dump($ex->getMessage());
+//                    http_response_code(200);
+//                }
 
                 exit();
             }

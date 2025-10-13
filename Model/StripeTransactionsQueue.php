@@ -5,7 +5,7 @@ use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\Template\ModelClass;
 use FacturaScripts\Core\Template\ModelTrait;
 use FacturaScripts\Dinamic\Model\ReciboCliente;
-use FacturaScripts\Dinamic\Model\RemesaSEPA;
+use FacturaScripts\Plugins\RemesasSEPA\Model\RemesaSEPA;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Invoice;
 use Stripe\StripeClient;
@@ -46,6 +46,7 @@ class StripeTransactionsQueue extends ModelClass
      */
     CONST TRANSACTION_TYPE_CHARGE = 'Cargo';
     CONST TRANSACTION_TYPE_PAYMENT_INTENT = 'Payment intent';
+    CONST TRANSACTION_TYPE_INVOICE = 'Factura';
 
     static array $tansactionTypeOptions = [
         self::TRANSACTION_TYPE_CHARGE => self::TRANSACTION_TYPE_CHARGE,
@@ -58,6 +59,7 @@ class StripeTransactionsQueue extends ModelClass
      */
     CONST DESTINATION_REMESA = 'Remesa';
     CONST DESTINATION_INVOICE = 'Factura';
+    const DESTINATION_CUSTOMER = 'Cliente';
 
     static array $destinoOptions = [
         self::DESTINATION_REMESA => self::DESTINATION_REMESA,
@@ -143,7 +145,7 @@ class StripeTransactionsQueue extends ModelClass
 
                 if (self::checkAllTransactionCompleted($transaction->event, $transaction->object_id)) {
                     $remesa = new RemesaSEPA();
-                    $remesa->load($transaction->destination_id);
+                    $remesa->loadFromCode($transaction->destination_id);
                     $remesa->estado = RemesaSEPA::STATUS_REVIEW;
                     $remesa->save();
 
@@ -154,6 +156,13 @@ class StripeTransactionsQueue extends ModelClass
                 }
 
                 break;
+            case self::EVENT_INVOICE_PAYMENT_SUCCEEDED:
+                    $enviarEmail = SettingStripeModel::getSetting('enviarEmail') == 1;
+                    //  todo sacar el sk_index
+                    $sk_index = 0;
+                    InvoiceStripe::generateFSInvoice($transaction->transaction_id, $sk_index, false, 'TARJETA', $enviarEmail, $transaction->destination_id, 'webhook');
+                break;
+
 
             default:
                 $transaction->status = self::STATUS_ERROR;

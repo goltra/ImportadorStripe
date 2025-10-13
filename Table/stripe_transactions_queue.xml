@@ -7,6 +7,12 @@
     </column>
 
     <column>
+        <name>stripe_account</name>
+        <type>character varying(150)</type>
+        <null>NO</null>
+    </column>
+
+    <column>
         <name>event</name>
         <type>character varying(50)</type>
         <null>NO</null>

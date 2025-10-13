@@ -23,6 +23,7 @@ class ListStripeTransactionsQueue extends ListController
 
     protected function createViewsProject(string $viewName = 'ListStripeTransactionsQueue'): void
     {
+        //  Orden
         $this->addView($viewName, 'StripeTransactionsQueue', 'Pagos de stripe')
             ->addOrderBy(['created_at'], 'fecha')
             ->addSearchFields(['created_at']);
@@ -31,6 +32,9 @@ class ListStripeTransactionsQueue extends ListController
         $this->setSettings($viewName, 'btnNew', false);
         $this->setSettings($viewName, 'btnDelete', false);
 
+        //   todo Agrego nuevo botón para procesar esa linea
+
+        //  Colores de las filas
         $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_PENDING, 'warning', 'Pendiente');
         $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_ERROR, 'danger', 'Pendiente');
 
@@ -74,12 +78,6 @@ class ListStripeTransactionsQueue extends ListController
             'status',
             StripeTransactionsQueue::$statusOptions
         );
-
-        /**
-         * todo funcionalidades
-         * - botón para procesar una linea y que a su vez compruebe si finaliza.
-         * - color de linea dependiendo del estado
-         */
     }
 
 

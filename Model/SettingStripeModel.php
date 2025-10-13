@@ -80,4 +80,22 @@ class SettingStripeModel
         Tools::settingsSet('stripe', $type, serialize($data));
         Tools::settingsSave();
     }
+
+
+    /**
+     * Devuelve el sk de stripe mediante el token. Esto se usa por ejemplo para las llamadas desde el webhook de stripe
+     * @param $token
+     * @return array
+     */
+    static function loadSkStripeByToken($token): array
+    {
+        foreach (self::getSks()() as $i => $sk){
+            if($sk['token'] === $token)
+                return $sk;
+        }
+
+        return [];
+    }
+
+
 }

@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <view>
-    <!-- Columnas del listado -->
     <columns>
+        <column name="Cuenta de stripe" order="100" display="left">
+            <widget type="text" fieldname="stripe_account" />
+        </column>
 
-        <column name="Tipo de evento" order="100" display="left">
-            <widget type="enum" fieldname="event" />
+        <column name="Tipo de evento" order="105" display="left">
+            <widget type="text" fieldname="event" />
         </column>
 
         <column name="Evento" order="110" display="left">
             <widget type="text" fieldname="object_id" />
         </column>
 
-        <column name="Fecha del pago" order="110" display="left">
+        <column name="Fecha del pago" order="115" display="left">
             <widget type="text" fieldname="object_date" />
         </column>
 
@@ -19,7 +21,7 @@
             <widget type="text" fieldname="transaction_type" />
         </column>
 
-        <column name="Transacción" order="120" display="left">
+        <column name="Transacción" order="125" display="left">
             <widget type="text" fieldname="transaction_id" />
         </column>
 
@@ -27,15 +29,15 @@
             <widget type="text" fieldname="destination" />
         </column>
 
-        <column name="Destino" order="130" display="center">
+        <column name="Destino" order="135" display="center">
             <widget type="text" fieldname="destination_id" />
         </column>
 
-        <column name="Estado" order="130" display="center">
+        <column name="Estado" order="140" display="center">
             <widget type="text" fieldname="status" />
         </column>
 
-        <column name="Tipo de error" order="130" display="center">
+        <column name="Tipo de error" order="145" display="center">
             <widget type="text" fieldname="error_type" />
         </column>
 
@@ -43,20 +45,4 @@
             <widget type="datetime" fieldname="created_at" />
         </column>
     </columns>
-
-    <!-- Opciones especiales por fila: coloreado y botones de acción -->
-    <rows>
-        <!-- Coloreado de filas según valor de 'status' -->
-        <row type="status">
-            <option color="success" fieldname="status">ok</option>
-            <option color="danger" fieldname="status">error</option>
-        </row>
-
-        <!-- Botones por fila (ejecutan acciones del controlador) -->
-<!--        <row type="actions">-->
-<!--            &lt;!&ndash; 'action' debe corresponder a un método/action que implementes en el controlador &ndash;&gt;-->
-<!--            <button action="process" color="success" icon="fas fa-play" label="Procesar" type="action" />-->
-<!--            <button action="mark_error" color="danger" icon="fas fa-exclamation-triangle" label="Marcar error" type="action" />-->
-<!--        </row>-->
-    </rows>
 </view>

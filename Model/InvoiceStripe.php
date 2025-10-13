@@ -49,23 +49,6 @@ class InvoiceStripe
         return SettingStripeModel::getSks();
     }
 
-
-    /**
-     * Devuelve el sk de stripe mediante el token. Esto se usa por ejemplo para las llamadas desde el webhook de stripe
-     * @param $token
-     * @return int
-     */
-    static function loadSkStripeByToken($token): int
-    {
-        $index = -1;
-        foreach (self::loadSkStripe() as $i => $sk){
-            if($sk['token'] === $token)
-                $index = $i;
-        }
-
-        return $index;
-    }
-
     /**
      * Devuelve las facturas de Stripe dentro del intervalo de fecha y a partir del id $start (en caso de recibirlo)
      * que han sido pagadas, tiene un importe > 0 y no tienen el metadato fs_idFactura

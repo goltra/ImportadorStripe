@@ -78,7 +78,7 @@ class WebhookStripeRemesasSepa extends Controller
 //
 //        $source = $_GET['source'];
 //        // $source = 'd4d9a56531e84cd5b842e208b3ee65ef';
-//        $sk_index = InvoiceStripe::loadSkStripeByToken($source);
+//        $sk_index = loadSkStripeByToken::loadSkStripeByToken($source);
 //
 //
 //
@@ -114,8 +114,11 @@ class WebhookStripeRemesasSepa extends Controller
 
         $payoutId = 'po_1S899KHDuQaJAlOmVNHE1ZIN';
 
-        $sk = 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk';
-
+    //        todo esto ha cambiado, ahora loadSkStripeByToken devuelve el sk completo para tener también el name y guardarlo en la cola
+        $sk = [
+            'sk' => 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk',
+            'name' => 'CJL'
+        ];
             try {
 
                 if (StripeTransactionsQueue::existsObjectId($payoutId, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID)){
@@ -159,7 +162,7 @@ class WebhookStripeRemesasSepa extends Controller
     {
         InvoiceStripe::log('Entra a processPayout', 'remesa');
         echo '<pre>';
-        $stripe = new StripeClient($sk);
+        $stripe = new StripeClient($sk['sk']);
 
         //  Pido los datos del pago
         $payout = $stripe->payouts->retrieve($payoutId, []);
@@ -197,6 +200,7 @@ class WebhookStripeRemesasSepa extends Controller
             $cont++;
 
             StripeTransactionsQueue::setStripeTransaction(
+                $sk['name'],
                 StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID,
                 $payoutId,
                 date('Y-m-d H:i:s'),

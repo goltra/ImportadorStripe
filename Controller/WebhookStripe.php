@@ -55,7 +55,9 @@ class WebhookStripe extends Controller
         }
 
         $source = $_GET['source'];
-        $sk_index = InvoiceStripe::loadSkStripeByToken($source);
+
+        //        todo esto ha cambiado, ahora loadSkStripeByToken devuelve el sk completo para tener también el name y guardarlo en la cola
+        $sk_index = SettingStripeModel::loadSkStripeByToken($source);
         InvoiceStripe::log('source: '.$source);
         InvoiceStripe::log('sk_index: '.$sk_index);
 

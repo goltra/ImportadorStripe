@@ -14,16 +14,12 @@ class Cron extends CronClass
 {
     public function run(): void
     {
-//        $this->job('procesar-cola-pagos-stripe')
-//            ->every('1 hour')
-//            ->run(function () {
-//                StripeTransactionsQueue::processQueue();
-//            });
-
-        $this->job('prueba-hora')
+        $this->job('procesar-cola-pagos-stripe')
             ->every('1 hour')
             ->run(function () {
-                echo 'Hola cron: ' . date('Y-m-d H:i:s') . PHP_EOL;
+                $model = new StripeTransactionsQueue();
+                $model->processQueue();
+
                 file_put_contents(__DIR__ . '/log_cron.txt', date('Y-m-d H:i:s') . " - job ejecutado\n", FILE_APPEND);
             });
     }

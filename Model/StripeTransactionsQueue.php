@@ -1,6 +1,7 @@
 <?php
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
+use Exception;
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\Template\ModelClass;
 use FacturaScripts\Core\Template\ModelTrait;
@@ -81,6 +82,7 @@ class StripeTransactionsQueue extends ModelClass
 
 
     CONST ERROR_TYPE_NO_EVENT = 'Evento no reconocido';
+    CONST ERROR_TYPE_NOT_GENERATE_INVOICE = 'Factura no generada';
 
 
     public function clear(): void
@@ -122,7 +124,11 @@ class StripeTransactionsQueue extends ModelClass
         );
     }
 
-    public function processQueue()
+    /**
+     * @return void
+     * @throws ApiErrorException
+     */
+    public function processQueue(): void
     {
         $data = self::getPendingTransactions();
 
@@ -158,9 +164,27 @@ class StripeTransactionsQueue extends ModelClass
                 break;
             case self::EVENT_INVOICE_PAYMENT_SUCCEEDED:
                     $enviarEmail = SettingStripeModel::getSetting('enviarEmail') == 1;
-                    //  todo sacar el sk_index
-                    $sk_index = 0;
-                    InvoiceStripe::generateFSInvoice($transaction->transaction_id, $sk_index, false, 'TARJETA', $enviarEmail, $transaction->destination_id, 'webhook');
+
+                try {
+                    InvoiceStripe::generateFSInvoice(
+                        $transaction->transaction_id,
+                        SettingStripeModel::loadSkStripeByName($transaction->stripe_account),
+                        false,
+                        'TARJETA',
+                        $enviarEmail,
+                        $transaction->destination_id,
+                        'webhook'
+                    );
+
+                    $transaction->status = self::STATUS_SUCCESS;
+                    $transaction->save();
+
+                 } catch (Exception) {
+                    $transaction->status = self::STATUS_ERROR;
+                    $transaction->error_type = self::ERROR_TYPE_NOT_GENERATE_INVOICE;
+                    $transaction->save();
+                }
+
                 break;
 
 

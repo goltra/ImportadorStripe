@@ -89,8 +89,23 @@ class SettingStripeModel
      */
     static function loadSkStripeByToken($token): array
     {
-        foreach (self::getSks()() as $i => $sk){
+        foreach (self::getSks() as $sk){
             if($sk['token'] === $token)
+                return $sk;
+        }
+
+        return [];
+    }
+
+    /**
+     * Devuelve el sk de stripe en base al nombre en facturascripts
+     * @param $name
+     * @return array
+     */
+    static function loadSkStripeByName($name): array
+    {
+        foreach (self::getSks() as $sk){
+            if($sk['name'] === $name)
                 return $sk;
         }
 

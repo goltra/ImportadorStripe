@@ -50,23 +50,24 @@ class WebhookStripe extends Controller
 
         $data = json_decode($payload);
 
-        if(!isset($_GET['source'])){
-            InvoiceStripe::log('No viene source');
-            http_response_code(400);
-            exit();
-        }
+//        if(!isset($_GET['source'])){
+//            InvoiceStripe::log('No viene source');
+//            http_response_code(400);
+//            exit();
+//        }
 
-        $source = $_GET['source'];
+//        $source = $_GET['source'];
+        $source = 'c38113434288e0c3cd160210ba3f2158';
 
         //        todo esto ha cambiado, ahora loadSkStripeByToken devuelve el sk completo para tener también el name y guardarlo en la cola
         $sk = SettingStripeModel::loadSkStripeByToken($source);
 
-        if (empty($sk_index)){
+        if (empty($sk)){
             InvoiceStripe::log('El source recibido no corresponde a ninguno de stripe');
             http_response_code(400);
             exit();
         }
-        
+
         Stripe::setApiKey($sk['sk']);
 
         try {

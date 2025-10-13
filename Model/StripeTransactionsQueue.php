@@ -4,6 +4,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\Template\ModelClass;
 use FacturaScripts\Core\Template\ModelTrait;
+use FacturaScripts\Dinamic\Model\ReciboCliente;
 use FacturaScripts\Dinamic\Model\RemesaSEPA;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Invoice;
@@ -121,18 +122,6 @@ class StripeTransactionsQueue extends ModelClass
 
     public function processQueue()
     {
-        /**
-         * Método al que llama el cron
-         * TODO Flujo:
-         * dependiendo del tipo de transacción voy llamando a stripe hasta llegar al invoice
-         * Si tengo el id de la factura de FS, asigno la factura a la remesa
-         * Actualizo el estado en la tabla
-         * Continuo con el siguiente
-         * ...
-         * Una vez terminado este flujo, compruebo si me quedan más por procesar
-         * En caso que no queden, mando un email avisando que la remesa está terminada y mando un status de como está todo.
-         */
-
         $data = self::getPendingTransactions();
 
         foreach ($data as $transaction) {
@@ -151,6 +140,19 @@ class StripeTransactionsQueue extends ModelClass
         switch ($transaction->event) {
             case self::EVENT_PAYOUT_PAID:
                 $this->processPayoutTransaction($transaction);
+
+                if (self::checkAllTransactionCompleted($transaction->event, $transaction->object_id)) {
+                    $remesa = new RemesaSEPA();
+                    $remesa->load($transaction->destination_id);
+                    $remesa->estado = RemesaSEPA::STATUS_REVIEW;
+                    $remesa->save();
+
+        //         Calculamos los totales de la remesa
+                    $remesa->updateTotal();
+        //           envio email avisando
+
+                }
+
                 break;
 
             default:
@@ -170,55 +172,46 @@ class StripeTransactionsQueue extends ModelClass
     private function processPayoutTransaction($transaction): void
     {
         $invoice = $this->getInvoiceFromPayoutTransaction($transaction->transaction_id);
+        $facturaId = $invoice->metadata['fs_idFactura'];
+
+        if (!isset($facturaId)){
+            InvoiceStripe::log('La factura ' . $facturaId. ' no está vinculada en stripe.', 'remesa');
+        }
+
+        $reciboCliente = new ReciboCliente();
+
+        $where = [new DataBaseWhere('idfactura', $facturaId), new DataBaseWhere('pagado', false)];
+        $reciboCliente->load('', $where);
+
+        if (!$reciboCliente->idrecibo){
+            InvoiceStripe::log('La factura ' . $facturaId. ' no tiene un recibo o ya está pagado', 'remesa');
+        }
+
+        if ($reciboCliente->idremesa){
+            InvoiceStripe::log('La factura ' . $facturaId. ' ya tiene una remesa asignada', 'remesa');
+        }
+
+        $reciboCliente->idremesa = $transaction->destination_id;
+
+        if ($reciboCliente->save()){
+            InvoiceStripe::log('Se genera linea de remesa con la factura:  ' . $facturaId, 'remesa');
+        }
     }
 
 
+    /**
+     * @param $event
+     * @param $objectId
+     * @return bool
+     */
+    private function checkAllTransactionCompleted($event, $objectId): bool {
+        $pending = self::findWhere([
+            new DataBaseWhere('event', $event),
+            new DataBaseWhere('object_id', $objectId),
+            new DataBaseWhere('status', self::STATUS_PENDING),
+        ]);
 
-    private function niIdeaAun()
-    {
-
-//
-//        $facturaId = $invoice->metadata['fs_idFactura'];
-//
-//        if (!isset($facturaId)){
-//            InvoiceStripe::log('La factura ' . $facturaId. ' no está vinculada en stripe.', 'remesa');
-//            $errors[$invoice['id']] = '- La factura ' . $facturaId. ' no está vinculada en stripe.';
-//            continue;
-//        }
-//
-//        $reciboCliente = new ReciboCliente();
-//
-//        $where = [new DataBaseWhere('idfactura', $facturaId), new DataBaseWhere('pagado', false)];
-//        $reciboCliente->loadFromCode('', $where);
-//
-//        if (!$reciboCliente->idrecibo){
-//            InvoiceStripe::log('La factura ' . $facturaId. ' no tiene un recibo o ya está pagado', 'remesa');
-//            $errors[$invoice['id']] = '- La factura ' . $facturaId. ' no tiene un recibo o ya está pagado';
-//            continue;
-//        }
-//
-//        if ($reciboCliente->idremesa){
-//            InvoiceStripe::log('La factura ' . $facturaId. ' ya tiene una remesa asignada', 'remesa');
-//            $errors[$invoice['id']] = '- La factura ' . $facturaId. ' ya tiene una remesa asignada';
-//            continue;
-//        }
-//
-//        $reciboCliente->idremesa = $remesa->idremesa;
-//
-//        if ($reciboCliente->save()){
-//            InvoiceStripe::log('Se genera linea de remesa con la factura:  ' . $facturaId, 'remesa');
-//        }
-
-
-
-
-        //  No va aquí, son trozos de código que me harán falta cuando lo monte todo
-
-        // Cambio el estado de la remesa
-//        $remesa->estado = RemesaSEPAAlias::STATUS_REVIEW;
-
-        // Calculamos los totales de la remesa
-//        $remesa->updateTotal();
+        return empty($pending);
     }
 
 

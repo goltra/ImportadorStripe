@@ -21,9 +21,9 @@ class SettingStripeModel
     /**
      * Obtiene el sk por nombre
      * @param $name
-     * @return mixed|null
+     * @return mixed
      */
-    public static function getSkIndexByName($name)
+    public static function getSkIndexByName($name): mixed
     {
         $res = null;
 
@@ -35,7 +35,7 @@ class SettingStripeModel
         return $res;
     }
 
-    public static function removeSk($name)
+    public static function removeSk($name): void
     {
         $sks = self::getSks();
         foreach ($sks as $sk) {
@@ -48,7 +48,7 @@ class SettingStripeModel
         self::save($sks, 'sks');
     }
 
-    public static function addSk($name, $sk, $serie)
+    public static function addSk($name, $sk, $serie): void
     {
         $sks = self::getSks();
         if (is_array($sks)) {
@@ -62,20 +62,20 @@ class SettingStripeModel
      * @param $setting
      * @return mixed|string
      */
-    public static function getSetting($setting)
+    public static function getSetting($setting): mixed
     {
         $settings_serialized = Tools::settings('stripe', 'settings');
         return ($settings_serialized !== null) ? unserialize($settings_serialized)[$setting] : '';
     }
 
-    public static function addSettings($settings)
+    public static function addSettings($settings): void
     {
         if (is_array($settings)) {
             self::save($settings, 'settings');
         }
     }
 
-    private static function save($data, $type)
+    private static function save($data, $type): void
     {
         Tools::settingsSet('stripe', $type, serialize($data));
         Tools::settingsSave();

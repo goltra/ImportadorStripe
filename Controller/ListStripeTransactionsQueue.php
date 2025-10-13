@@ -2,7 +2,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Dinamic\Lib\ExtendedController\ListController;
-use FacturaScripts\Dinamic\Model\StripeTransactionsQueue;
+use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
 
 class ListStripeTransactionsQueue extends ListController
 {
@@ -15,7 +15,7 @@ class ListStripeTransactionsQueue extends ListController
         return $data;
     }
 
-    protected function createViews()
+    protected function createViews(): void
     {
         // Se crean las pestañas usando funciones separadas para mayor claridad
         $this->createViewsProject();

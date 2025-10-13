@@ -8,6 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\KernelException;
 use FacturaScripts\Core\Plugins;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Serie;
@@ -17,18 +18,21 @@ use FacturaScripts\Core\Session;
 class SettingParams extends Controller
 {
 
-    public $sks_stripe = [];
-    public $series = [];
-    public $codcliente = '';
-    public $codproducto = '';
-    public $enviarEmail;
-    public $adminEmail = '';
-    public $mostrarStripeCus;
-    public $remesasSEPA = false;
-    public $cuentaRemesaSEPA = '';
+    public array $sks_stripe = [];
+    public array $series = [];
+    public string $codcliente = '';
+    public string $codproducto = '';
+    public bool $enviarEmail;
+    public string $adminEmail = '';
+    public bool $mostrarStripeCus;
+    public bool $remesasSEPA = false;
+    public string $cuentaRemesaSEPA = '';
 
 
-    public function privateCore(&$response, $user, $permissions)
+    /**
+     * @throws KernelException
+     */
+    public function privateCore(&$response, $user, $permissions): void
     {
         $this->init();
         parent::privateCore($response, $user, $permissions);
@@ -44,7 +48,7 @@ class SettingParams extends Controller
         return $pageData;
     }
 
-    private function init()
+    private function init(): void
     {
         $this->title='Configuración de Claves de stripe';
         $action = $this->request->query->get('action');
@@ -77,12 +81,12 @@ class SettingParams extends Controller
         }
     }
 
-    private function getAllSks()
+    private function getAllSks(): void
     {
         $this->sks_stripe = SettingStripeModel::getSks();
     }
 
-    private function getAllSettings()
+    private function getAllSettings(): void
     {
         $this->codcliente = SettingStripeModel::getSetting('codcliente');
         $this->codproducto = SettingStripeModel::getSetting('codproducto');
@@ -93,7 +97,7 @@ class SettingParams extends Controller
         $this->cuentaRemesaSEPA = SettingStripeModel::getSetting('cuentaRemesaSEPA') ?? '';
     }
 
-    private function setSkStripe()
+    private function setSkStripe(): void
     {
         $data = $this->request->request->all();
         $name = $data['name'];
@@ -110,7 +114,8 @@ class SettingParams extends Controller
 
     }
 
-    private function setSettings(){
+    private function setSettings(): void
+    {
         $data = $this->request->request->all();
 
         $this->codcliente = $data['codcliente'];
@@ -165,7 +170,7 @@ class SettingParams extends Controller
 
     }
 
-    private function delSkStripe($name)
+    private function delSkStripe($name): void
     {
         SettingStripeModel::removeSk($name);
         $this->getAllSks();

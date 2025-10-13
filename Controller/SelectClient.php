@@ -7,15 +7,22 @@
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
+use Exception;
 use FacturaScripts\Core\Controller\ListCliente as ParentListCliente;
 use FacturaScripts\Core\Tools;
 
 
 class SelectClient extends ParentListCliente
 {
-    private $postAction = '';
+    private string $postAction = '';
 
-    public function privateCore(&$response, $user, $permissions)
+    /**
+     * @param $response
+     * @param $user
+     * @param $permissions
+     * @return void
+     */
+    public function privateCore(&$response, $user, $permissions): void
     {
         parent::privateCore($response, $user, $permissions);
     }
@@ -36,7 +43,10 @@ class SelectClient extends ParentListCliente
         return $pageData;
     }
 
-    private function customSettingsView()
+    /**
+     * @throws Exception
+     */
+    private function customSettingsView(): void
     {
         //
         $this->addButton('ListCliente', [
@@ -52,7 +62,7 @@ class SelectClient extends ParentListCliente
         $this->setSettings('ListCliente', 'clickable', false);
     }
 
-    protected function execPreviousAction($action)
+    protected function execPreviousAction($action): void
     {
 
         if($action == "" && $this->request->query->get('action')){
@@ -71,7 +81,7 @@ class SelectClient extends ParentListCliente
         $this->init();
     }
 
-    protected function execAfterAction($action)
+    protected function execAfterAction($action): void
     {
         switch ($action) {
             case 'selectClient':
@@ -87,12 +97,12 @@ class SelectClient extends ParentListCliente
 
     }
 
-    protected function loadData($viewName, $view)
+    protected function loadData($viewName, $view): void
     {
         parent::loadData($viewName, $view);
     }
 
-    private function selectClient()
+    private function selectClient(): void
     {
         $customer_id = $this->request->request->get('code')[0];
 
@@ -103,7 +113,7 @@ class SelectClient extends ParentListCliente
         }
     }
 
-    private function changeClient()
+    private function changeClient(): void
     {
         $customer_id = $this->request->request->get('code')[0];
         $stripe_customer_id = $this->request->query->get('stripe_customer_id');

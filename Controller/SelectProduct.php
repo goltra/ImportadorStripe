@@ -7,15 +7,21 @@
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
+use Exception;
 use FacturaScripts\Core\Controller\ListProducto as ParentListProducto;
-use FacturaScripts\Core\Model\Variante;
 use FacturaScripts\Core\Tools;
 
 
 class SelectProduct extends ParentListProducto
 {
 
-    public function privateCore(&$response, $user, $permissions)
+    /**
+     * @param $response
+     * @param $user
+     * @param $permissions
+     * @return void
+     */
+    public function privateCore(&$response, $user, $permissions): void
     {
         parent::privateCore($response, $user, $permissions);
     }
@@ -37,7 +43,11 @@ class SelectProduct extends ParentListProducto
         session_start();
     }
 
-    private function customSettingsView()
+    /**
+     * @return void
+     * @throws Exception
+     */
+    private function customSettingsView(): void
     {
         //
         $this->addButton('ListProducto', [
@@ -53,13 +63,13 @@ class SelectProduct extends ParentListProducto
         $this->setSettings('ListProducto', 'clickable', false);
     }
 
-    protected function execPreviousAction($action)
+    protected function execPreviousAction($action): void
     {
         parent::execPreviousAction($action);
         $this->init();
     }
 
-    protected function execAfterAction($action)
+    protected function execAfterAction($action): void
     {
         switch ($action) {
             case 'selectProduct':
@@ -78,12 +88,12 @@ class SelectProduct extends ParentListProducto
 
     }
 
-    protected function loadData($viewName, $view)
+    protected function loadData($viewName, $view): void
     {
         parent::loadData($viewName, $view);
     }
 
-    private function selectProduct()
+    private function selectProduct(): void
     {
         $id = $this->request->request->get('code')[0];
 

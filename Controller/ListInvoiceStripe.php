@@ -9,9 +9,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use Exception;
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
-use FacturaScripts\Core\Model\Cliente;
-use FacturaScripts\Core\Model\ReciboCliente;
+use FacturaScripts\Core\KernelException;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\ClientModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\Helper;
@@ -39,14 +37,17 @@ class ListInvoiceStripe extends Controller
         return $pageData;
     }
 
-    public function privateCore(&$response, $user, $permissions)
+    /**
+     * @throws KernelException
+     */
+    public function privateCore(&$response, $user, $permissions): void
     {
         parent::privateCore($response, $user, $permissions);
         $this->init();
     }
 
 
-    private function init()
+    private function init(): void
     {
         session_start();
 
@@ -63,7 +64,7 @@ class ListInvoiceStripe extends Controller
                     $this->sk_stripe_index = $this->request->query->get('sk_stripe_index');
                 } else {
                     Tools::log()->error('No se ha recibido el sk correspondiente');
-                    return false;
+                    return;
                 }
 
                 $start = $this->request->query->get('start');
@@ -99,7 +100,7 @@ class ListInvoiceStripe extends Controller
                     $res = ClientModel::linkFsClientToStripeCustomer($stripe_customer_id, $_SESSION['sk_stripe_index'], $customer_id);
 
                     if ($res['status'] === true) {
-                        $this->toolBox()->log()->info('Cliente vinculado correctamente.');
+                        Tools::log()->info('Cliente vinculado correctamente.');
                     } else {
                         Tools::log()->error($res['message']);
                     }
@@ -126,10 +127,10 @@ class ListInvoiceStripe extends Controller
      * @param null $f_ini
      * @param null $f_fin
      */
-    public function getData($sk_stripe_index, $start = null, $limit = 5, $f_ini = null, $f_fin = null)
+    public function getData($sk_stripe_index, $start = null, int $limit = 5, $f_ini = null, $f_fin = null): void
     {
         try {
-            $data = InvoiceStripe::loadInvoicesNotProcessed($sk_stripe_index, $start, $limit, $f_ini, $f_fin);
+            $data = InvoiceStripe::loadInvoicesNotProcessed($sk_stripe_index, $start, $limit, (int)$f_ini, $f_fin);
 
             if ($data['status'] === false) {
                 Tools::log()->error('No se han podido cargar las facturas ' . $data['message']);

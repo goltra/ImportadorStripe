@@ -10,20 +10,14 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Dinamic\Lib\Email\NewMail;
 use FacturaScripts\Dinamic\Model\InvoiceStripe;
-use FacturaScripts\Dinamic\Model\ReciboCliente;
 use FacturaScripts\Dinamic\Model\RemesaSEPA;
-use FacturaScripts\Dinamic\Model\StripeTransactionsQueue;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
+use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue as StripeTransactionsQueueAlias;
-use FacturaScripts\Plugins\RemesasSEPA\Model\RemesaSEPA as RemesaSEPAAlias;
 use PHPMailer\PHPMailer\Exception;
-use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
-use Stripe\Invoice;
-use Stripe\Stripe;
 use Stripe\StripeClient;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
@@ -47,13 +41,14 @@ class WebhookStripeRemesasSepa extends Controller
         return $pageData;
     }
 
-    public function publicCore(&$response)
+    public function publicCore(&$response): void
     {
         $this->init();
     }
 
 
-    public function init(){
+    public function init(): void
+    {
 //        InvoiceStripe::log('entro al init', 'remesa');
 //
 //        if (!SettingStripeModel::getSetting('remesasSEPA')){
@@ -156,12 +151,9 @@ class WebhookStripeRemesasSepa extends Controller
     /**
      * @param $sk
      * @param $payoutId
+     * @param $remesaId
      * @return void
      * @throws ApiErrorException
-     * @throws Exception
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
      */
     private function processPayout($sk, $payoutId, $remesaId): void
     {

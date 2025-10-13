@@ -29,13 +29,14 @@ class WebhookStripe extends Controller
         return $pageData;
     }
 
-    public function publicCore(&$response)
+    public function publicCore(&$response): void
     {
         $this->init();
     }
 
 
-    public function init(){
+    public function init(): void
+    {
 
         $payload = @file_get_contents('php://input');
 

@@ -8,20 +8,28 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
+use Stripe\Exception\ApiErrorException;
 
 class ClientModel
 {
 
-    public $id;
-    public $email;
-    public $fs_idClient;
+    public int $id;
+    public string $email;
+    public int $fs_idClient;
 
     static function loadSkStripe()
     {
         return SettingStripeModel::getSks();
     }
 
-    static public function loadStripeCustomers($sk_stripe_index, $start = null, int $limit = 10)
+    /**
+     * @param $sk_stripe_index
+     * @param $start
+     * @param int $limit
+     * @return array|null
+     * @throws ApiErrorException
+     */
+    static public function loadStripeCustomers($sk_stripe_index, $start = null, int $limit = 10): ?array
     {
         $limit = 100000;
         $stripe_ids = self::loadSkStripe();
@@ -55,7 +63,7 @@ class ClientModel
      * @param $data
      * @return array Devuelve un array vacio o con objetos de tipo ProductModel
      */
-    static private function processStripeObjects($data)
+    static private function processStripeObjects($data): array
     {
         $res = [];
         foreach ($data as $item) {
@@ -69,7 +77,7 @@ class ClientModel
         return $res;
     }
 
-    static public function linkFsClientToStripeCustomer(string $stripe_customer_id, int $sk_stripe_index, string $fs_idFsCustomer)
+    static public function linkFsClientToStripeCustomer(string $stripe_customer_id, int $sk_stripe_index, string $fs_idFsCustomer): array
     {
         $stripe_ids = self::loadSkStripe();
         $sk_stripe = $stripe_ids[$sk_stripe_index];

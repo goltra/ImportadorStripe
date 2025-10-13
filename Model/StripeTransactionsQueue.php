@@ -4,10 +4,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\Template\ModelClass;
 use FacturaScripts\Core\Template\ModelTrait;
-use FacturaScripts\Dinamic\Model\InvoiceStripe;
-use FacturaScripts\Dinamic\Model\ReciboCliente;
 use FacturaScripts\Dinamic\Model\RemesaSEPA;
-use FacturaScripts\Plugins\RemesasSEPA\Model\RemesaSEPA as RemesaSEPAAlias;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Invoice;
 use Stripe\StripeClient;
@@ -16,7 +13,7 @@ class StripeTransactionsQueue extends ModelClass
 {
     use ModelTrait;
 
-    public $id;
+    public int $id;
     public $event; // Evento (payout, invoice)
     public $object_id; // id del objecto del evento (po_xxx, inv_xxx)
     public $object_date; // fecha en la que se produjo el objecto del evento

@@ -31,6 +31,7 @@ class ListStripeTransactionsQueue extends ListController
         //   Quito botones por defecto
         $this->setSettings($viewName, 'btnNew', false);
         $this->setSettings($viewName, 'btnDelete', false);
+        $this->setSettings($viewName, 'clickable', false);
 
         //   todo Agrego nuevo botón para procesar esa linea
 

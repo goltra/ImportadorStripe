@@ -149,6 +149,9 @@ class StripeTransactionsQueue extends ModelClass
             case self::EVENT_PAYOUT_PAID:
                 $this->processPayoutTransaction($transaction);
 
+                $transaction->status = self::STATUS_SUCCESS;
+                $transaction->save();
+
                 if (self::checkAllTransactionCompleted($transaction->event, $transaction->object_id)) {
                     $remesa = new RemesaSEPA();
                     $remesa->loadFromCode($transaction->destination_id);
@@ -204,7 +207,8 @@ class StripeTransactionsQueue extends ModelClass
      */
     private function processPayoutTransaction($transaction): void
     {
-        $invoice = $this->getInvoiceFromPayoutTransaction($transaction->transaction_id);
+        $sk = SettingStripeModel::loadSkStripeByName($transaction->stripe_account);
+        $invoice = $this->getInvoiceFromPayoutTransaction($transaction->transaction_id, $sk );
         $facturaId = $invoice->metadata['fs_idFactura'];
 
         if (!isset($facturaId)){
@@ -214,7 +218,7 @@ class StripeTransactionsQueue extends ModelClass
         $reciboCliente = new ReciboCliente();
 
         $where = [new DataBaseWhere('idfactura', $facturaId), new DataBaseWhere('pagado', false)];
-        $reciboCliente->load('', $where);
+        $reciboCliente->loadWhere($where);
 
         if (!$reciboCliente->idrecibo){
             InvoiceStripe::log('La factura ' . $facturaId. ' no tiene un recibo o ya está pagado', 'remesa');
@@ -256,10 +260,8 @@ class StripeTransactionsQueue extends ModelClass
      * @return Invoice|null
      * @throws ApiErrorException
      */
-    public function getInvoiceFromPayoutTransaction(string $source): ?Invoice
+    public function getInvoiceFromPayoutTransaction(string $source, string $sk): ?Invoice
     {
-        //  todo agregar sk de stripe a la cola
-        $sk = 'jose';
         $stripe = new StripeClient($sk);
 
         if (str_starts_with($source, 'ch_')) {

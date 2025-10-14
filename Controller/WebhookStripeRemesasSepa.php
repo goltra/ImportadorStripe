@@ -125,7 +125,6 @@ class WebhookStripeRemesasSepa extends Controller
                 echo 'Ya está registrado el payout id';
             }
             else
-//                    $this->processPayout($sk, $payoutId, 4);
                 $this->processPayout($sk, $payoutId);
         }
         catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {

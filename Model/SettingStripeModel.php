@@ -17,24 +17,6 @@ class SettingStripeModel
         return ($sk_serialized !== null) ? unserialize($sk_serialized) : [];
     }
 
-
-    /**
-     * Obtiene el sk por nombre
-     * @param $name
-     * @return mixed
-     */
-    public static function getSkIndexByName($name): mixed
-    {
-        $res = null;
-
-        foreach (self::getSks() as $index => $sk){
-            if ($sk['name'] === $name)
-                $res = $index;
-        }
-
-        return $res;
-    }
-
     public static function removeSk($name): void
     {
         $sks = self::getSks();
@@ -107,6 +89,21 @@ class SettingStripeModel
         foreach (self::getSks() as $i => $sk){
             if($sk['name'] === $name)
                 return $i;
+        }
+
+        return null;
+    }
+
+    /**
+     * Devuelve el sk de stripe en base al nombre en facturascripts
+     * @param $name
+     * @return string|null
+     */
+    static function loadSkStripeByName($name): string| null
+    {
+        foreach (self::getSks() as $i => $sk){
+            if($sk['name'] === $name)
+                return $sk['sk'];
         }
 
         return null;

@@ -26,18 +26,18 @@ use Twig\Error\SyntaxError;
 
 class InvoiceStripe
 {
-    public int $id;
-    public int $numero;
+    public string $id;
+    public string $numero;
     public string $date;
     public float $amount;
-    public int $status;
-    public int $customer_id;
+    public string $status;
+    public string $customer_id;
     public string $customer_email;
     public int|null $fs_idFsCustomer = null;
-    public int $fs_idFactura;
+    public int|null $fs_idFactura;
     public string $fs_customerName;
     public float $discount=0;
-    public int $lines;
+    public array $lines = [];
 
 
     public function __construct($data = [])
@@ -225,6 +225,8 @@ class InvoiceStripe
                         $fs_product_id = '';
                         $tax = null;
 
+
+
                         // El iva puede venir a nivel de factura o a nivel de linea. La prioridad va a ser:
                         // - Iva en linea
                         // - Iva en factura
@@ -255,7 +257,7 @@ class InvoiceStripe
                             } else {
                                 // Comprueba si el fs_product_id existe en fs
                                 $product = new Producto();
-                                if (!$product->loadFromCode($fs_product_id)){
+                                if (!$product->load($fs_product_id)){
                                     self::log('El producto FS relacionado con el producto de stripe no existe');
                                     $errors[] = ['message' => 'El producto FS relacionado con el producto de stripe no existe', 'data' => $fs_product_id];
                                 }
@@ -326,7 +328,6 @@ class InvoiceStripe
                     self::log('Factura de stripe procesada correctamente');
                     self::log('Errores: '.count($errors));
                 }
-
 
                 if (count($errors) == 0)
                     $res[] = $invoice;

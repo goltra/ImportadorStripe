@@ -100,16 +100,16 @@ class SettingStripeModel
     /**
      * Devuelve el sk de stripe en base al nombre en facturascripts
      * @param $name
-     * @return array
+     * @return int|null
      */
-    static function loadSkStripeByName($name): array
+    static function loadSkIndexStripeByName($name): int| null
     {
-        foreach (self::getSks() as $sk){
+        foreach (self::getSks() as $i => $sk){
             if($sk['name'] === $name)
-                return $sk;
+                return $i;
         }
 
-        return [];
+        return null;
     }
 
 

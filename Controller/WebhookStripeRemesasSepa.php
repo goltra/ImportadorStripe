@@ -119,34 +119,20 @@ class WebhookStripeRemesasSepa extends Controller
             'sk' => 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk',
             'name' => 'CJL'
         ];
-            try {
+        try {
 
-                if (StripeTransactionsQueue::existsObjectId($payoutId, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID)){
-                    echo 'Ya está registrado el payout id';
-                }
-                else
-                    $this->processPayout($sk, $payoutId, 4);
-//                $this->processPayout($sk['sk'], $payoutId);
+            if (StripeTransactionsQueue::existsObjectId($payoutId, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID)){
+                echo 'Ya está registrado el payout id';
             }
-            catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
-                $this->sendMailError(serialize($e->getMessage()));
-            }
-//
-//            echo ' todo ok';
-//        }
-//
-//
-//
-//        http_response_code(200);
+            else
+//                    $this->processPayout($sk, $payoutId, 4);
+                $this->processPayout($sk, $payoutId);
+        }
+        catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
+            $this->sendMailError(serialize($e->getMessage()));
+        }
 
-        /**
-         * todo flujo:
-         * Recibo el payout_id
-         * Comprobamos que ese pago no esté ya registrado
-         * Creo la remesa y me guardo el id de la remesa
-         * Leo el payout_id y meto todos los cargos junto a la remesa en la base de datos.
-         * Mando un email avisando que se ha recibido el cargo.
-         */
+        http_response_code(200);
 
     }
 
@@ -154,14 +140,12 @@ class WebhookStripeRemesasSepa extends Controller
     /**
      * @param $sk
      * @param $payoutId
-     * @param $remesaId
      * @return void
      * @throws ApiErrorException
      */
-    private function processPayout($sk, $payoutId, $remesaId): void
+    private function processPayout($sk, $payoutId): void
     {
         InvoiceStripe::log('Entra a processPayout', 'remesa');
-        echo '<pre>';
         $stripe = new StripeClient($sk['sk']);
 
         //  Pido los datos del pago
@@ -171,22 +155,20 @@ class WebhookStripeRemesasSepa extends Controller
         InvoiceStripe::log('Total ingreso: ' . $totalIngresoStripe, 'remesa');
 
         //  Creo la remesa
-//        $remesa = new RemesaSEPA();
-//
-//        $remesa->nombre = $payoutId;
-//        $remesa->descripcion = 'Pago CJL';
-//        $remesa->fecha = date('Y-m-d H:i:s');
-//        $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);
-//        $remesa->estado = RemesaSEPAAlias::STATUS_WAIT;
-//        $remesa->codcuenta = (int)SettingStripeModel::getSetting('cuentaRemesaSEPA');
-//        $remesa->save();
+        $remesa = new RemesaSEPA();
+
+        $remesa->nombre = $payoutId;
+        $remesa->descripcion = 'Pago CJL';
+        $remesa->fecha = date('Y-m-d H:i:s');
+        $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);
+        $remesa->estado = RemesaSEPA::STATUS_WAIT;
+        $remesa->codcuenta = (int)SettingStripeModel::getSetting('cuentaRemesaSEPA');
+        $remesa->save();
 
         InvoiceStripe::log('Se genera la remesa. ', 'remesa');
 
         // Pido el balance transaction
         $balanceTransactions = $this->getAllBalanceTransactions($stripe, $payoutId, 50);
-
-        $errors = [];
 
         InvoiceStripe::log('El pago trae ' . count($balanceTransactions) . 'cargos.', 'remesa');
         $cont = 0;
@@ -207,7 +189,7 @@ class WebhookStripeRemesasSepa extends Controller
                 $transaction['type'] === 'charge' ? StripeTransactionsQueueAlias::TRANSACTION_TYPE_CHARGE : StripeTransactionsQueueAlias::TRANSACTION_TYPE_PAYMENT_INTENT,
                 $transaction['source'],
                 StripeTransactionsQueueAlias::DESTINATION_REMESA,
-                $remesaId,
+                $remesa->idremesa,
             );
         }
 

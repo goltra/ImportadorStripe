@@ -12,7 +12,6 @@ use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
-use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue as StripeTransactionsQueueAlias;
 use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
@@ -33,7 +32,15 @@ class WebhookStripe extends Controller
 
     public function publicCore(&$response): void
     {
-        $this->init();
+
+        $this->initTest();
+//        $this->init();
+    }
+
+    public function initTest()
+    {
+        $model = new StripeTransactionsQueue();
+        $model->processQueue();
     }
 
 
@@ -91,12 +98,12 @@ class WebhookStripe extends Controller
             try {
                 StripeTransactionsQueue::setStripeTransaction(
                     $sk['name'],
-                    StripeTransactionsQueueAlias::EVENT_INVOICE_PAYMENT_SUCCEEDED,
+                    StripeTransactionsQueue::EVENT_INVOICE_PAYMENT_SUCCEEDED,
                     $id,
                     date('Y-m-d H:i:s'),
                     StripeTransactionsQueue::TRANSACTION_TYPE_INVOICE,
                     $id,
-                    StripeTransactionsQueueAlias::DESTINATION_CUSTOMER,
+                    StripeTransactionsQueue::DESTINATION_CUSTOMER,
                     $event->data->object->customer,
                 );
 

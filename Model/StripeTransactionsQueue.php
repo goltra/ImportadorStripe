@@ -163,12 +163,12 @@ class StripeTransactionsQueue extends ModelClass
 
                 break;
             case self::EVENT_INVOICE_PAYMENT_SUCCEEDED:
-                    $enviarEmail = SettingStripeModel::getSetting('enviarEmail') == 1;
 
                 try {
+                    $enviarEmail = SettingStripeModel::getSetting('enviarEmail') == 1;
                     InvoiceStripe::generateFSInvoice(
                         $transaction->transaction_id,
-                        SettingStripeModel::loadSkStripeByName($transaction->stripe_account),
+                        SettingStripeModel::loadSkIndexStripeByName($transaction->stripe_account),
                         false,
                         'TARJETA',
                         $enviarEmail,

@@ -6,6 +6,7 @@ package-lock.json
 package-lock.json
 *.cache
 *.lock
+log-cron.txt
 
 # eclipse
 .buildpath

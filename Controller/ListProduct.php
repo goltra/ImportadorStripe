@@ -27,7 +27,7 @@ class ListProduct extends Controller
         $pageData = parent::getPageData();
         $pageData['title'] = 'Productos';
         $pageData['menu'] = 'Stripe';
-        $pageData['icon'] = 'fas fa-search';
+        $pageData['icon'] = 'fa-solid fa-cubes';
         $pageData['showonmenu'] = true;
         return $pageData;
     }

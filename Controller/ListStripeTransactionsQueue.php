@@ -9,9 +9,9 @@ class ListStripeTransactionsQueue extends ListController
     public function getPageData(): array
     {
         $data = parent::getPageData();
-        $data["title"] = "Pagos de stripe";
+        $data["title"] = "Cola de transacciones";
         $data["menu"] = "Stripe";
-        $data["icon"] = "fas fa-file-signature";
+        $data["icon"] = "fa-solid fa-bars-staggered";
         return $data;
     }
 

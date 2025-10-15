@@ -43,7 +43,7 @@ class SettingParams extends Controller
         $pageData = parent::getPageData();
         $pageData['title'] = 'Ajustes';
         $pageData['menu'] = 'Stripe';
-        $pageData['icon'] = 'fas fa-search';
+        $pageData['icon'] = 'fa-solid fa-sliders';
         $pageData['showonmenu'] = true;
         return $pageData;
     }

@@ -32,7 +32,7 @@ class ListInvoiceStripe extends Controller
         $pageData = parent::getPageData();
         $pageData['title'] = 'Facturas';
         $pageData['menu'] = 'Stripe';
-        $pageData['icon'] = 'fas fa-search';
+        $pageData['icon'] = 'fa-solid fa-file-invoice-dollar';
         $pageData['showonmenu'] = true;
         return $pageData;
     }

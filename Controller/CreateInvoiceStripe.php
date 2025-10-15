@@ -184,6 +184,9 @@ class CreateInvoiceStripe extends Controller
      * Devuelve false en caso de fallar. Si todo va bien devuelve el código de la factura creada.
      * @param $id_invoice_stripe
      * @param $sk_stripe_index
+     * @param $mark_as_paid
+     * @param $payment_method
+     * @param $send_by_email
      * @return void | integer
      */
     private function generateFSInvoice($id_invoice_stripe, $sk_stripe_index, $mark_as_paid, $payment_method, $send_by_email)

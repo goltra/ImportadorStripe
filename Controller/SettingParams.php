@@ -17,7 +17,6 @@ use FacturaScripts\Core\Session;
 
 class SettingParams extends Controller
 {
-
     public array $sks_stripe = [];
     public array $series = [];
     public string $codcliente = '';
@@ -27,7 +26,6 @@ class SettingParams extends Controller
     public bool $mostrarStripeCus;
     public bool $remesasSEPA = false;
     public string $cuentaRemesaSEPA = '';
-
 
     /**
      * @throws KernelException

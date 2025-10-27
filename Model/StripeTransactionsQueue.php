@@ -28,7 +28,6 @@ class StripeTransactionsQueue extends ModelClass
     public string|null $error_type; // tipos de error que puede dar en la cola
     public string|null $created_at; // fecha de creación
 
-
     /**
      * Origen de los datos de la cola.
      * Ahora mismo tenemos dos, cuando se realiza un payout y cuando se cobra una factura en stripe
@@ -257,6 +256,7 @@ class StripeTransactionsQueue extends ModelClass
      *  ch >> Es mediante cargo, que es la que nos interesa
      *  in >> Es una factura
      * @param string $source
+     * @param string $sk
      * @return Invoice|null
      * @throws ApiErrorException
      */
@@ -296,7 +296,6 @@ class StripeTransactionsQueue extends ModelClass
                 new DataBaseWhere('event', $event)
             ]) > 0;
     }
-
 
     /**
      * @param $stripe_account

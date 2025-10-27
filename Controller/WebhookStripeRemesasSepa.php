@@ -127,7 +127,7 @@ class WebhookStripeRemesasSepa extends Controller
             else
                 $this->processPayout($sk, $payoutId);
         }
-        catch (Exception|ApiErrorException|LoaderError|RuntimeError|SyntaxError $e) {
+        catch (\Exception $e) {
             $this->sendMailError(serialize($e->getMessage()));
         }
 
@@ -268,7 +268,6 @@ class WebhookStripeRemesasSepa extends Controller
         $mail->send();
 
     }
-
 
     /**
      * Método que va a mandar un email

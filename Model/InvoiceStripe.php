@@ -626,7 +626,6 @@ class InvoiceStripe
 
     static function log($valor, $flag = 'invoice'): void
     {
-
         switch ($flag) {
             case 'invoice':
                 $dir = 'invoice-log.txt';

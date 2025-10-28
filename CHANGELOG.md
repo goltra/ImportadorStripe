@@ -1,3 +1,9 @@
+2025-10-28: Version 1.8
+
+    Corrección:
+    * Compatibilidad con la versión 2025 de FS
+    * Agrego input de búsqueda en los clientes
+
 2024-10-15: Version 1.6
 
     Corrección:

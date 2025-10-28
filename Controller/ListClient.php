@@ -17,11 +17,12 @@ use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 class ListClient extends Controller
 {
 
-    public $clients = [];
-    public $sks_stripe = [];
-    public $action = '';
-    public $sk_stripe_index = null;
-    public $paymentMethods = [];
+    public array $clients = [];
+    public array $sks_stripe = [];
+    public string|null $action = '';
+    public int|null $sk_stripe_index = null;
+    public string $stripe_customer_email = '';
+    public array $paymentMethods = [];
 
     public function getPageData(): array
     {
@@ -79,19 +80,21 @@ class ListClient extends Controller
                     return false;
                 }
 
+                $this->stripe_customer_email = $this->request->request->get('stripe_customer_email') ?? $_SESSION['stripe_customer_email'] ?? '';
                 $start = $this->request->query->get('start');
                 $limit = $this->request->query->get('limit');
                 $pm = new FormaPago();
                 $this->paymentMethods = $pm->all();
 
                 $_SESSION['sk_stripe_index'] = $this->sk_stripe_index;
+                $_SESSION['stripe_customer_email'] = $this->stripe_customer_email;
 
                 if ($limit === null || count($limit) == 0)
                     $limit = 1000;
                 if ($start === null || count($start) == 0)
                     $start = null;
 
-                $this->getData($this->sk_stripe_index, $start, $limit);
+                $this->getData($this->sk_stripe_index, $this->stripe_customer_email, $start, $limit);
                 break;
 
             case 'linkClient':
@@ -119,10 +122,10 @@ class ListClient extends Controller
         }
     }
 
-    public function getData($sk_stripe_index, $start = null, $limit = 10)
+    public function getData($sk_stripe_index, $stripe_customer_email,  $start = null, $limit = 10)
     {
         try{
-            $data = ClientModel::loadStripeCustomers($sk_stripe_index, $start, $limit);
+            $data = ClientModel::loadStripeCustomers($sk_stripe_index, $stripe_customer_email, $start, $limit);
 
             if (array_key_exists('status', $data) && $data['status'] === false) {
                 Tools::log()->error( 'Error: ' . $data['message']);

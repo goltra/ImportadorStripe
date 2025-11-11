@@ -30,7 +30,7 @@ class ListClient extends Controller
         $pageData = parent::getPageData();
         $pageData['title'] = 'Clientes';
         $pageData['menu'] = 'Stripe';
-        $pageData['icon'] = 'fas fa-search';
+        $pageData['icon'] = 'fa fa-users';
         $pageData['showonmenu'] = true;
         return $pageData;
     }

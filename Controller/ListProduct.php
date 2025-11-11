@@ -47,7 +47,7 @@ class ListProduct extends Controller
 
         AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/stripe.css');
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
-        $this->action = $this->request->query->get('action');
+        $this->action = $this->request->query->get('action') ?? '';
         $this->sks_stripe = ProductModel::loadSkStripe();
         switch ($this->action) {
             case('load'):

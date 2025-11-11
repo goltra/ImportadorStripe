@@ -17,7 +17,9 @@ use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue as StripeTransactionsQueueAlias;
 use PHPMailer\PHPMailer\Exception;
+use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
+use Stripe\Stripe;
 use Stripe\StripeClient;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
@@ -49,92 +51,80 @@ class WebhookStripeRemesasSepa extends Controller
 
     public function init(): void
     {
-//        InvoiceStripe::log('entro al init', 'remesa');
-//
-//        if (!SettingStripeModel::getSetting('remesasSEPA')){
-//            InvoiceStripe::log('No tienes remesas activadas en los ajustes del plugin', 'remesa');
-//            $this->sendMailError();
-//            echo 'Debes activar las remesas en Stripe >> Ajustes';
-//            return;
-//        }
-//
-//        $payload = @file_get_contents('php://input');
-//
-//        if(!$payload){
-//            InvoiceStripe::log('No viene payload', 'remesa');
-//            $this->sendMailError();
-//            http_response_code(400);
-//            exit();
-//        }
-//
-//        $data = json_decode($payload);
-//
-//        if(!isset($_GET['source'])){
-//            InvoiceStripe::log('No viene source', 'remesa');
-//            $this->sendMailError();
-//            http_response_code(400);
-//            exit();
-//        }
-//
-//        $source = $_GET['source'];
-//        // $source = 'd4d9a56531e84cd5b842e208b3ee65ef';
-//        $sk_index = loadSkStripeByToken::loadSkStripeByToken($source);
-//
-//
-//
-//        if ($sk_index === -1){
-//            InvoiceStripe::log('No hay sk_index', 'remesa');
-//            $this->sendMailError();
-//            http_response_code(400);
-//            exit();
-//        }
-//
-//        $sk = InvoiceStripe::loadSkStripe()[$sk_index];
-//
-//        InvoiceStripe::log('SK '. serialize($sk), 'remesa');
-//
-//        Stripe::setApiKey($sk['sk']);
-//
-//        try {
-//            $event = Event::retrieve($data->id);
-//            InvoiceStripe::log('Recuperamos event', 'remesa');
-//        } catch(ApiErrorException $e) {
-//            InvoiceStripe::log('Error al recuperar el evento', 'remesa');
-//            $this->sendMailError();
-//
-//            http_response_code(400);
-//            exit();
-//        }
-//
-//        if($event->type == 'payout.paid') {
-//
-//            $payoutId = $event->data->object->id;;
-//            InvoiceStripe::log('payout id: ' . $payoutId, 'remesa');
-//
+        InvoiceStripe::log('entro al init', 'remesa');
 
-        $payoutId = 'po_1S899KHDuQaJAlOmVNHE1ZIN';
+        if (!SettingStripeModel::getSetting('remesasSEPA')) {
+            InvoiceStripe::log('No tienes remesas activadas en los ajustes del plugin', 'remesa');
+            $this->sendMailError();
+            echo 'Debes activar las remesas en Stripe >> Ajustes';
+            return;
+        }
 
-    //        todo esto ha cambiado, ahora loadSkStripeByToken devuelve el sk completo para tener también el name y guardarlo en la cola
-        $sk = [
-            'sk' => 'sk_test_51ILOeaHDuQaJAlOmoxCwXO9mYqMKmXk6c9ByTDILdJ3vujXorxScbbyTNBrQeXb82oNeqq4UsioajKWiSaRMEGL700xoDW92tk',
-            'name' => 'CJL'
-        ];
+        $payload = @file_get_contents('php://input');
+
+        if (!$payload) {
+            InvoiceStripe::log('No viene payload', 'remesa');
+            $this->sendMailError();
+            http_response_code(400);
+            exit();
+        }
+
+        $data = json_decode($payload);
+
+        if (!isset($_GET['source'])) {
+            InvoiceStripe::log('No viene source', 'remesa');
+            $this->sendMailError();
+            http_response_code(400);
+            exit();
+        }
+
+        $source = $_GET['source'];
+        // $source = 'd4d9a56531e84cd5b842e208b3ee65ef';
+        $sk = SettingStripeModel::loadSkStripeByToken($source);
+
+
+        if (count($sk) === 0) {
+            InvoiceStripe::log('No hay sk', 'remesa');
+            $this->sendMailError();
+            http_response_code(400);
+            exit();
+        }
+
+        InvoiceStripe::log('SK ' . serialize($sk), 'remesa');
+
+//        $payoutId = 'po_1S899KHDuQaJAlOmVNHE1ZIN';
+        Stripe::setApiKey($sk['sk']);
+
         try {
+            $event = Event::retrieve($data->id);
+            InvoiceStripe::log('Recuperamos event', 'remesa');
+        } catch (ApiErrorException $e) {
+            InvoiceStripe::log('Error al recuperar el evento', 'remesa');
+            $this->sendMailError();
 
-            if (StripeTransactionsQueue::existsObjectId($payoutId, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID)){
-                echo 'Ya está registrado el payout id';
+            http_response_code(400);
+            exit();
+        }
+
+        if ($event->type == 'payout.paid') {
+
+            $payoutId = $event->data->object->id;;
+            InvoiceStripe::log('payout id: ' . $payoutId, 'remesa');
+
+            try {
+
+                if (StripeTransactionsQueue::existsObjectId($payoutId, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID)) {
+                    echo 'Ya está registrado el payout id';
+                } else
+                    $this->processPayout($sk, $payoutId);
+            } catch (\Exception $e) {
+                InvoiceStripe::log('error al generar la remesa ' . serialize($e->getMessage()), 'remesa');
+//                $this->sendMailError(serialize($e->getMessage()));
             }
-            else
-                $this->processPayout($sk, $payoutId);
-        }
-        catch (\Exception $e) {
-            $this->sendMailError(serialize($e->getMessage()));
-        }
 
-        http_response_code(200);
-
+            http_response_code(200);
+        }
     }
-
 
     /**
      * @param $sk
@@ -193,7 +183,6 @@ class WebhookStripeRemesasSepa extends Controller
         }
 
         var_dump('total cargos: ' . $cont);
-
 
 
 //        if (SettingStripeModel::getSetting('adminEmail'))
@@ -259,14 +248,12 @@ class WebhookStripeRemesasSepa extends Controller
         if ($error)
             $body .= $error;
 
-
         $mail = NewMail::create()
             ->to(SettingStripeModel::getSetting('adminEmail'))
             ->subject($subject)
             ->body(nl2br($body));
 
         $mail->send();
-
     }
 
     /**

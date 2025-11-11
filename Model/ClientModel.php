@@ -13,9 +13,9 @@ use Stripe\Exception\ApiErrorException;
 class ClientModel
 {
 
-    public int $id;
+    public string $id;
     public string $email;
-    public int $fs_idClient;
+    public string $fs_idClient;
 
     static function loadSkStripe()
     {
@@ -77,7 +77,7 @@ class ClientModel
         foreach ($data as $item) {
             $obj = new ClientModel();
             $obj->id = $item['id'];
-            $obj->email = $item['email'];
+            $obj->email = $item['email'] ?? '';
             $obj->fs_idClient = isset($item->metadata['fs_idFsCustomer']) && $item->metadata['fs_idFsCustomer'] !== '' ? $item->metadata['fs_idFsCustomer'] : '';
             $res[] = $obj;
         }

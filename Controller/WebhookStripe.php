@@ -33,15 +33,15 @@ class WebhookStripe extends Controller
     public function publicCore(&$response): void
     {
 
-        $this->initTest();
-//        $this->init();
+//        $this->initTest();
+        $this->init();
     }
 
-    public function initTest()
-    {
-        $model = new StripeTransactionsQueue();
-        $model->processQueue();
-    }
+//    public function initTest()
+//    {
+//        $model = new StripeTransactionsQueue();
+//        $model->processQueue();
+//    }
 
 
     public function init(): void
@@ -57,16 +57,15 @@ class WebhookStripe extends Controller
 
         $data = json_decode($payload);
 
-//        if(!isset($_GET['source'])){
-//            InvoiceStripe::log('No viene source');
-//            http_response_code(400);
-//            exit();
-//        }
+        if(!isset($_GET['source'])){
+            InvoiceStripe::log('No viene source');
+            http_response_code(400);
+            exit();
+        }
 
-//        $source = $_GET['source'];
-        $source = 'c38113434288e0c3cd160210ba3f2158';
+        $source = $_GET['source'];
+//        $source = 'c38113434288e0c3cd160210ba3f2158';
 
-        //        todo esto ha cambiado, ahora loadSkStripeByToken devuelve el sk completo para tener también el name y guardarlo en la cola
         $sk = SettingStripeModel::loadSkStripeByToken($source);
 
         if (empty($sk)){
@@ -109,7 +108,8 @@ class WebhookStripe extends Controller
 
                 InvoiceStripe::log('invoice id correcto: ' . $id);
             } catch (Exception $ex) {
-//                InvoiceStripe::log('invoice id error: ' . $id);
+                InvoiceStripe::log('invoice id error: ' . $id);
+                InvoiceStripe::log('Error: ' . $ex->getMessage());
 //                InvoiceStripe::sendMailError($id, serialize($ex->getMessage()));
 //                /*
 //                 * Tenemos un bug de facturascript que cuando entran dos facturas al mismo tiempo, la segunda coge el código de la primera y luego al guardar da error.

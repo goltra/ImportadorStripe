@@ -51,9 +51,11 @@ class SelectClient extends ParentListCliente
         //
         $this->addButton('ListCliente', [
             'action' => $this->postAction,
+            'icon' => 'fas fa-check',
             'label' => 'Seleccionar',
             'color' => 'info'
         ]);
+
         $this->setSettings('ListCliente', 'btnNew', false);
         $this->setSettings('ListCliente', 'btnDelete', false);
         $this->setSettings('ListCliente', 'btnPrint', false);
@@ -104,7 +106,7 @@ class SelectClient extends ParentListCliente
 
     private function selectClient(): void
     {
-        $customer_id = $this->request->request->get('code')[0];
+        $customer_id = unserialize($this->request->request->get('codes'))[0];
 
         if ($customer_id !== null && strlen($customer_id) > 0) {
             $this->redirect('CreateInvoiceStripe?action=clientOk&codcliente=' . $customer_id);
@@ -115,7 +117,7 @@ class SelectClient extends ParentListCliente
 
     private function changeClient(): void
     {
-        $customer_id = $this->request->request->get('code')[0];
+        $customer_id = unserialize($this->request->request->get('codes'))[0];
         $stripe_customer_id = $this->request->query->get('stripe_customer_id');
 
         switch ($this->request->query->get('source')) {

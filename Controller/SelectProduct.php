@@ -52,6 +52,7 @@ class SelectProduct extends ParentListProducto
         //
         $this->addButton('ListProducto', [
             'action' => 'selectProduct',
+            'icon' => 'fas fa-check',
             'label' => 'Seleccionar',
             'color' => 'info'
         ]);
@@ -95,7 +96,7 @@ class SelectProduct extends ParentListProducto
 
     private function selectProduct(): void
     {
-        $id = $this->request->request->get('code')[0];
+        $id = unserialize($this->request->request->get('codes'))[0];
 
         if ($id !== null && strlen($id) > 0) {
             $this->redirect('ListProduct?action=linkProduct&codproduct=' . $id);

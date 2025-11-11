@@ -24,13 +24,15 @@ class ClientModel
 
     /**
      * @param $sk_stripe_index
-     * @param $start
+     * @param string $stripe_customer_email
+     * @param null $start
      * @param int $limit
      * @return array|null
      * @throws ApiErrorException
      */
-    static public function loadStripeCustomers($sk_stripe_index, $start = null, int $limit = 10): ?array
+    static public function loadStripeCustomers($sk_stripe_index, $stripe_customer_email = '', $start = null, int $limit = 10): ?array
     {
+
         $limit = 100000;
         $stripe_ids = self::loadSkStripe();
         // Cargo el index del sk pasado a la función
@@ -41,9 +43,15 @@ class ClientModel
         $stripe_id = $sk_stripe['sk'];
         $stripe = new \Stripe\StripeClient($stripe_id);
 
-        $response = $stripe->customers->all(
-            ['limit'=>$limit]
-        );
+        $params = [
+            'limit' => $limit,
+        ];
+
+        if (!empty($stripe_customer_email)) {
+            $params['email'] = $stripe_customer_email;
+        }
+
+        $response = $stripe->customers->all($params);
 
         $customers = [];
 
@@ -54,7 +62,7 @@ class ClientModel
         if (count($customers) > 0)
             return self::processStripeObjects($customers);
 
-        return null;
+        return [];
     }
 
     /**

@@ -12,6 +12,7 @@
                                 value="{{ key }}">{{ value.name }}</option>
                     {% endfor %}
                 </select>
+                <input type="text" name="stripe_customer_email" value="{{ fsc.stripe_customer_email }}" placeholder="Agrega un email si lo deseas" style="width: 300px" />
             </div>
             <button style="height: 40px;align-self: flex-end;" onclick="muestraSpinner(true)" class="btn btn-info" type="submit">Consultar</button>
         </form>

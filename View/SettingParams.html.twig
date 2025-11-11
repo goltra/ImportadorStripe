@@ -68,18 +68,18 @@
                         <input type="text" id="adminEmail" name="adminEmail" class="form-control" value="{{ fsc.adminEmail }}"/>
                     </label>
 
-                    <label for="remesasSEPA" style="flex:1;">
-                        Generar remesa con las facturas pagadas. Necesitas tener instalado el plugin RemesasSEPA.
-                        <select name="remesasSEPA" id="remesasSEPA" class="form-control">
-                            <option value="0" {{ (fsc.remesasSEPA == 0) ? 'selected' : '' }}>No</option>
-                            <option value="1" {{ (fsc.remesasSEPA == 1) ? 'selected' : ''}}>Si</option>
-                        </select>
-                    </label>
+{#                    <label for="remesasSEPA" style="flex:1;">#}
+{#                        Generar remesa con las facturas pagadas. Necesitas tener instalado el plugin RemesasSEPA.#}
+{#                        <select name="remesasSEPA" id="remesasSEPA" class="form-control">#}
+{#                            <option value="0" {{ (fsc.remesasSEPA == 0) ? 'selected' : '' }}>No</option>#}
+{#                            <option value="1" {{ (fsc.remesasSEPA == 1) ? 'selected' : ''}}>Si</option>#}
+{#                        </select>#}
+{#                    </label>#}
 
-                    <label for="cuentaRemesaSepa" style="flex:1;">
-                        Id de la cuenta bancaria donde llegan las transferencias de stripe
-                        <input type="text" id="cuentaRemesaSEPA" name="cuentaRemesaSEPA" class="form-control" value="{{ fsc.cuentaRemesaSEPA }}"/>
-                    </label>
+{#                    <label for="cuentaRemesaSepa" style="flex:1;">#}
+{#                        Id de la cuenta bancaria donde llegan las transferencias de stripe#}
+{#                        <input type="text" id="cuentaRemesaSEPA" name="cuentaRemesaSEPA" class="form-control" value="{{ fsc.cuentaRemesaSEPA }}"/>#}
+{#                    </label>#}
 
                     <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
                             class="btn btn-info">Guardar
@@ -101,9 +101,9 @@
                 {{ sk.name }} (Serie: {{ sk.codserie }}) :
                 <ul>
                     <li>Webhook Facturas: {{ asset('WebhookStripe') }}?source={{ sk.token }}</li>
-                    {% if fsc.remesasSEPA == 1 %}
-                        <li>Webhook Remesas: {{ asset('WebhookStripeRemesasSepa') }}?source={{ sk.token }}</li>
-                    {% endif %}
+{#                    {% if fsc.remesasSEPA == 1 %}#}
+{#                        <li>Webhook Remesas: {{ asset('WebhookStripeRemesasSepa') }}?source={{ sk.token }}</li>#}
+{#                    {% endif %}#}
                 </ul>
             </li>
         {% endfor %}

@@ -8,17 +8,10 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Core\Lib\Email\NewMail;
-use FacturaScripts\Core\Lib\Export\PDFExport;
-use FacturaScripts\Core\Lib\ExtendedController\BaseController;
-use FacturaScripts\Core\Lib\ExtendedController\BaseView;
 use FacturaScripts\Core\Model\Cliente;
-use FacturaScripts\Core\Model\EmailSent;
-use FacturaScripts\Core\Model\FacturaCliente;
 use FacturaScripts\Core\Model\FormaPago;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
-use FacturaScripts\Core\Lib\ExportManager;
 
 
 class CreateInvoiceStripe extends Controller

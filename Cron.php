@@ -15,10 +15,10 @@ class Cron extends CronClass
     public function run(): void
     {
         $this->job('procesar-cola-pagos-stripe')
-            ->every('1 hour')
+//            ->every('1 hour')
+            ->every('30 minutes')
             ->run(function () {
                 StripeTransactionsQueue::processQueue();
-                file_put_contents(__DIR__ . '/log_cron.txt', date('Y-m-d H:i:s') . " - job ejecutado\n", FILE_APPEND);
             });
     }
 }

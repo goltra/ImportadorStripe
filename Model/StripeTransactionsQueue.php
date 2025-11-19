@@ -82,6 +82,10 @@ class StripeTransactionsQueue extends ModelClass
 
     CONST ERROR_TYPE_NO_EVENT = 'Evento no reconocido';
     CONST ERROR_TYPE_NOT_GENERATE_INVOICE = 'Factura no generada';
+    CONST ERROR_TYPE_RECIBO_PAGADO = 'Recibo pagado';
+    CONST ERROR_TYPE_FACTURA_NO_VINCULADA = 'Factura no vinculada';
+    CONST ERROR_TYPE_ASIGNADO_OTRA_REMESA = 'Asignado otra remesa';
+
 
 
     public function clear(): void
@@ -111,8 +115,9 @@ class StripeTransactionsQueue extends ModelClass
      * Método para conseguir líneas pendientes de procesar
      *
      * @param int $limit número máximo de registros a devolver
+     * @return StripeTransactionsQueue[]
      */
-    public static function getPendingTransactions(int $limit = 50): array
+    public static function getPendingTransactions(int $limit = 5): array
     {
         $where = [ new DataBaseWhere('status', self::STATUS_PENDING) ];
         return self::all(
@@ -132,37 +137,39 @@ class StripeTransactionsQueue extends ModelClass
         $data = self::getPendingTransactions();
 
         foreach ($data as $d) {
-            $model = new StripeTransactionsQueue();
-            $model->load($d['id']);
-            $model->processQueueRow();
+            $d->processQueueRow();
         }
     }
 
-
     /**
      * @return void
-     * @throws ApiErrorException
      */
     public function processQueueRow(): void
     {
         switch ($this->event) {
             case self::EVENT_PAYOUT_PAID:
-                $this->processPayoutTransaction();
 
-                $this->status = self::STATUS_SUCCESS;
-                $this->error_type = '';
-                $this->save();
+                try {
+                    $this->processPayoutTransaction();
+                    $this->status = self::STATUS_SUCCESS;
+                    $this->error_type = '';
+                    $this->save();
 
-                if (self::checkAllTransactionCompleted($this->event, $this->object_id)) {
-                    $remesa = new RemesaSEPA();
-                    $remesa->load($this->destination_id);
-                    $remesa->estado = RemesaSEPA::STATUS_REVIEW;
-                    $remesa->save();
+                    if (self::checkAllTransactionCompleted($this->event, $this->object_id)) {
+                        $remesa = new RemesaSEPA();
+                        $remesa->load($this->destination_id);
+                        $remesa->estado = RemesaSEPA::STATUS_REVIEW;
+                        $remesa->save();
 
-        //         Calculamos los totales de la remesa
-                    $remesa->updateTotal();
-        //           envio email avisando
-
+            //         Calculamos los totales de la remesa
+                        $remesa->updateTotal();
+            //           envio email avisando
+                    }
+                }
+                catch (Exception $e) {
+                    $this->status = self::STATUS_ERROR;
+                    $this->error_type = $e->getMessage();
+                    $this->save();
                 }
 
                 break;
@@ -205,6 +212,7 @@ class StripeTransactionsQueue extends ModelClass
     /**
      * @return void
      * @throws ApiErrorException
+     * @throws Exception
      */
     private function processPayoutTransaction(): void
     {
@@ -214,6 +222,7 @@ class StripeTransactionsQueue extends ModelClass
 
         if (!isset($facturaId)){
             InvoiceStripe::log('La factura ' . $facturaId. ' no está vinculada en stripe.', 'remesa');
+            throw new Exception(self::ERROR_TYPE_FACTURA_NO_VINCULADA);
         }
 
         $reciboCliente = new ReciboCliente();
@@ -223,10 +232,12 @@ class StripeTransactionsQueue extends ModelClass
 
         if (!$reciboCliente->idrecibo){
             InvoiceStripe::log('La factura ' . $facturaId. ' no tiene un recibo o ya está pagado', 'remesa');
+            throw new Exception(self::ERROR_TYPE_RECIBO_PAGADO);
         }
 
         if ($reciboCliente->idremesa){
             InvoiceStripe::log('La factura ' . $facturaId. ' ya tiene una remesa asignada', 'remesa');
+            throw new Exception(self::ERROR_TYPE_ASIGNADO_OTRA_REMESA);
         }
 
         $reciboCliente->idremesa = $this->destination_id;

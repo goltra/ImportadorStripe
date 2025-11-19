@@ -39,8 +39,7 @@ class WebhookStripe extends Controller
 
 //    public function initTest()
 //    {
-//        $model = new StripeTransactionsQueue();
-//        $model->processQueue();
+//        StripeTransactionsQueue::processQueue();
 //    }
 
 

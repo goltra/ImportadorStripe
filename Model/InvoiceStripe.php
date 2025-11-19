@@ -384,6 +384,12 @@ class InvoiceStripe
 
         self::log('vuelvo a generateFSInvoice');
 
+        if (array_key_exists('status', $invoices) && $invoices['status'] === false) {
+            self::log('Error al generar la factura: ' . $invoices['message']);
+            Tools::log('stripe')->error('Error al generar la factura: ' . $invoices['message']);
+            throw new Exception('Error al generar la factura: ' . $invoices['message']);
+        }
+
         // COMPROBAMOS QUE LA FACTURA DE STRIPE SE HA CARGADO CORRECTAMENTE
         if (count($invoices['data']) === 0) {
             self::log('La factura de stripe ya ha sido generada');

@@ -150,6 +150,7 @@ class StripeTransactionsQueue extends ModelClass
                 $this->processPayoutTransaction();
 
                 $this->status = self::STATUS_SUCCESS;
+                $this->error_type = '';
                 $this->save();
 
                 if (self::checkAllTransactionCompleted($this->event, $this->object_id)) {
@@ -180,6 +181,7 @@ class StripeTransactionsQueue extends ModelClass
                     );
 
                     $this->status = self::STATUS_SUCCESS;
+                    $this->error_type = '';
                     $this->save();
 
                  } catch (Exception) {

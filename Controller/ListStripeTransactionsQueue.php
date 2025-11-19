@@ -1,8 +1,10 @@
 <?php
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
+use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Lib\ExtendedController\ListController;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
+use Stripe\Exception\ApiErrorException;
 
 class ListStripeTransactionsQueue extends ListController
 {
@@ -15,6 +17,48 @@ class ListStripeTransactionsQueue extends ListController
         return $data;
     }
 
+
+    /**
+     * Run the actions that alter data before reading it.
+     *
+     * @param string $action
+     *
+     * @return bool
+     */
+    protected function execPreviousAction($action): bool
+    {
+        switch ($action) {
+            case 'generate':
+                return $this->generateAction();
+        }
+
+        return parent::execPreviousAction($action);
+    }
+
+    private function generateAction()
+    {
+        if (!$this->request->request->get('codes')){
+            Tools::log()->error('No has seleccionado una linea.');
+            return true;
+        }
+
+        $codes = unserialize($this->request->request->get('codes'));
+
+        if (count($codes) > 1){
+            Tools::log()->error('Sólo se puede seleccionar una línea.');
+            return true;
+        }
+
+        $code = $codes[0];
+        $transaction = new StripeTransactionsQueue();
+        $transaction->load($code);
+        $transaction->processQueueRow();
+
+
+        return true;
+    }
+
+
     protected function createViews(): void
     {
         // Se crean las pestañas usando funciones separadas para mayor claridad
@@ -25,7 +69,7 @@ class ListStripeTransactionsQueue extends ListController
     {
         //  Orden
         $this->addView($viewName, 'StripeTransactionsQueue', 'Pagos de stripe')
-            ->addOrderBy(['created_at'], 'fecha')
+            ->addOrderBy(['created_at'], 'fecha', 2)
             ->addSearchFields(['created_at']);
 
         //   Quito botones por defecto
@@ -33,7 +77,11 @@ class ListStripeTransactionsQueue extends ListController
         $this->setSettings($viewName, 'btnDelete', false);
         $this->setSettings($viewName, 'clickable', false);
 
-        //   todo Agrego nuevo botón para procesar esa linea
+        $this->addButton($viewName, [
+            'action' => 'generate',
+            'icon' => 'fas fa-plus',
+            'label' => 'Procesar',
+        ]);
 
         //  Colores de las filas
         $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_PENDING, 'warning', 'Pendiente');

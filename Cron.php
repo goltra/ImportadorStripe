@@ -17,9 +17,7 @@ class Cron extends CronClass
         $this->job('procesar-cola-pagos-stripe')
             ->every('1 hour')
             ->run(function () {
-                $model = new StripeTransactionsQueue();
-                $model->processQueue();
-
+                StripeTransactionsQueue::processQueue();
                 file_put_contents(__DIR__ . '/log_cron.txt', date('Y-m-d H:i:s') . " - job ejecutado\n", FILE_APPEND);
             });
     }

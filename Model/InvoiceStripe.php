@@ -258,7 +258,7 @@ class InvoiceStripe
                                 // Comprueba si el fs_product_id existe en fs
                                 $product = new Producto();
                                 if (!$product->load($fs_product_id)){
-                                    self::log('El producto FS relacionado con el producto de stripe no existe');
+                                    self::log('El producto FS relacionado con el producto de stripe no existe: ' . $fs_product_id);
                                     $errors[] = ['message' => 'El producto FS relacionado con el producto de stripe no existe', 'data' => $fs_product_id];
                                 }
                                 else {

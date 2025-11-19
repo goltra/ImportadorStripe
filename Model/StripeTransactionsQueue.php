@@ -127,33 +127,34 @@ class StripeTransactionsQueue extends ModelClass
      * @return void
      * @throws ApiErrorException
      */
-    public function processQueue(): void
+    static function processQueue(): void
     {
         $data = self::getPendingTransactions();
 
-        foreach ($data as $transaction) {
-            $this->processQueueRow($transaction);
+        foreach ($data as $d) {
+            $model = new StripeTransactionsQueue();
+            $model->load($d['id']);
+            $model->processQueueRow();
         }
     }
 
 
     /**
-     * @param $transaction
      * @return void
      * @throws ApiErrorException
      */
-    private function processQueueRow($transaction): void
+    public function processQueueRow(): void
     {
-        switch ($transaction->event) {
+        switch ($this->event) {
             case self::EVENT_PAYOUT_PAID:
-                $this->processPayoutTransaction($transaction);
+                $this->processPayoutTransaction();
 
-                $transaction->status = self::STATUS_SUCCESS;
-                $transaction->save();
+                $this->status = self::STATUS_SUCCESS;
+                $this->save();
 
-                if (self::checkAllTransactionCompleted($transaction->event, $transaction->object_id)) {
+                if (self::checkAllTransactionCompleted($this->event, $this->object_id)) {
                     $remesa = new RemesaSEPA();
-                    $remesa->loadFromCode($transaction->destination_id);
+                    $remesa->load($this->destination_id);
                     $remesa->estado = RemesaSEPA::STATUS_REVIEW;
                     $remesa->save();
 
@@ -169,45 +170,44 @@ class StripeTransactionsQueue extends ModelClass
                 try {
                     $enviarEmail = SettingStripeModel::getSetting('enviarEmail') == 1;
                     InvoiceStripe::generateFSInvoice(
-                        $transaction->transaction_id,
-                        SettingStripeModel::loadSkIndexStripeByName($transaction->stripe_account),
+                        $this->transaction_id,
+                        SettingStripeModel::loadSkIndexStripeByName($this->stripe_account),
                         false,
                         'TARJETA',
                         $enviarEmail,
-                        $transaction->destination_id,
+                        $this->destination_id,
                         'webhook'
                     );
 
-                    $transaction->status = self::STATUS_SUCCESS;
-                    $transaction->save();
+                    $this->status = self::STATUS_SUCCESS;
+                    $this->save();
 
                  } catch (Exception) {
-                    $transaction->status = self::STATUS_ERROR;
-                    $transaction->error_type = self::ERROR_TYPE_NOT_GENERATE_INVOICE;
-                    $transaction->save();
+                    $this->status = self::STATUS_ERROR;
+                    $this->error_type = self::ERROR_TYPE_NOT_GENERATE_INVOICE;
+                    $this->save();
                 }
 
                 break;
 
 
             default:
-                $transaction->status = self::STATUS_ERROR;
-                $transaction->error_type = self::ERROR_TYPE_NO_EVENT;
-                $transaction->save();
+                $this->status = self::STATUS_ERROR;
+                $this->error_type = self::ERROR_TYPE_NO_EVENT;
+                $this->save();
                 break;
         }
     }
 
 
     /**
-     * @param $transaction
      * @return void
      * @throws ApiErrorException
      */
-    private function processPayoutTransaction($transaction): void
+    private function processPayoutTransaction(): void
     {
-        $sk = SettingStripeModel::loadSkStripeByName($transaction->stripe_account);
-        $invoice = $this->getInvoiceFromPayoutTransaction($transaction->transaction_id, $sk );
+        $sk = SettingStripeModel::loadSkStripeByName($this->stripe_account);
+        $invoice = $this->getInvoiceFromPayoutTransaction($this->transaction_id, $sk );
         $facturaId = $invoice->metadata['fs_idFactura'];
 
         if (!isset($facturaId)){
@@ -227,7 +227,7 @@ class StripeTransactionsQueue extends ModelClass
             InvoiceStripe::log('La factura ' . $facturaId. ' ya tiene una remesa asignada', 'remesa');
         }
 
-        $reciboCliente->idremesa = $transaction->destination_id;
+        $reciboCliente->idremesa = $this->destination_id;
 
         if ($reciboCliente->save()){
             InvoiceStripe::log('Se genera linea de remesa con la factura:  ' . $facturaId, 'remesa');

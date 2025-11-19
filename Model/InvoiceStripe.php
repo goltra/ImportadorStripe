@@ -223,7 +223,11 @@ class InvoiceStripe
                         $period_start = (isset($l->period->start)) ? $l->period->start : null;
                         $period_end = (isset($l->period->end)) ? $l->period->end : null;
                         $fs_product_id = '';
-                        $tax = null;
+                        $tax = (object)[
+                            'codimpuesto' => null,
+                            'iva'         => 0,
+                            'recargo'     => 0
+                        ];
 
 
 
@@ -232,7 +236,7 @@ class InvoiceStripe
                         // - Iva en factura
                         // - Iva del artículo de FS
 
-                        $vat_perc = $inv->tax_percent!==null ? $inv->tax_percent : null; //Impuesto aplicado a factura
+                        $vat_perc = property_exists($inv, 'tax_percent') ? $inv->tax_percent : null; //Impuesto aplicado a factura
                         $vat_perc = ( is_array($l->tax_rates) && count($l->tax_rates)>0 && isset($l->tax_rates[0]['percentage']) ) ? $l->tax_rates[0]['percentage'] : $vat_perc; //Impuesto aplicado a linea
 
                         if ($vat_perc === null && isset($inv->default_tax_rates[0]->percentage))
@@ -262,7 +266,9 @@ class InvoiceStripe
                                     $errors[] = ['message' => 'El producto FS relacionado con el producto de stripe no existe', 'data' => $fs_product_id];
                                 }
                                 else {
-                                    $tax = $product->getTax();
+
+                                    if ($product->getTax() !== null)
+                                        $tax = $product->getTax();
 
                                     if ($vat_perc !== null)
                                         $tax->iva = $vat_perc;

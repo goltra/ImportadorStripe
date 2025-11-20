@@ -12,9 +12,11 @@ use FacturaScripts\Core\Lib\Calculator;
 use FacturaScripts\Core\Base\DataBase;
 use FacturaScripts\Core\Lib\Email\NewMail;
 use FacturaScripts\Core\Lib\Export\PDFExport;
+use FacturaScripts\Core\Model\EstadoDocumento;
 use FacturaScripts\Core\Model\Producto;
 use FacturaScripts\Core\Model\Serie;
 use FacturaScripts\Core\Tools;
+use FacturaScripts\Core\Where;
 use FacturaScripts\Dinamic\Lib\Accounting\InvoiceToAccounting;
 use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\FacturaCliente;
@@ -543,7 +545,10 @@ class InvoiceStripe
         // asigno al numero2 el numero de factura de stripe
         $invoiceFs->numero2 = $invoice->numero;
         // se marca como emitida
-        $invoiceFs->idestado = 11;
+
+        $estado = new EstadoDocumento();
+        $estado->loadWhere([Where::eq('tipodoc', 'FacturaCliente'), Where::eq('nombre', 'Emitida')]);
+        $invoiceFs->idestado = $estado->idestado;
 
         if ($mark_as_paid === true && $payment_method !== null) $invoiceFs->codpago = $payment_method;
 

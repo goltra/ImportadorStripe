@@ -1,7 +1,9 @@
 <?php
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
+use FacturaScripts\Core\Model\IdentificadorFiscal;
 use FacturaScripts\Core\Tools;
+use FacturaScripts\Core\Where;
 use FacturaScripts\Dinamic\Lib\ExtendedController\ListController;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
 use Stripe\Exception\ApiErrorException;
@@ -52,6 +54,12 @@ class ListStripeTransactionsQueue extends ListController
         $code = $codes[0];
         $transaction = new StripeTransactionsQueue();
         $transaction->load($code);
+
+        if ($transaction->status === StripeTransactionsQueue::STATUS_SUCCESS) {
+            Tools::log()->error('La línea ya ha sido procesada.');
+            return true;
+        }
+
         $transaction->processQueueRow();
 
         Tools::log()->info('Linea procesada, revisa que no haya dado error.');
@@ -137,9 +145,12 @@ class ListStripeTransactionsQueue extends ListController
      */
     protected function getDistinctPayouts(): array
     {
-        $items = StripeTransactionsQueue::all();
+        $items = StripeTransactionsQueue::all([ Where::like('event', StripeTransactionsQueue::EVENT_PAYOUT_PAID )]);
         $ret = [];
         foreach ($items as $line) {
+            if (array_key_exists($line->object_id, $ret))
+                continue;
+
             $ret[$line->object_id] = $line->object_id;
         }
         return $ret;

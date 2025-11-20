@@ -436,7 +436,7 @@ class InvoiceStripe
 
         if ($stripe_customer !== '' && $client->codcliente === SettingStripeModel::getSetting('codcliente')){
             self::log('El cliente no está vinculado');
-            $invoiceFs->observaciones = 'Cliente de Stripe no vinculado en Facturascripts ('.$stripe_customer.')';
+            $invoiceFs->observaciones = 'Cliente de Stripe no vinculado en Facturascripts ('.$stripe_customer.') - ';
         }
 
         $invoiceFs->setSubject($client);
@@ -524,12 +524,15 @@ class InvoiceStripe
 
             //  Agrego una nueva línea sin coste con la referencia del cliente de stripe
             if (SettingStripeModel::getSetting('mostrarStripeCus') == 1){
-                $line = $invoiceFs->getNewLine();
-                $line->idfactura = $invoiceFs->idfactura;
-                $line->descripcion = 'Referencia: '.$invoice->customer_id;
-                $line->codimpuesto = null;
-                $line->iva = 0;
-                $line->save();
+//                $line = $invoiceFs->getNewLine();
+//                $line->idfactura = $invoiceFs->idfactura;
+//                $line->descripcion = 'Referencia: '.$invoice->customer_id;
+//                $line->codimpuesto = null;
+//                $line->iva = 0;
+//                $line->save();
+
+                //  Con la entrada de verifactu la línea a coste 0 daba error, ahora lo ponemos en obsevaciones.
+                $invoiceFs->observaciones = 'Referencia: '.$invoice->customer_id;
             }
 
         } else {

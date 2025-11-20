@@ -10,6 +10,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\Where;
 use FacturaScripts\Dinamic\Lib\Email\NewMail;
 use FacturaScripts\Dinamic\Model\InvoiceStripe;
 use FacturaScripts\Dinamic\Model\RemesaSEPA;
@@ -111,6 +112,13 @@ class WebhookStripeRemesasSepa extends Controller
             $payoutId = $event->data->object->id;;
             InvoiceStripe::log('payout id: ' . $payoutId, 'remesa');
 
+            if (StripeTransactionsQueue::findWhere([ Where::eq('object_id', $payoutId) ] )) {
+                echo 'El pago ya está en la cola';
+                InvoiceStripe::log('El pago ya está en la cola', 'remesa');
+                http_response_code(200);
+                exit();
+            }
+
             try {
 
                 if (StripeTransactionsQueue::existsObjectId($payoutId, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID)) {
@@ -119,10 +127,13 @@ class WebhookStripeRemesasSepa extends Controller
                     $this->processPayout($sk, $payoutId);
             } catch (\Exception $e) {
                 InvoiceStripe::log('error al generar la remesa ' . serialize($e->getMessage()), 'remesa');
-//                $this->sendMailError(serialize($e->getMessage()));
+                var_dump($e->getMessage());
+                http_response_code(200);
+                exit();
             }
 
             http_response_code(200);
+            exit();
         }
     }
 

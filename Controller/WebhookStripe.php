@@ -9,6 +9,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use Exception;
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\Where;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
@@ -79,6 +80,7 @@ class WebhookStripe extends Controller
             $event = Event::retrieve($data->id);
         } catch(ApiErrorException $e) {
 
+            echo 'Error en data';
             InvoiceStripe::log('Error en data');
             http_response_code(400);
             exit();
@@ -88,7 +90,15 @@ class WebhookStripe extends Controller
             $id = $event->data->object->id;
 
             if($event->data->object->amount_paid === 0){
+            echo 'Se ha pagado 0€, no se factura';
                 InvoiceStripe::log('Se ha pagado 0€, no se factura');
+                http_response_code(200);
+                exit();
+            }
+
+            if (StripeTransactionsQueue::findWhere([ Where::eq('object_id', $id) ] )) {
+                echo 'La factura ya está en la cola';
+                InvoiceStripe::log('La factura ya está en la cola');
                 http_response_code(200);
                 exit();
             }
@@ -118,8 +128,8 @@ class WebhookStripe extends Controller
 //                    http_response_code(400);
 //                }
 //                else{
-//                    var_dump($ex->getMessage());
-//                    http_response_code(200);
+                    var_dump($ex->getMessage());
+                    http_response_code(200);
 //                }
 
                 exit();
@@ -127,5 +137,6 @@ class WebhookStripe extends Controller
         }
 
         http_response_code(200);
+        exit();
     }
 }

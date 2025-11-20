@@ -33,7 +33,7 @@ class StripeTransactionsQueue extends ModelClass
      * Ahora mismo tenemos dos, cuando se realiza un payout y cuando se cobra una factura en stripe
      */
     CONST EVENT_PAYOUT_PAID = 'Pago';
-    CONST EVENT_INVOICE_PAYMENT_SUCCEEDED = 'Suscripción';
+    CONST EVENT_INVOICE_PAYMENT_SUCCEEDED = 'Suscripcion';
 
     static array $eventOptions = [
         self::EVENT_PAYOUT_PAID => self::EVENT_PAYOUT_PAID,
@@ -163,7 +163,7 @@ class StripeTransactionsQueue extends ModelClass
 
             //         Calculamos los totales de la remesa
                         $remesa->updateTotal();
-            //           envio email avisando
+            //          todo envio email avisando
                     }
                 }
                 catch (Exception $e) {
@@ -221,7 +221,7 @@ class StripeTransactionsQueue extends ModelClass
         $facturaId = $invoice->metadata['fs_idFactura'];
 
         if (!isset($facturaId)){
-            InvoiceStripe::log('La factura ' . $facturaId. ' no está vinculada en stripe.', 'remesa');
+            InvoiceStripe::log('La factura ' . $invoice['id']. ' no está vinculada en stripe.', 'remesa');
             throw new Exception(self::ERROR_TYPE_FACTURA_NO_VINCULADA);
         }
 

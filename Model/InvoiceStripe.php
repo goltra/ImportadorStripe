@@ -20,6 +20,7 @@ use FacturaScripts\Core\Where;
 use FacturaScripts\Dinamic\Lib\Accounting\InvoiceToAccounting;
 use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\FacturaCliente;
+use Stripe\Customer;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
 use Stripe\StripeClient;
@@ -84,7 +85,7 @@ class InvoiceStripe
             }
             $params = ['status' => 'paid', 'limit' => $limit, 'created' => ['lte' => $endDate, 'gte' => $initDate]];
 
-            $stripe = new \Stripe\StripeClient($stripe_id);
+            $stripe = new StripeClient($stripe_id);
             Stripe::$apiVersion = '2020-08-27';
             $stripe_response = $stripe->invoices->all($params);
 
@@ -125,7 +126,7 @@ class InvoiceStripe
         self::log('id de la factura a descargar: '.$id);
 
         try {
-            $stripe = new \Stripe\StripeClient($stripe_id);
+            $stripe = new StripeClient($stripe_id);
             $invoices[] = $stripe->invoices->retrieve($id, [
                 'expand' => ['lines.data.price.product'],
             ]); //guardamos en un array porque el método que genera el objeto lo tenemos definido así
@@ -142,7 +143,7 @@ class InvoiceStripe
 
             return ['status' => true, 'data' => $res];
 
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             self::log('Error al obtener la factura desde stripe ' . serialize($ex->getMessage()));
             self::sendMailError($id, serialize($ex->getMessage()));
             return ['status' => false, 'message' => 'Error al obtener la factura desde stripe ' . $ex->getMessage()];
@@ -158,12 +159,12 @@ class InvoiceStripe
         }
         $stripe_id = $sk_stripe['sk'];
         try {
-            $stripe = new \Stripe\StripeClient($stripe_id);
+            $stripe = new StripeClient($stripe_id);
             $customer = $stripe->customers->update($stripe_customer_id, [
                 'metadata' => ['fs_idFsCustomer' => $fs_idFsCustomer]
             ]);
             return ['status' => true, 'data' => $customer];
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             return ['status' => false, 'message' => 'Error al obtener el cliente desde stripe ' . $ex->getMessage()];
         }
     }
@@ -190,7 +191,7 @@ class InvoiceStripe
             if ($customer === null) {
                 self::log('cliente No se ha podido cargar el cliente de stripe correspondiente a la factura');
                 Tools::log('stripe')->error('invoice id error: ' . $sk_stripe_index);
-                throw new \Exception('No se ha podido cargar el cliente de stripe correspondiente a la factura ' . $inv->id);
+                throw new Exception('No se ha podido cargar el cliente de stripe correspondiente a la factura ' . $inv->id);
             }
 
             self::log('Comprobamos si ya se ha pagado la factura o si ya ha sido descargada');
@@ -356,13 +357,13 @@ class InvoiceStripe
      * Devuelve el cliente de stripe que corresponde con el $customer_id recibido
      * @param $customer_id
      * @param $sk_stripe_index
-     * @return mixed || null
+     * @return Customer|array|null || null
      * @throws LoaderError
      * @throws RuntimeError
      * @throws SyntaxError
      * @throws \PHPMailer\PHPMailer\Exception
      */
-    static private function getStripeClient($customer_id, $sk_stripe_index): mixed
+    static private function getStripeClient($customer_id, $sk_stripe_index): Customer|array|null
     {
         $stripe_ids = self::loadSkStripe();
         $sk_stripe = $stripe_ids[$sk_stripe_index];
@@ -371,9 +372,9 @@ class InvoiceStripe
         }
         $stripe_id = $sk_stripe['sk'];
         try {
-            $stripe = new \Stripe\StripeClient($stripe_id);
+            $stripe = new StripeClient($stripe_id);
             return $stripe->customers->retrieve($customer_id);
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             self::sendMailError($customer_id, serialize($ex->getMessage()));
             return null;
         }

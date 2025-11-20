@@ -20,6 +20,7 @@ use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\FacturaCliente;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
+use Stripe\StripeClient;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
@@ -95,7 +96,7 @@ class InvoiceStripe
 
             $data = self::processInvoicesObject($_data, $sk_stripe_index);
 
-            $response = [
+            return [
                 'status' => true,
                 'data' => $data,
                 'last' => $stripe_response->data[count($stripe_response->data) - 1]->id,
@@ -103,7 +104,6 @@ class InvoiceStripe
                 'has_more' => $stripe_response->has_more
             ];
 
-            return $response;
         } catch (ApiErrorException $e) {
             self::sendMailError('(no hay factura)', $e->getMessage());
             return ['status' => false, 'message' => $e->getMessage()];
@@ -624,7 +624,7 @@ class InvoiceStripe
         }
         $stripe_id = $sk_stripe['sk'];
         try {
-            $stripe = new \Stripe\StripeClient($stripe_id);
+            $stripe = new StripeClient($stripe_id);
             $stripe->invoices->update(
                 $id_invoice_stripe,
                 ['metadata' => ['fs_idFactura' => $fs_idFactura]]);
@@ -689,9 +689,9 @@ class InvoiceStripe
      */
     static function exportAndSendEmail($code): void
     {
-        $factura = new \FacturaScripts\Core\Model\FacturaCliente();
+        $factura = new FacturaCliente();
         $factura->load($code);
-        $cliente = new \FacturaScripts\Core\Model\Cliente();
+        $cliente = new Cliente();
         $cliente->load($factura->codcliente);
         if ($cliente->email === null || strlen($cliente->email) == 0 && !filter_var($cliente->email, FILTER_VALIDATE_EMAIL)) {
             Tools::log()->error('Se generará la factura pero no se puede enviar el email porque el cliente no tiene puesta una dirección.');

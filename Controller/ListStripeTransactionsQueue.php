@@ -54,6 +54,8 @@ class ListStripeTransactionsQueue extends ListController
         $transaction->load($code);
         $transaction->processQueueRow();
 
+        Tools::log()->info('Linea procesada, revisa que no haya dado error.');
+
 
         return true;
     }

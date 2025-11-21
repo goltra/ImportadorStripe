@@ -5,11 +5,15 @@ use Exception;
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\Template\ModelClass;
 use FacturaScripts\Core\Template\ModelTrait;
+use FacturaScripts\Dinamic\Lib\Email\NewMail;
 use FacturaScripts\Dinamic\Model\ReciboCliente;
 use FacturaScripts\Plugins\RemesasSEPA\Model\RemesaSEPA;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Invoice;
 use Stripe\StripeClient;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 
 class StripeTransactionsQueue extends ModelClass
 {
@@ -130,7 +134,6 @@ class StripeTransactionsQueue extends ModelClass
 
     /**
      * @return void
-     * @throws ApiErrorException
      */
     static function processQueue(): void
     {
@@ -163,7 +166,7 @@ class StripeTransactionsQueue extends ModelClass
 
             //         Calculamos los totales de la remesa
                         $remesa->updateTotal();
-            //          todo envio email avisando
+                        $this->sendMailRemesaCompleta($remesa->nombre);
                     }
                 }
                 catch (Exception $e) {
@@ -206,6 +209,30 @@ class StripeTransactionsQueue extends ModelClass
                 $this->save();
                 break;
         }
+    }
+
+
+    /**
+     * Método que va a mandar un email
+     * @param $nombre_remesa
+     * @return void
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     * @throws \PHPMailer\PHPMailer\Exception
+     */
+    private function sendMailRemesaCompleta($nombre_remesa): void
+    {
+        $subject = 'Remesa ' . $nombre_remesa . ' procesada';
+        $body = 'La remesa se ha procesado completamente, por favor comprueba que está correcta.';
+
+        $mail = NewMail::create()
+            ->to(SettingStripeModel::getSetting('adminEmail'))
+            ->cc(SettingStripeModel::getSetting('satEmail'))
+            ->subject($subject)
+            ->body(nl2br($body));
+
+        $mail->send();
     }
 
 

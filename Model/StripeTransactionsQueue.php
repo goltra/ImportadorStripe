@@ -57,6 +57,7 @@ class StripeTransactionsQueue extends ModelClass
     static array $tansactionTypeOptions = [
         self::TRANSACTION_TYPE_CHARGE => self::TRANSACTION_TYPE_CHARGE,
         self::TRANSACTION_TYPE_PAYMENT_INTENT => self::TRANSACTION_TYPE_PAYMENT_INTENT,
+        self:: TRANSACTION_TYPE_INVOICE => self:: TRANSACTION_TYPE_INVOICE
     ];
 
 

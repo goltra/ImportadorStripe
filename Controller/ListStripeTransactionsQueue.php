@@ -97,7 +97,10 @@ class ListStripeTransactionsQueue extends ListController
         $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_PENDING, 'warning', 'Pendiente');
         $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_ERROR, 'danger', 'Pendiente');
 
+
         // Filtros
+        $this->addSearchFields($viewName, ['object_id']);
+
         $this->addFilterSelect(
             $viewName,
             'event',

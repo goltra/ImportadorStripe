@@ -9,13 +9,17 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use Exception;
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Core\Where;
+use FacturaScripts\Dinamic\Lib\Email\NewMail;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
+use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue as StripeTransactionsQueueAlias;
 use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 
 
 class WebhookStripe extends Controller
@@ -49,59 +53,40 @@ class WebhookStripe extends Controller
 
         $payload = @file_get_contents('php://input');
 
-        if(!$payload){
-            InvoiceStripe::log('No entra');
-            http_response_code(400);
-            exit();
-        }
+        if(!$payload)
+            $this->sendError('Error: No viene payload', 400);
 
         $data = json_decode($payload);
 
-        if(!isset($_GET['source'])){
-            InvoiceStripe::log('No viene source');
-            http_response_code(400);
-            exit();
-        }
+        if (!isset($_GET['source']))
+            $this->sendError('Error: No viene source', 400);
 
         $source = $_GET['source'];
 //        $source = 'c38113434288e0c3cd160210ba3f2158';
 
         $sk = SettingStripeModel::loadSkStripeByToken($source);
 
-        if (empty($sk)){
-            InvoiceStripe::log('El source recibido no corresponde a ninguno de stripe');
-            http_response_code(400);
-            exit();
-        }
+        if (count($sk) === 0)
+            $this->sendError('Error: No hay sk', 400);
 
         Stripe::setApiKey($sk['sk']);
 
         try {
             $event = Event::retrieve($data->id);
         } catch(ApiErrorException $e) {
-
-            echo 'Error en data';
-            InvoiceStripe::log('Error en data');
-            http_response_code(400);
+            $this->sendError('Error: Error en data: ' . $e->getMessage(), 400);
             exit();
         }
 
         if($event->type == 'invoice.payment_succeeded') {
             $id = $event->data->object->id;
 
-            if($event->data->object->amount_paid === 0){
-            echo 'Se ha pagado 0€, no se factura';
-                InvoiceStripe::log('Se ha pagado 0€, no se factura');
-                http_response_code(200);
-                exit();
-            }
+            if($event->data->object->amount_paid === 0)
+                $this->sendError('Se ha pagado 0€, no se factura', 200);
 
-            if (StripeTransactionsQueue::findWhere([ Where::eq('object_id', $id) ] )) {
-                echo 'La factura ya está en la cola';
-                InvoiceStripe::log('La factura ya está en la cola');
-                http_response_code(200);
-                exit();
-            }
+
+            if (StripeTransactionsQueue::existsObjectId($id, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID))
+                $this->sendError('Error: La factura ya está en la cola ', 200);
 
             try {
                 StripeTransactionsQueue::setStripeTransaction(
@@ -117,26 +102,56 @@ class WebhookStripe extends Controller
 
                 InvoiceStripe::log('invoice id correcto: ' . $id);
             } catch (Exception $ex) {
-                InvoiceStripe::log('invoice id error: ' . $id);
-                InvoiceStripe::log('Error: ' . $ex->getMessage());
-//                InvoiceStripe::sendMailError($id, serialize($ex->getMessage()));
-//                /*
-//                 * Tenemos un bug de facturascript que cuando entran dos facturas al mismo tiempo, la segunda coge el código de la primera y luego al guardar da error.
-//                 * Por tanto, si el error es ese, le mandamos un código 400 para que stripe vuelva a llamar más tarde.
-//                 */
-//                if ($ex->getMessage() === 'Error al generar la factura.'){
-//                    http_response_code(400);
-//                }
-//                else{
-                    var_dump($ex->getMessage());
-                    http_response_code(200);
-//                }
-
-                exit();
+                $this->sendError('Error: Error al registrar la factura en la cola. '. $ex->getMessage(), 200);
             }
         }
 
         http_response_code(200);
         exit();
+    }
+
+    /**
+     * @param $error
+     * @param $response_code
+     * @return void
+     */
+    private function sendError($error, $response_code): void
+    {
+        echo $error;
+        InvoiceStripe::log($error);
+
+        try {
+            $this->sendMailError($error);
+        }
+        catch (Exception $e) {
+            InvoiceStripe::log('No se ha podido mandar el email. '. $e->getMessage());
+        }
+
+        http_response_code($response_code);
+        exit();
+    }
+
+    /**
+     * @param string $error
+     * @return void
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     * @throws \PHPMailer\PHPMailer\Exception
+     */
+    private function sendMailError(string $error = ''): void
+    {
+        $subject = 'Error al generar la remesa de cobro de stripe';
+        $body = "Hola, \r\n La llamada de stripe para generar una remesa ha dado error: . \r\n";
+
+        if ($error)
+            $body .= $error;
+
+        $mail = NewMail::create()
+            ->to(SettingStripeModel::getSetting('satEmail'))
+            ->subject($subject)
+            ->body(nl2br($body));
+
+        $mail->send();
     }
 }

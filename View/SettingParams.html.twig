@@ -63,8 +63,13 @@
                 </div>
 
                 <div style="display:flex; gap: 20px;">
-                    <label for="sk" style="flex:1;">
+                    <label for="satEmail" style="flex:1;">
                         Email técnico para las comunicaciones de los webhooks *
+                        <input type="text" id="satEmail" name="satEmail" class="form-control" value="{{ fsc.satEmail }}"/>
+                    </label>
+
+                    <label for="adminEmail" style="flex:1;">
+                        Email administrativo para las comunicaciones de los webhooks *
                         <input type="text" id="adminEmail" name="adminEmail" class="form-control" value="{{ fsc.adminEmail }}"/>
                     </label>
 

@@ -22,6 +22,7 @@ class SettingParams extends Controller
     public string $codcliente = '';
     public string $codproducto = '';
     public bool $enviarEmail;
+    public string $satEmail = '';
     public string $adminEmail = '';
     public bool $mostrarStripeCus;
     public bool $remesasSEPA = false;
@@ -89,7 +90,8 @@ class SettingParams extends Controller
         $this->codcliente = SettingStripeModel::getSetting('codcliente');
         $this->codproducto = SettingStripeModel::getSetting('codproducto');
         $this->enviarEmail = SettingStripeModel::getSetting('enviarEmail');
-        $this->adminEmail = SettingStripeModel::getSetting('adminEmail');
+        $this->satEmail = SettingStripeModel::getSetting('satEmail') ?? Session::get('user')->email;
+        $this->adminEmail = SettingStripeModel::getSetting('adminEmail') ?? Session::get('user')->email;
         $this->mostrarStripeCus = SettingStripeModel::getSetting('mostrarStripeCus');
         $this->remesasSEPA = SettingStripeModel::getSetting('remesasSEPA');
         $this->cuentaRemesaSEPA = SettingStripeModel::getSetting('cuentaRemesaSEPA') ?? '';
@@ -119,6 +121,8 @@ class SettingParams extends Controller
         $this->codcliente = $data['codcliente'];
         $this->codproducto = $data['codproducto'];
         $this->enviarEmail = $data['enviarEmail'];
+
+        $this->satEmail = $data['satEmail'];
         $this->adminEmail = $data['adminEmail'];
         $this->mostrarStripeCus = $data['mostrarStripeCus'];
         $this->remesasSEPA = $data['remesasSEPA'];
@@ -160,6 +164,7 @@ class SettingParams extends Controller
             $settings['cuentaRemesaSEPA'] = $this->cuentaRemesaSEPA;
 
 
+        $settings['satEmail'] = strlen($this->satEmail) > 0 ? $this->satEmail : Session::get('user')->email;
         $settings['adminEmail'] = strlen($this->adminEmail) > 0 ? $this->adminEmail : Session::get('user')->email;
 
         SettingStripeModel::addSettings($settings);

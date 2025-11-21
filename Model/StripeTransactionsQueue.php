@@ -3,6 +3,8 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
+use FacturaScripts\Core\Internal\Plugin;
+use FacturaScripts\Core\Plugins;
 use FacturaScripts\Core\Template\ModelClass;
 use FacturaScripts\Core\Template\ModelTrait;
 use FacturaScripts\Dinamic\Lib\Email\NewMail;
@@ -371,4 +373,17 @@ class StripeTransactionsQueue extends ModelClass
         return $model->save();
     }
 
+
+    /**
+     * Comprueba si puedo usar las remesas
+     * @param bool $onlyVerifyPlugin
+     * @return bool
+     */
+    static function canUseRemesas(bool $onlyVerifyPlugin = false): bool
+    {
+        if ($onlyVerifyPlugin)
+            return Plugins::isInstalled('RemesasSEPA') && Plugins::isEnabled('RemesasSEPA');
+
+        return SettingStripeModel::getSetting('remesasSEPA') === 1 && Plugins::isInstalled('RemesasSEPA') && Plugins::isEnabled('RemesasSEPA');
+    }
 }

@@ -14,6 +14,7 @@ use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Serie;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use FacturaScripts\Core\Session;
+use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
 
 class SettingParams extends Controller
 {
@@ -27,6 +28,7 @@ class SettingParams extends Controller
     public bool $mostrarStripeCus;
     public bool $remesasSEPA = false;
     public string $cuentaRemesaSEPA = '';
+    public bool $hayPluginRemesas = false;
 
     /**
      * @throws KernelException
@@ -53,6 +55,7 @@ class SettingParams extends Controller
         $action = $this->request->query->get('action');
         $serieModel = new Serie();
         $this->series = $serieModel->all();
+        $this->hayPluginRemesas = StripeTransactionsQueue::canUseRemesas(true);
 
         switch ($action) {
             case 'add':

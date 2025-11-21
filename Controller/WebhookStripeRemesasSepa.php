@@ -53,7 +53,7 @@ class WebhookStripeRemesasSepa extends Controller
     {
         InvoiceStripe::log('entro al init', 'remesa');
 
-        if (!SettingStripeModel::getSetting('remesasSEPA'))
+        if (StripeTransactionsQueue::canUseRemesas())
             $this->sendError('Error: No tienes remesas activadas en los ajustes del plugin', 400);
 
         $payload = @file_get_contents('php://input');

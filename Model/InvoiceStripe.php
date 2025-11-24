@@ -37,7 +37,7 @@ class InvoiceStripe
     public string $status;
     public string $customer_id;
     public string $customer_email;
-    public int|null $fs_idFsCustomer = null;
+    public string $fs_idFsCustomer = '';
     public int|null $fs_idFactura;
     public string $fs_customerName;
     public float $discount=0;

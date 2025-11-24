@@ -95,7 +95,7 @@ class ListStripeTransactionsQueue extends ListController
 
         //  Colores de las filas
         $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_PENDING, 'warning', 'Pendiente');
-        $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_ERROR, 'danger', 'Pendiente');
+        $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_ERROR, 'danger', 'Error');
 
 
         // Filtros

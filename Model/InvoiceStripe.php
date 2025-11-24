@@ -657,7 +657,6 @@ class InvoiceStripe
         }
     }
 
-
     static function log($valor, $flag = 'invoice'): void
     {
         switch ($flag) {

@@ -131,7 +131,7 @@ class WebhookStripeRemesasSepa extends Controller
         $remesa = new RemesaSEPA();
 
         $remesa->nombre = $payoutId;
-        $remesa->descripcion = 'Pago CJL';
+        $remesa->descripcion = 'Pago ' . $sk['name'];
         $remesa->fecha = date('Y-m-d H:i:s');
         $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);
         $remesa->estado = RemesaSEPA::STATUS_WAIT;

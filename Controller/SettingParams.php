@@ -29,6 +29,8 @@ class SettingParams extends Controller
     public bool $remesasSEPA = false;
     public string $cuentaRemesaSEPA = '';
     public bool $hayPluginRemesas = false;
+    public bool $verifactu = false;
+    public bool $hayPluginVerifactu = false;
 
     /**
      * @throws KernelException
@@ -56,6 +58,7 @@ class SettingParams extends Controller
         $serieModel = new Serie();
         $this->series = $serieModel->all();
         $this->hayPluginRemesas = StripeTransactionsQueue::canUseRemesas(true);
+        $this->hayPluginVerifactu = StripeTransactionsQueue::canUseVerifactu(true);
 
         switch ($action) {
             case 'add':
@@ -98,6 +101,7 @@ class SettingParams extends Controller
         $this->mostrarStripeCus = SettingStripeModel::getSetting('mostrarStripeCus');
         $this->remesasSEPA = SettingStripeModel::getSetting('remesasSEPA');
         $this->cuentaRemesaSEPA = SettingStripeModel::getSetting('cuentaRemesaSEPA') ?? '';
+        $this->verifactu = SettingStripeModel::getSetting('verifactu') ?? false;
     }
 
     private function setSkStripe(): void
@@ -130,6 +134,7 @@ class SettingParams extends Controller
         $this->mostrarStripeCus = $data['mostrarStripeCus'];
         $this->remesasSEPA = $data['remesasSEPA'];
         $this->cuentaRemesaSEPA = $data['cuentaRemesaSEPA'];
+        $this->verifactu = $data['verifactu'];
 
         $settings = [];
 
@@ -145,27 +150,35 @@ class SettingParams extends Controller
         if($this->mostrarStripeCus !== null)
             $settings['mostrarStripeCus'] = $this->mostrarStripeCus;
 
-        if($this->remesasSEPA !== null){
 
-            if ($this->remesasSEPA !== '0') {
-                if (!Plugins::isInstalled('RemesasSEPA')){
-                    Tools::log()->error('No tienes instalado el plugin Remesas SEPA.');
-                    return;
-                }
-                if (!Plugins::isEnabled('RemesasSEPA')){
-                    Tools::log()->error('No tienes activado el plugin Remesas SEPA.');
-                    return;
-                }
+        if ($this->remesasSEPA !== '0') {
+            if (!Plugins::isInstalled('RemesasSEPA')){
+                Tools::log()->error('No tienes instalado el plugin Remesas SEPA.');
+                return;
             }
-
-            $settings['remesasSEPA'] = $this->remesasSEPA;
+            if (!Plugins::isEnabled('RemesasSEPA')){
+                Tools::log()->error('No tienes activado el plugin Remesas SEPA.');
+                return;
+            }
         }
 
-
+        $settings['remesasSEPA'] = $this->remesasSEPA;
 
         if($this->cuentaRemesaSEPA !== null)
             $settings['cuentaRemesaSEPA'] = $this->cuentaRemesaSEPA;
 
+
+        if ($this->verifactu !== '0') {
+            if (!Plugins::isInstalled('Verifactu')) {
+                Tools::log()->error('No tienes instalado el plugin Verifactu.');
+                return;
+            }
+            if (!Plugins::isEnabled('Verifactu')) {
+                Tools::log()->error('No tienes activado el plugin Verifactu.');
+                return;
+            }
+        }
+        $settings['verifactu'] = $this->verifactu;
 
         $settings['satEmail'] = strlen($this->satEmail) > 0 ? $this->satEmail : Session::get('user')->email;
         $settings['adminEmail'] = strlen($this->adminEmail) > 0 ? $this->adminEmail : Session::get('user')->email;

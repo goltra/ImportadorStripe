@@ -387,4 +387,18 @@ class StripeTransactionsQueue extends ModelClass
 
         return SettingStripeModel::getSetting('remesasSEPA') === 1 && Plugins::isInstalled('RemesasSEPA') && Plugins::isEnabled('RemesasSEPA');
     }
+
+
+    /**
+     * Comprueba si puedo usar verifactu
+     * @param bool $onlyVerifyPlugin
+     * @return bool
+     */
+    static function canUseVerifactu(bool $onlyVerifyPlugin = false): bool
+    {
+        if ($onlyVerifyPlugin)
+            return Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
+
+        return SettingStripeModel::getSetting('verifactu') === 1 && Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
+    }
 }

@@ -558,7 +558,7 @@ class InvoiceStripe
         // se marca como emitida
 
         $estado = new EstadoDocumento();
-        $estadoLabel = $esClienteNoVinculado ? 'Emitida' : 'Verifactu';
+        $estadoLabel = StripeTransactionsQueue::canUseVerifactu() && !$esClienteNoVinculado ? 'Verifactu' : 'Emitida';
 
         if (!$estado->loadWhere([Where::eq('tipodoc', 'FacturaCliente'), Where::eq('nombre', $estadoLabel)])) {
             self::log('El estado ' . $estadoLabel . ' no existe');

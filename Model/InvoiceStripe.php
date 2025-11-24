@@ -432,12 +432,19 @@ class InvoiceStripe
          */
 
         $client = new Cliente();
-        $client->load($invoice->fs_idFsCustomer);
 
-        if ($stripe_customer !== '' && $client->codcliente === SettingStripeModel::getSetting('codcliente')){
-            self::log('El cliente no está vinculado');
-            $invoiceFs->observaciones = 'Cliente de Stripe no vinculado en Facturascripts ('.$stripe_customer.') - ';
+        if (!$client->load($invoice->fs_idFsCustomer)) {
+            self::log('El cliente no existe');
+            throw new Exception('El cliente no existe');
         }
+
+        $esClienteNoVinculado = $stripe_customer !== '' && $client->codcliente === SettingStripeModel::getSetting('codcliente');
+
+        if ($esClienteNoVinculado){
+            self::log('El cliente no está vinculado');
+            $invoiceFs->observaciones = 'Cliente de Stripe no vinculado en Facturascripts ('.$stripe_customer.'). ';
+        }
+
 
         $invoiceFs->setSubject($client);
         $invoiceFs->dtopor1 = $invoice->discount;
@@ -498,7 +505,7 @@ class InvoiceStripe
                 if ($l['fs_product_id'] === SettingStripeModel::getSetting('codproducto')){
                     self::log('No hay producto de fs vinculado');
 
-                    $invoiceFs->observaciones = 'Producto de Stripe no vinculado en Facturascripts ('.$l['fs_product_id'].')';
+                    $invoiceFs->observaciones .= 'Producto de Stripe no vinculado en Facturascripts ('.$l['fs_product_id'].'). ';
                     $invoiceFs->save();
                 }
 
@@ -523,7 +530,7 @@ class InvoiceStripe
             }
 
             //  Agrego una nueva línea sin coste con la referencia del cliente de stripe
-            if (SettingStripeModel::getSetting('mostrarStripeCus') == 1){
+            if (SettingStripeModel::getSetting('mostrarStripeCus') == 1 && !$esClienteNoVinculado){
 //                $line = $invoiceFs->getNewLine();
 //                $line->idfactura = $invoiceFs->idfactura;
 //                $line->descripcion = 'Referencia: '.$invoice->customer_id;
@@ -532,7 +539,7 @@ class InvoiceStripe
 //                $line->save();
 
                 //  Con la entrada de verifactu la línea a coste 0 daba error, ahora lo ponemos en obsevaciones.
-                $invoiceFs->observaciones = 'Referencia: '.$invoice->customer_id;
+                $invoiceFs->observaciones = 'Referencia: '.$invoice->customer_id . '. ';
             }
 
         } else {
@@ -551,7 +558,13 @@ class InvoiceStripe
         // se marca como emitida
 
         $estado = new EstadoDocumento();
-        $estado->loadWhere([Where::eq('tipodoc', 'FacturaCliente'), Where::eq('nombre', 'Emitida')]);
+        $estadoLabel = $esClienteNoVinculado ? 'Emitida' : 'Verifactu';
+
+        if (!$estado->loadWhere([Where::eq('tipodoc', 'FacturaCliente'), Where::eq('nombre', $estadoLabel)])) {
+            self::log('El estado ' . $estadoLabel . ' no existe');
+            throw new Exception('El estado ' . $estadoLabel . ' no existe');
+        }
+
         $invoiceFs->idestado = $estado->idestado;
 
         if ($mark_as_paid === true && $payment_method !== null) $invoiceFs->codpago = $payment_method;
@@ -591,7 +604,7 @@ class InvoiceStripe
 
         self::log('return '.$invoiceFs->idfactura);
 
-        if ($send_by_email === true && $client->codcliente !== SettingStripeModel::getSetting('codcliente') && $l['fs_product_id'] !== SettingStripeModel::getSetting('codproducto')){
+        if ($send_by_email === true && !$esClienteNoVinculado && $l['fs_product_id'] !== SettingStripeModel::getSetting('codproducto')){
             self::log('Mandamos email');
             try {
                 self::exportAndSendEmail($invoiceFs->idfactura);

@@ -307,16 +307,16 @@ class StripeTransactionsQueue extends ModelClass
     {
         $stripe = new StripeClient($sk);
 
-        if (str_starts_with($source, 'ch_')) {
-            $charge = $stripe->charges->retrieve($source, []);
-
-            if (empty($charge->invoice)) {
-//                $errors[] = 'El cargo ' . $source . ' no tiene factura';
-                return null;
-            }
-
-            return $stripe->invoices->retrieve($charge->invoice, []);
-        }
+//        if (str_starts_with($source, 'ch_')) {
+//            $charge = $stripe->charges->retrieve($source, []);
+//
+//            if (empty($charge->invoice)) {
+////                $errors[] = 'El cargo ' . $source . ' no tiene factura';
+//                return null;
+//            }
+//
+//            return $stripe->invoices->retrieve($charge->invoice, []);
+//        }
 
         if (str_starts_with($source, 'in_')) {
             return $stripe->invoices->retrieve($source, []);

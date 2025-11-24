@@ -165,8 +165,8 @@ class WebhookStripeRemesasSepa extends Controller
                 StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID,
                 $payoutId,
                 date('Y-m-d H:i:s'),
-                $transaction['type'] === 'charge' ? StripeTransactionsQueueAlias::TRANSACTION_TYPE_CHARGE : StripeTransactionsQueueAlias::TRANSACTION_TYPE_PAYMENT_INTENT,
-                $transaction['source'],
+                StripeTransactionsQueueAlias::TRANSACTION_TYPE_INVOICE,
+                $transaction['source']->invoice,
                 StripeTransactionsQueueAlias::DESTINATION_REMESA,
                 $remesa->idremesa,
             ))
@@ -178,8 +178,8 @@ class WebhookStripeRemesasSepa extends Controller
                     'evento' => StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID,
                     'pago' => $payoutId,
                     'fecha' => date('Y-m-d H:i:s'),
-                    'transacción' => $transaction['type'] === 'charge' ? StripeTransactionsQueueAlias::TRANSACTION_TYPE_CHARGE : StripeTransactionsQueueAlias::TRANSACTION_TYPE_PAYMENT_INTENT,
-                    'transaccion_id' => $transaction['source'],
+                    'transacción' => StripeTransactionsQueue::TRANSACTION_TYPE_INVOICE,
+                    'transaccion_id' => $transaction['source']->invoice,
                     'destino' => StripeTransactionsQueueAlias::DESTINATION_REMESA,
                     'destino_id' => $remesa->idremesa,
                 ];
@@ -211,6 +211,7 @@ class WebhookStripeRemesasSepa extends Controller
         $params = [
             'payout' => $payoutId,
             'limit'  => $limit,
+            'expand' => ['data.source.source'],
         ];
 
         if ($startingAfter) {

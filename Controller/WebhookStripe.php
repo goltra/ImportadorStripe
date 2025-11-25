@@ -82,7 +82,7 @@ class WebhookStripe extends Controller
             $id = $event->data->object->id;
 
             if($event->data->object->amount_paid === 0)
-                $this->sendError('Se ha pagado 0€, no se factura', 200);
+                $this->sendError('Se ha pagado 0€, no se factura', 200, false);
 
 
             if (StripeTransactionsQueue::existsObjectId($id, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID))
@@ -113,18 +113,21 @@ class WebhookStripe extends Controller
     /**
      * @param $error
      * @param $response_code
+     * @param bool $send_email
      * @return void
      */
-    private function sendError($error, $response_code): void
+    private function sendError($error, $response_code, bool $send_email = true): void
     {
         echo $error;
         InvoiceStripe::log($error);
 
-        try {
-            $this->sendMailError($error);
-        }
-        catch (Exception $e) {
-            InvoiceStripe::log('No se ha podido mandar el email. '. $e->getMessage());
+        if ($send_email){
+            try {
+                $this->sendMailError($error);
+            }
+            catch (Exception $e) {
+                InvoiceStripe::log('No se ha podido mandar el email. '. $e->getMessage());
+            }
         }
 
         http_response_code($response_code);

@@ -217,7 +217,7 @@ class StripeTransactionsQueue extends ModelClass
 
     /**
      * Método que va a mandar un email
-     * @param $nombre_remesa
+     * @param $id_remesa
      * @return void
      * @throws LoaderError
      * @throws RuntimeError

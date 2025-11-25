@@ -1,6 +1,7 @@
 <?php
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
+use FacturaScripts\Core\Base\DataBase;
 use FacturaScripts\Core\Model\IdentificadorFiscal;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Core\Where;
@@ -95,11 +96,21 @@ class ListStripeTransactionsQueue extends ListController
 
         //  Colores de las filas
         $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_PENDING, 'warning', 'Pendiente');
+        $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_SUCCESS, '', 'Procesado');
         $this->addColor($viewName, 'status', StripeTransactionsQueue::STATUS_ERROR, 'danger', 'Error');
 
 
         // Filtros
         $this->addSearchFields($viewName, ['object_id']);
+
+
+        $this->addFilterSelect(
+            $viewName,
+            'stripe_account',
+            'Cuenta de stripe',
+            'stripe_account',
+            $this->getDistinctStripeAccount()
+        );
 
         $this->addFilterSelect(
             $viewName,
@@ -109,13 +120,13 @@ class ListStripeTransactionsQueue extends ListController
             StripeTransactionsQueue::$eventOptions
         );
 
-        $this->addFilterSelect(
-            $viewName,
-            'object_id',
-            'Evento',
-            'object_id',
-            $this->getDistinctPayouts()
-        );
+//        $this->addFilterSelect(
+//            $viewName,
+//            'object_id',
+//            'Evento',
+//            'object_id',
+//            $this->getDistinctPayouts()
+//        );
 
         $this->addFilterSelect(
             $viewName,
@@ -146,16 +157,32 @@ class ListStripeTransactionsQueue extends ListController
     /**
      * Listado de payouts que hay en la tabla para el filtro
      */
-    protected function getDistinctPayouts(): array
-    {
-        $items = StripeTransactionsQueue::all([ Where::like('event', StripeTransactionsQueue::EVENT_PAYOUT_PAID )]);
-        $ret = [];
-        foreach ($items as $line) {
-            if (array_key_exists($line->object_id, $ret))
-                continue;
+//    protected function getDistinctPayouts(): array
+//    {
+//        $items = StripeTransactionsQueue::all([ Where::like('event', StripeTransactionsQueue::EVENT_PAYOUT_PAID )]);
+//        $ret = [];
+//        foreach ($items as $line) {
+//            if (array_key_exists($line->object_id, $ret))
+//                continue;
+//
+//            $ret[$line->object_id] = $line->object_id;
+//        }
+//        return $ret;
+//    }
 
-            $ret[$line->object_id] = $line->object_id;
+
+
+    /**
+     * Listado de payouts que hay en la tabla para el filtro
+     */
+    protected function getDistinctStripeAccount(): array
+    {
+        $db = new DataBase();
+        $items = $db->select("SELECT DISTINCT stripe_account FROM stripe_transactions_queue");
+        $res = [];
+        foreach ($items as $line) {
+            $res[$line['stripe_account']] = $line['stripe_account'];
         }
-        return $ret;
+        return $res;
     }
 }

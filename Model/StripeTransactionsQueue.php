@@ -169,7 +169,7 @@ class StripeTransactionsQueue extends ModelClass
 
             //         Calculamos los totales de la remesa
                         $remesa->updateTotal();
-                        $this->sendMailRemesaCompleta($remesa->nombre);
+                        $this->sendMailRemesaCompleta($remesa->idremesa);
                     }
                 }
                 catch (Exception $e) {
@@ -224,9 +224,9 @@ class StripeTransactionsQueue extends ModelClass
      * @throws SyntaxError
      * @throws \PHPMailer\PHPMailer\Exception
      */
-    private function sendMailRemesaCompleta($nombre_remesa): void
+    private function sendMailRemesaCompleta($id_remesa): void
     {
-        $subject = 'Remesa ' . $nombre_remesa . ' procesada';
+        $subject = 'Remesa ' . $id_remesa . ' procesada';
         $body = 'La remesa se ha procesado completamente, por favor comprueba que está correcta.';
 
         $mail = NewMail::create()

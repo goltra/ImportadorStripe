@@ -141,8 +141,8 @@ class WebhookStripe extends Controller
      */
     private function sendMailError(string $error = ''): void
     {
-        $subject = 'Error al generar la remesa de cobro de stripe';
-        $body = "Hola, \r\n La llamada de stripe para generar una remesa ha dado error: . \r\n";
+        $subject = 'Error al procesar la factura de stripe';
+        $body = "Hola, \r\n La llamada de stripe para procesar una factura ha dado error: . \r\n";
 
         if ($error)
             $body .= $error;

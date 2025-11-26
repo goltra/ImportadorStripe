@@ -101,7 +101,7 @@ class ListStripeTransactionsQueue extends ListController
 
 
         // Filtros
-        $this->addSearchFields($viewName, ['object_id']);
+        $this->addSearchFields($viewName, ['object_id', 'transaction_id']);
 
 
         $this->addFilterSelect(
@@ -128,13 +128,13 @@ class ListStripeTransactionsQueue extends ListController
 //            $this->getDistinctPayouts()
 //        );
 
-        $this->addFilterSelect(
-            $viewName,
-            'transaction_type',
-            'Transaccion',
-            'transaction_type',
-            StripeTransactionsQueue::$tansactionTypeOptions
-        );
+//        $this->addFilterSelect(
+//            $viewName,
+//            'transaction_type',
+//            'Transaccion',
+//            'transaction_type',
+//            StripeTransactionsQueue::$tansactionTypeOptions
+//        );
 
         $this->addFilterSelect(
             $viewName,

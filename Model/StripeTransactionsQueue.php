@@ -227,7 +227,23 @@ class StripeTransactionsQueue extends ModelClass
     private function sendMailRemesaCompleta($id_remesa): void
     {
         $subject = 'Remesa ' . $id_remesa . ' procesada';
-        $body = 'La remesa se ha procesado completamente, por favor comprueba que está correcta.';
+        $body = 'La remesa se ha procesado completamente, por favor comprueba que está correcta. \r\n';
+
+        $errors = self::all([
+            new DataBaseWhere('destination', self::DESTINATION_REMESA),
+            new DataBaseWhere('destination_id', $id_remesa),
+            new DataBaseWhere('status', self::STATUS_ERROR),
+        ]);
+
+        $res = [];
+
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $res[] = '- Factura: ' . $error->transaction_id;
+            }
+        }
+
+        $body .= "Errores:\r\n" . implode("\r\n", $res);
 
         $mail = NewMail::create()
             ->to(SettingStripeModel::getSetting('adminEmail'))
@@ -292,6 +308,8 @@ class StripeTransactionsQueue extends ModelClass
 
         return empty($pending);
     }
+
+
 
 
     /**

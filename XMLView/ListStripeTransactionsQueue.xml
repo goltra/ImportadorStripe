@@ -17,9 +17,9 @@
             <widget type="text" fieldname="object_date" />
         </column>
 
-        <column name="Tipo de transacción" order="120" display="left">
-            <widget type="text" fieldname="transaction_type" />
-        </column>
+<!--        <column name="Tipo de transacción" order="120" display="left">-->
+<!--            <widget type="text" fieldname="transaction_type" />-->
+<!--        </column>-->
 
         <column name="Transacción" order="125" display="left">
             <widget type="text" fieldname="transaction_id" />

@@ -298,7 +298,7 @@ class WebhookStripeRemesasSepa extends Controller
         $body = "Hola, \r\n Se ha creado la remesa $idRemesa de forma automática por un pago de stripe. Y todas las líneas se han agregado a la cola para su procesamiento. \r\n";
         $body .= "Total del ingreso: $totalIngresoStripe €\n";
         $body .= "Total cargos: $numCargos \r\n";
-        $body .= "Num cargos registrados: $cargosCorrectos \r\n";
+        $body .= "Num cargos agregados a la cola: $cargosCorrectos \r\n";
 
         if (count($errores) > 0)
             $body .= "Errores:\r\n" . implode("\r\n", $errores);

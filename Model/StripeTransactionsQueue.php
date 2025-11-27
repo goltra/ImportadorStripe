@@ -149,6 +149,10 @@ class StripeTransactionsQueue extends ModelClass
 
     /**
      * @return void
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     * @throws \PHPMailer\PHPMailer\Exception
      */
     public function processQueueRow(): void
     {
@@ -200,7 +204,9 @@ class StripeTransactionsQueue extends ModelClass
                  } catch (Exception) {
                     $this->status = self::STATUS_ERROR;
                     $this->error_type = self::ERROR_TYPE_NOT_GENERATE_INVOICE;
-                    $this->save();
+
+                    if ($this->save())
+                        $this->sendMailError();
                 }
 
                 break;
@@ -212,6 +218,26 @@ class StripeTransactionsQueue extends ModelClass
                 $this->save();
                 break;
         }
+    }
+
+    /**
+     * @return void
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     * @throws \PHPMailer\PHPMailer\Exception
+     */
+    private function sendMailError(): void
+    {
+        $subject = 'Error al procesar la factura de stripe';
+        $body = "Hola, \r\n La llamada de stripe para procesar la factura $this->object_id ha dado error: . \r\n";
+
+        $mail = NewMail::create()
+            ->to(SettingStripeModel::getSetting('satEmail'))
+            ->subject($subject)
+            ->body(nl2br($body));
+
+        $mail->send();
     }
 
 

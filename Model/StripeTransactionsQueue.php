@@ -230,7 +230,7 @@ class StripeTransactionsQueue extends ModelClass
     private function sendMailError(): void
     {
         $subject = 'Error al procesar la factura de stripe';
-        $body = "Hola, \r\n La llamada de stripe para procesar la factura $this->object_id ha dado error: . \r\n";
+        $body = "Hola, \r\n se ha intentado procesar la factura $this->object_id y ha dado error: . \r\n";
 
         $mail = NewMail::create()
             ->to(SettingStripeModel::getSetting('adminEmail'))

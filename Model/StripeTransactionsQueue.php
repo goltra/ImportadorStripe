@@ -233,7 +233,8 @@ class StripeTransactionsQueue extends ModelClass
         $body = "Hola, \r\n La llamada de stripe para procesar la factura $this->object_id ha dado error: . \r\n";
 
         $mail = NewMail::create()
-            ->to(SettingStripeModel::getSetting('satEmail'))
+            ->to(SettingStripeModel::getSetting('adminEmail'))
+            ->cc(SettingStripeModel::getSetting('satEmail'))
             ->subject($subject)
             ->body(nl2br($body));
 

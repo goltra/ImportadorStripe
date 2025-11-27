@@ -227,7 +227,7 @@ class StripeTransactionsQueue extends ModelClass
     private function sendMailRemesaCompleta($id_remesa): void
     {
         $subject = 'Remesa ' . $id_remesa . ' procesada';
-        $body = 'La remesa se ha procesado completamente, por favor comprueba que está correcta. \r\n';
+        $body = "La remesa se ha procesado completamente, por favor comprueba que está correcta. \r\n";
 
         $errors = self::all([
             new DataBaseWhere('destination', self::DESTINATION_REMESA),
@@ -235,15 +235,15 @@ class StripeTransactionsQueue extends ModelClass
             new DataBaseWhere('status', self::STATUS_ERROR),
         ]);
 
-        $res = [];
-
         if (count($errors) > 0) {
+            $res = [];
+
             foreach ($errors as $error) {
                 $res[] = '- Factura: ' . $error->transaction_id;
             }
-        }
 
-        $body .= "Errores:\r\n" . implode("\r\n", $res);
+            $body .= "Errores:\r\n" . implode("\r\n", $res);
+        }
 
         $mail = NewMail::create()
             ->to(SettingStripeModel::getSetting('adminEmail'))
@@ -403,7 +403,7 @@ class StripeTransactionsQueue extends ModelClass
         if ($onlyVerifyPlugin)
             return Plugins::isInstalled('RemesasSEPA') && Plugins::isEnabled('RemesasSEPA');
 
-        return SettingStripeModel::getSetting('remesasSEPA') === 1 && Plugins::isInstalled('RemesasSEPA') && Plugins::isEnabled('RemesasSEPA');
+        return SettingStripeModel::getSetting('remesasSEPA') && Plugins::isInstalled('RemesasSEPA') && Plugins::isEnabled('RemesasSEPA');
     }
 
 
@@ -417,6 +417,6 @@ class StripeTransactionsQueue extends ModelClass
         if ($onlyVerifyPlugin)
             return Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
 
-        return SettingStripeModel::getSetting('verifactu') === 1 && Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
+        return SettingStripeModel::getSetting('verifactu') && Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
     }
 }

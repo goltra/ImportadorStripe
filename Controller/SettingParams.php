@@ -99,7 +99,7 @@ class SettingParams extends Controller
         $this->satEmail = SettingStripeModel::getSetting('satEmail') ?? Session::get('user')->email;
         $this->adminEmail = SettingStripeModel::getSetting('adminEmail') ?? Session::get('user')->email;
         $this->mostrarStripeCus = SettingStripeModel::getSetting('mostrarStripeCus');
-        $this->remesasSEPA = SettingStripeModel::getSetting('remesasSEPA');
+        $this->remesasSEPA = SettingStripeModel::getSetting('remesasSEPA') ?? false;
         $this->cuentaRemesaSEPA = SettingStripeModel::getSetting('cuentaRemesaSEPA') ?? '';
         $this->verifactu = SettingStripeModel::getSetting('verifactu') ?? false;
     }

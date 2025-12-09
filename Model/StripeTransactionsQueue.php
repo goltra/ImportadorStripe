@@ -148,13 +148,14 @@ class StripeTransactionsQueue extends ModelClass
     }
 
     /**
+     * @param bool $sendMailError
      * @return void
      * @throws LoaderError
      * @throws RuntimeError
      * @throws SyntaxError
      * @throws \PHPMailer\PHPMailer\Exception
      */
-    public function processQueueRow(): void
+    public function processQueueRow(bool $sendMailError = true): void
     {
         switch ($this->event) {
             case self::EVENT_PAYOUT_PAID:
@@ -186,7 +187,7 @@ class StripeTransactionsQueue extends ModelClass
             case self::EVENT_INVOICE_PAYMENT_SUCCEEDED:
 
                 try {
-                    $enviarEmail = SettingStripeModel::getSetting('enviarEmail') == 1;
+                    $enviarEmail = SettingStripeModel::getSetting('enviarEmail') == 1 && $this->status !== self::STATUS_ERROR;
                     InvoiceStripe::generateFSInvoice(
                         $this->transaction_id,
                         SettingStripeModel::loadSkIndexStripeByName($this->stripe_account),
@@ -194,7 +195,8 @@ class StripeTransactionsQueue extends ModelClass
                         'TARJETA',
                         $enviarEmail,
                         $this->destination_id,
-                        'webhook'
+                        'webhook',
+                        $this->status === self::STATUS_ERROR,
                     );
 
                     $this->status = self::STATUS_SUCCESS;
@@ -205,7 +207,7 @@ class StripeTransactionsQueue extends ModelClass
                     $this->status = self::STATUS_ERROR;
                     $this->error_type = self::ERROR_TYPE_NOT_GENERATE_INVOICE;
 
-                    if ($this->save())
+                    if ($this->save() && $sendMailError)
                         $this->sendMailError();
                 }
 

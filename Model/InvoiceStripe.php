@@ -386,7 +386,7 @@ class InvoiceStripe
      * return Array
      * @throws Exception
      */
-    static public function generateFSInvoice($id_invoice_stripe, $sk_stripe_index, $mark_as_paid = false, $payment_method = null, $send_by_email = false, $stripe_customer = '', $source = 'direct'): array
+    static public function generateFSInvoice($id_invoice_stripe, $sk_stripe_index, $mark_as_paid = false, $payment_method = null, $send_by_email = false, $stripe_customer = '', $source = 'direct', $esBoceto = false): array
     {
         self::log('generateFSInvoice');
         $invoices = self::loadInvoiceFromStripe($id_invoice_stripe, $sk_stripe_index);
@@ -558,7 +558,11 @@ class InvoiceStripe
         // se marca como emitida
 
         $estado = new EstadoDocumento();
-        $estadoLabel = StripeTransactionsQueue::canUseVerifactu() && !$esClienteNoVinculado ? 'Verifactu' : 'Emitida';
+
+        $estadoLabel = 'Boceto';
+
+        if (!$esBoceto)
+            $estadoLabel = StripeTransactionsQueue::canUseVerifactu() && !$esClienteNoVinculado ? 'Verifactu' : 'Emitida';
 
         if (!$estado->loadWhere([Where::eq('tipodoc', 'FacturaCliente'), Where::eq('nombre', $estadoLabel)])) {
             self::log('El estado ' . $estadoLabel . ' no existe');

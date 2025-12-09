@@ -2,12 +2,9 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\DataBase;
-use FacturaScripts\Core\Model\IdentificadorFiscal;
 use FacturaScripts\Core\Tools;
-use FacturaScripts\Core\Where;
 use FacturaScripts\Dinamic\Lib\ExtendedController\ListController;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
-use Stripe\Exception\ApiErrorException;
 
 class ListStripeTransactionsQueue extends ListController
 {
@@ -61,10 +58,9 @@ class ListStripeTransactionsQueue extends ListController
             return true;
         }
 
-        $transaction->processQueueRow();
+        $transaction->processQueueRow(false);
 
         Tools::log()->info('Linea procesada, revisa que no haya dado error.');
-
 
         return true;
     }

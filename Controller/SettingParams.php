@@ -168,7 +168,7 @@ class SettingParams extends Controller
             $settings['cuentaRemesaSEPA'] = $this->cuentaRemesaSEPA;
 
 
-        if ($this->verifactu !== '0') {
+        if ($this->verifactu && $this->verifactu !== '0') {
             if (!Plugins::isInstalled('Verifactu')) {
                 Tools::log()->error('No tienes instalado el plugin Verifactu.');
                 return;

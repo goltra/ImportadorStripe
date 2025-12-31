@@ -137,6 +137,10 @@ class StripeTransactionsQueue extends ModelClass
 
     /**
      * @return void
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
+     * @throws \PHPMailer\PHPMailer\Exception
      */
     static function processQueue(): void
     {
@@ -144,6 +148,7 @@ class StripeTransactionsQueue extends ModelClass
 
         foreach ($data as $d) {
             $d->processQueueRow();
+            sleep(2);
         }
     }
 

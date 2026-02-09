@@ -39,7 +39,6 @@ class SettingStripeModel
         }
     }
 
-
     /**
      * @param $setting
      * @return mixed|string

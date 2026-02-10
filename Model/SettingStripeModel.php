@@ -17,25 +17,7 @@ class SettingStripeModel
         return ($sk_serialized !== null) ? unserialize($sk_serialized) : [];
     }
 
-
-    /**
-     * Obtiene el sk por nombre
-     * @param $name
-     * @return mixed|null
-     */
-    public static function getSkIndexByName($name)
-    {
-        $res = null;
-
-        foreach (self::getSks() as $index => $sk){
-            if ($sk['name'] === $name)
-                $res = $index;
-        }
-
-        return $res;
-    }
-
-    public static function removeSk($name)
+    public static function removeSk($name): void
     {
         $sks = self::getSks();
         foreach ($sks as $sk) {
@@ -48,7 +30,7 @@ class SettingStripeModel
         self::save($sks, 'sks');
     }
 
-    public static function addSk($name, $sk, $serie)
+    public static function addSk($name, $sk, $serie): void
     {
         $sks = self::getSks();
         if (is_array($sks)) {
@@ -57,27 +39,74 @@ class SettingStripeModel
         }
     }
 
-
     /**
      * @param $setting
      * @return mixed|string
      */
-    public static function getSetting($setting)
+    public static function getSetting($setting): mixed
     {
         $settings_serialized = Tools::settings('stripe', 'settings');
         return ($settings_serialized !== null) ? unserialize($settings_serialized)[$setting] : '';
     }
 
-    public static function addSettings($settings)
+    public static function addSettings($settings): void
     {
         if (is_array($settings)) {
             self::save($settings, 'settings');
         }
     }
 
-    private static function save($data, $type)
+    private static function save($data, $type): void
     {
         Tools::settingsSet('stripe', $type, serialize($data));
         Tools::settingsSave();
     }
+
+
+    /**
+     * Devuelve el sk de stripe mediante el token. Esto se usa por ejemplo para las llamadas desde el webhook de stripe
+     * @param $token
+     * @return array
+     */
+    static function loadSkStripeByToken($token): array
+    {
+        foreach (self::getSks() as $sk){
+            if($sk['token'] === $token)
+                return $sk;
+        }
+
+        return [];
+    }
+
+    /**
+     * Devuelve el sk de stripe en base al nombre en facturascripts
+     * @param $name
+     * @return int|null
+     */
+    static function loadSkIndexStripeByName($name): int| null
+    {
+        foreach (self::getSks() as $i => $sk){
+            if($sk['name'] === $name)
+                return $i;
+        }
+
+        return null;
+    }
+
+    /**
+     * Devuelve el sk de stripe en base al nombre en facturascripts
+     * @param $name
+     * @return string|null
+     */
+    static function loadSkStripeByName($name): string| null
+    {
+        foreach (self::getSks() as $i => $sk){
+            if($sk['name'] === $name)
+                return $sk['sk'];
+        }
+
+        return null;
+    }
+
+
 }

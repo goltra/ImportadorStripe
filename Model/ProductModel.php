@@ -22,7 +22,7 @@ class ProductModel
         return SettingStripeModel::getSks();
     }
 
-    static public function loadStripeProducts($sk_stripe_index, $start = null, int $limit = 1000)
+    static public function loadStripeProducts($sk_stripe_index, $start = null, int $limit = 1000): ?array
     {
         $stripe_ids = self::loadSkStripe();
         // Cargo el index del sk pasado a la función
@@ -72,7 +72,7 @@ class ProductModel
      * @param $data
      * @return array Devuelve un array vacio o con objetos de tipo ProductModel
      */
-    static private function processProductStripeObjects($data)
+    static private function processProductStripeObjects($data): array
     {
         $res = [];
         foreach ($data as $item) {

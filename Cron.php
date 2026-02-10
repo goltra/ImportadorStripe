@@ -1,18 +1,25 @@
 <?php
-namespace FacturaScripts\Plugins\MyPlugin;
+namespace FacturaScripts\Plugins\ImportadorStripe;
 
 use FacturaScripts\Core\Template\CronClass;
+use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
 
+/**
+ * Aquí se define las tareas cron que se van a ejecutar.
+ * El parámetro every es cada cuanto se va a ejecutar ese cron pero tienes que ir haciendo pings desde el servidor para que vaya.
+ * Es decir si tu configuras every para que se haga cada hora, tienes que hacer pings mínimo cada hora para que funcione.
+ * Si haces pings cada 5 min y tienes 1 cron cada hora, sólo se ejecutará 1 vez cada hora.
+ */
 class Cron extends CronClass
 {
     public function run(): void
     {
-        /*
-        if ($this->isTimeForJob("my-job-name", "6 hours")) {
-            /// su código aquí
-            $this->jobDone("my-job-name");
-        }
-        */
+        $this->job('procesar-cola-pagos-stripe')
+//            ->every('1 hour')
+            ->every('5 minutes')
+            ->run(function () {
+                StripeTransactionsQueue::processQueue();
+            });
     }
 }
 

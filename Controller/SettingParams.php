@@ -8,27 +8,34 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\KernelException;
 use FacturaScripts\Core\Plugins;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Serie;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use FacturaScripts\Core\Session;
+use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
 
 class SettingParams extends Controller
 {
+    public array $sks_stripe = [];
+    public array $series = [];
+    public string $codcliente = '';
+    public string $codproducto = '';
+    public bool $enviarEmail;
+    public string $satEmail = '';
+    public string $adminEmail = '';
+    public bool $mostrarStripeCus;
+    public bool $remesasSEPA = false;
+    public string $cuentaRemesaSEPA = '';
+    public bool $hayPluginRemesas = false;
+    public bool $verifactu = false;
+    public bool $hayPluginVerifactu = false;
 
-    public $sks_stripe = [];
-    public $series = [];
-    public $codcliente = '';
-    public $codproducto = '';
-    public $enviarEmail;
-    public $adminEmail = '';
-    public $mostrarStripeCus;
-    public $remesasSEPA = false;
-    public $cuentaRemesaSEPA = '';
-
-
-    public function privateCore(&$response, $user, $permissions)
+    /**
+     * @throws KernelException
+     */
+    public function privateCore(&$response, $user, $permissions): void
     {
         $this->init();
         parent::privateCore($response, $user, $permissions);
@@ -39,17 +46,19 @@ class SettingParams extends Controller
         $pageData = parent::getPageData();
         $pageData['title'] = 'Ajustes';
         $pageData['menu'] = 'Stripe';
-        $pageData['icon'] = 'fas fa-search';
+        $pageData['icon'] = 'fa-solid fa-sliders';
         $pageData['showonmenu'] = true;
         return $pageData;
     }
 
-    private function init()
+    private function init(): void
     {
         $this->title='Configuración de Claves de stripe';
         $action = $this->request->query->get('action');
         $serieModel = new Serie();
         $this->series = $serieModel->all();
+        $this->hayPluginRemesas = StripeTransactionsQueue::canUseRemesas(true);
+        $this->hayPluginVerifactu = StripeTransactionsQueue::canUseVerifactu(true);
 
         switch ($action) {
             case 'add':
@@ -77,23 +86,25 @@ class SettingParams extends Controller
         }
     }
 
-    private function getAllSks()
+    private function getAllSks(): void
     {
         $this->sks_stripe = SettingStripeModel::getSks();
     }
 
-    private function getAllSettings()
+    private function getAllSettings(): void
     {
         $this->codcliente = SettingStripeModel::getSetting('codcliente');
         $this->codproducto = SettingStripeModel::getSetting('codproducto');
         $this->enviarEmail = SettingStripeModel::getSetting('enviarEmail');
-        $this->adminEmail = SettingStripeModel::getSetting('adminEmail');
+        $this->satEmail = SettingStripeModel::getSetting('satEmail') ?? Session::get('user')->email;
+        $this->adminEmail = SettingStripeModel::getSetting('adminEmail') ?? Session::get('user')->email;
         $this->mostrarStripeCus = SettingStripeModel::getSetting('mostrarStripeCus');
-        $this->remesasSEPA = SettingStripeModel::getSetting('remesasSEPA');
+        $this->remesasSEPA = SettingStripeModel::getSetting('remesasSEPA') ?? false;
         $this->cuentaRemesaSEPA = SettingStripeModel::getSetting('cuentaRemesaSEPA') ?? '';
+        $this->verifactu = SettingStripeModel::getSetting('verifactu') ?? false;
     }
 
-    private function setSkStripe()
+    private function setSkStripe(): void
     {
         $data = $this->request->request->all();
         $name = $data['name'];
@@ -110,16 +121,20 @@ class SettingParams extends Controller
 
     }
 
-    private function setSettings(){
+    private function setSettings(): void
+    {
         $data = $this->request->request->all();
 
         $this->codcliente = $data['codcliente'];
         $this->codproducto = $data['codproducto'];
         $this->enviarEmail = $data['enviarEmail'];
+
+        $this->satEmail = $data['satEmail'];
         $this->adminEmail = $data['adminEmail'];
         $this->mostrarStripeCus = $data['mostrarStripeCus'];
         $this->remesasSEPA = $data['remesasSEPA'];
         $this->cuentaRemesaSEPA = $data['cuentaRemesaSEPA'];
+        $this->verifactu = $data['verifactu'];
 
         $settings = [];
 
@@ -135,28 +150,37 @@ class SettingParams extends Controller
         if($this->mostrarStripeCus !== null)
             $settings['mostrarStripeCus'] = $this->mostrarStripeCus;
 
-        if($this->remesasSEPA !== null){
 
-            if ($this->remesasSEPA !== '0') {
-                if (!Plugins::isInstalled('RemesasSEPA')){
-                    Tools::log()->error('No tienes instalado el plugin Remesas SEPA.');
-                    return;
-                }
-                if (!Plugins::isEnabled('RemesasSEPA')){
-                    Tools::log()->error('No tienes activado el plugin Remesas SEPA.');
-                    return;
-                }
+        if ($this->remesasSEPA !== '0') {
+            if (!Plugins::isInstalled('RemesasSEPA')){
+                Tools::log()->error('No tienes instalado el plugin Remesas SEPA.');
+                return;
             }
-
-            $settings['remesasSEPA'] = $this->remesasSEPA;
+            if (!Plugins::isEnabled('RemesasSEPA')){
+                Tools::log()->error('No tienes activado el plugin Remesas SEPA.');
+                return;
+            }
         }
 
-
+        $settings['remesasSEPA'] = $this->remesasSEPA;
 
         if($this->cuentaRemesaSEPA !== null)
             $settings['cuentaRemesaSEPA'] = $this->cuentaRemesaSEPA;
 
 
+        if ($this->verifactu && $this->verifactu !== '0') {
+            if (!Plugins::isInstalled('Verifactu')) {
+                Tools::log()->error('No tienes instalado el plugin Verifactu.');
+                return;
+            }
+            if (!Plugins::isEnabled('Verifactu')) {
+                Tools::log()->error('No tienes activado el plugin Verifactu.');
+                return;
+            }
+        }
+        $settings['verifactu'] = $this->verifactu;
+
+        $settings['satEmail'] = strlen($this->satEmail) > 0 ? $this->satEmail : Session::get('user')->email;
         $settings['adminEmail'] = strlen($this->adminEmail) > 0 ? $this->adminEmail : Session::get('user')->email;
 
         SettingStripeModel::addSettings($settings);
@@ -165,7 +189,7 @@ class SettingParams extends Controller
 
     }
 
-    private function delSkStripe($name)
+    private function delSkStripe($name): void
     {
         SettingStripeModel::removeSk($name);
         $this->getAllSks();

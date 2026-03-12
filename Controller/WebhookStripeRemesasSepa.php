@@ -130,7 +130,7 @@ class WebhookStripeRemesasSepa extends Controller
         //  Creo la remesa
         $remesa = new RemesaSEPA();
 
-        $remesa->nombre = $payoutId;
+        $remesa->nombre = 'GOLTRATEC S.L.';
         $remesa->descripcion = 'Pago ' . $sk['name'];
         $remesa->fecha = date('Y-m-d H:i:s');
         $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);

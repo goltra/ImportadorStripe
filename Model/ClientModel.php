@@ -8,20 +8,29 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
+use Stripe\Exception\ApiErrorException;
 
 class ClientModel
 {
 
-    public $id;
-    public $email;
-    public $fs_idClient;
+    public string $id;
+    public string $email;
+    public string $fs_idClient;
 
     static function loadSkStripe()
     {
         return SettingStripeModel::getSks();
     }
 
-    static public function loadStripeCustomers($sk_stripe_index, $stripe_customer_email = '', $start = null, int $limit = 10)
+    /**
+     * @param $sk_stripe_index
+     * @param string $stripe_customer_email
+     * @param null $start
+     * @param int $limit
+     * @return array|null
+     * @throws ApiErrorException
+     */
+    static public function loadStripeCustomers($sk_stripe_index, $stripe_customer_email = '', $start = null, int $limit = 10): ?array
     {
 
         $limit = 100000;
@@ -62,13 +71,13 @@ class ClientModel
      * @param $data
      * @return array Devuelve un array vacio o con objetos de tipo ProductModel
      */
-    static private function processStripeObjects($data)
+    static private function processStripeObjects($data): array
     {
         $res = [];
         foreach ($data as $item) {
             $obj = new ClientModel();
             $obj->id = $item['id'];
-            $obj->email = $item['email'];
+            $obj->email = $item['email'] ?? '';
             $obj->fs_idClient = isset($item->metadata['fs_idFsCustomer']) && $item->metadata['fs_idFsCustomer'] !== '' ? $item->metadata['fs_idFsCustomer'] : '';
             $res[] = $obj;
         }
@@ -76,7 +85,7 @@ class ClientModel
         return $res;
     }
 
-    static public function linkFsClientToStripeCustomer(string $stripe_customer_id, int $sk_stripe_index, string $fs_idFsCustomer)
+    static public function linkFsClientToStripeCustomer(string $stripe_customer_id, int $sk_stripe_index, string $fs_idFsCustomer): array
     {
         $stripe_ids = self::loadSkStripe();
         $sk_stripe = $stripe_ids[$sk_stripe_index];

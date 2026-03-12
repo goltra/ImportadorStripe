@@ -8,6 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\KernelException;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Plugins\ImportadorStripe\Model\ProductModel;
@@ -16,34 +17,37 @@ use FacturaScripts\Core\Lib\AssetManager;
 class ListProduct extends Controller
 {
 
-    public $products = [];
-    public $sks_stripe = [];
-    public $action = '';
-    public $sk_stripe_index = null;
+    public array $products = [];
+    public array $sks_stripe = [];
+    public string $action = '';
+    public int|null $sk_stripe_index = null;
 
     public function getPageData(): array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'Productos';
         $pageData['menu'] = 'Stripe';
-        $pageData['icon'] = 'fas fa-search';
+        $pageData['icon'] = 'fa-solid fa-cubes';
         $pageData['showonmenu'] = true;
         return $pageData;
     }
 
-    public function privateCore(&$response, $user, $permissions)
+    /**
+     * @throws KernelException
+     */
+    public function privateCore(&$response, $user, $permissions): void
     {
         parent::privateCore($response, $user, $permissions);
         $this->init();
     }
 
-    private function init()
+    private function init(): void
     {
         session_start();
 
         AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/stripe.css');
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
-        $this->action = $this->request->query->get('action');
+        $this->action = $this->request->query->get('action') ?? '';
         $this->sks_stripe = ProductModel::loadSkStripe();
         switch ($this->action) {
             case('load'):
@@ -60,7 +64,7 @@ class ListProduct extends Controller
                     $this->sk_stripe_index = $_SESSION['sk_stripe_index'];
                 } else {
                     Tools::log()->error('No se ha recibido el sk correspondiente');
-                    return false;
+                    return;
                 }
 
                 $start = $this->request->query->get('start');
@@ -113,7 +117,7 @@ class ListProduct extends Controller
         }*/
     }
 
-    public function getData($sk_stripe_index, $start = null, $limit = 10)
+    public function getData($sk_stripe_index, $start = null, $limit = 10): void
     {
         try{
             $data = ProductModel::loadStripeProducts($sk_stripe_index, $start, $limit);

@@ -8,6 +8,7 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\KernelException;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\ClientModel;
 use FacturaScripts\Core\Lib\AssetManager;
@@ -29,18 +30,21 @@ class ListClient extends Controller
         $pageData = parent::getPageData();
         $pageData['title'] = 'Clientes';
         $pageData['menu'] = 'Stripe';
-        $pageData['icon'] = 'fas fa-search';
+        $pageData['icon'] = 'fa fa-users';
         $pageData['showonmenu'] = true;
         return $pageData;
     }
 
-    public function privateCore(&$response, $user, $permissions)
+    /**
+     * @throws KernelException
+     */
+    public function privateCore(&$response, $user, $permissions): void
     {
         parent::privateCore($response, $user, $permissions);
         $this->init();
     }
 
-    private function init()
+    private function init(): void
     {
         session_start();
 
@@ -50,19 +54,19 @@ class ListClient extends Controller
         $this->sks_stripe = ClientModel::loadSkStripe();
         switch ($this->action) {
             case('linkPaymentMethod'):
-                if (
-                    ($pm = $this->request->query->get('pm')) !== null &&
-                    ($stripe_customer_id = $this->request->query->get('stripe_customer_id')) !== null
-                ) {
-                        $res = ClientModel::addPaymentMethodInMetaData($stripe_customer_id, $_SESSION['sk_stripe_index'], $pm);
-
-//                        if ($res['status'] === true) {
-//                            Tools::log()->info('Cliente vinculado correctamente.');
-//                        } else {
-//                            Tools::log()->error($res['message']);
-//                        }
-
-                }
+//                if (
+//                    ($pm = $this->request->query->get('pm')) !== null &&
+//                    ($stripe_customer_id = $this->request->query->get('stripe_customer_id')) !== null
+//                ) {
+//                        $res = ClientModel::addPaymentMethodInMetaData($stripe_customer_id, $_SESSION['sk_stripe_index'], $pm);
+//
+////                        if ($res['status'] === true) {
+////                            Tools::log()->info('Cliente vinculado correctamente.');
+////                        } else {
+////                            Tools::log()->error($res['message']);
+////                        }
+//
+//                }
                 break;
             case('load'):
 
@@ -77,7 +81,7 @@ class ListClient extends Controller
                     $this->sk_stripe_index = $_SESSION['sk_stripe_index'];
                 } else {
                     Tools::log()->error('No se ha recibido el sk correspondiente');
-                    return false;
+                    return;
                 }
 
                 $this->stripe_customer_email = $this->request->request->get('stripe_customer_email') ?? $_SESSION['stripe_customer_email'] ?? '';
@@ -122,7 +126,7 @@ class ListClient extends Controller
         }
     }
 
-    public function getData($sk_stripe_index, $stripe_customer_email,  $start = null, $limit = 10)
+    public function getData($sk_stripe_index, $stripe_customer_email, $start = null, $limit = 10): void
     {
         try{
             $data = ClientModel::loadStripeCustomers($sk_stripe_index, $stripe_customer_email, $start, $limit);

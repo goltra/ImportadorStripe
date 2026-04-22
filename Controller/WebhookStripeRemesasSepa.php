@@ -305,7 +305,6 @@ class WebhookStripeRemesasSepa extends Controller
 
         $mail = NewMail::create()
             ->to(SettingStripeModel::getSetting('adminEmail'))
-            ->cc(SettingStripeModel::getSetting('satEmail'))
             ->subject($subject)
             ->body(nl2br($body));
 

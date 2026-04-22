@@ -9,7 +9,9 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use Exception;
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\Where;
 use FacturaScripts\Dinamic\Lib\Email\NewMail;
+use FacturaScripts\Dinamic\Model\FacturaCliente;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
@@ -50,7 +52,6 @@ class WebhookStripe extends Controller
 
     public function init(): void
     {
-
         $payload = @file_get_contents('php://input');
 
         if(!$payload)
@@ -78,31 +79,42 @@ class WebhookStripe extends Controller
             exit();
         }
 
-        if($event->type == 'invoice.payment_succeeded') {
-            $id = $event->data->object->id;
+        if($event->type == 'charge.succeeded') {
+            $invoice = $event->data->object->invoice;
 
-            if($event->data->object->amount_paid === 0)
+            if($event->data->object->amount === 0)
                 $this->sendError('Se ha pagado 0€, no se factura', 200, false);
 
 
-            if (StripeTransactionsQueue::existsObjectId($id, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID))
+            if (StripeTransactionsQueue::existsObjectId($invoice, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID))
                 $this->sendError('Error: La factura ya está en la cola ', 200);
 
             try {
                 StripeTransactionsQueue::setStripeTransaction(
                     $sk['name'],
                     StripeTransactionsQueue::EVENT_INVOICE_PAYMENT_SUCCEEDED,
-                    $id,
+                    $invoice,
                     date('Y-m-d H:i:s'),
                     StripeTransactionsQueue::TRANSACTION_TYPE_INVOICE,
-                    $id,
+                    $invoice,
                     StripeTransactionsQueue::DESTINATION_CUSTOMER,
                     $event->data->object->customer,
                 );
 
-                InvoiceStripe::log('invoice id correcto: ' . $id);
+                InvoiceStripe::log('invoice id correcto: ' . $invoice);
             } catch (Exception $ex) {
                 $this->sendError('Error: Error al registrar la factura en la cola. '. $ex->getMessage(), 200);
+            }
+        }
+
+
+        if ($event->type == 'invoice.marked_uncollectible') {
+            $factura_numero = $event->data->object->number;
+            $factura_id = $event->data->object->id;
+            $facturaFS = new FacturaCliente();
+
+            if ($facturaFS->loadWhere([Where::eq('numero2', $factura_numero)])) {
+                $this->sendMailFacturaIncobrable($factura_id, $facturaFS->idfactura, $facturaFS->codigo);
             }
         }
 
@@ -156,5 +168,24 @@ class WebhookStripe extends Controller
             ->body(nl2br($body));
 
         $mail->send();
+    }
+
+    private function sendMailFacturaIncobrable($factura_stripe_id, $factura_fs_id, $factura_fs_codigo)
+    {
+        $subject = 'No se ha podido cobrar la factura';
+        $body = "Hola, \r\n La factura de stripe <a href=\"https://dashboard.stripe.com/acct_1ILOeaHDuQaJAlOm/invoices/$factura_stripe_id\">$factura_stripe_id</a> no se ha podido cobrar y había sido generada con el código <a href=\"https://goltratec.facturasenlanube.es/EditFacturaCliente?code=$factura_fs_id\">$factura_fs_codigo</a>.";
+
+        try {
+            $mail = NewMail::create()
+                ->to(SettingStripeModel::getSetting('satEmail'))
+                ->subject($subject)
+                ->body($body);
+
+            $mail->send();
+        }
+        catch (Exception $ex) {
+            InvoiceStripe::log('Error al enviar el email cuando la factura no se puede cobrar');
+            InvoiceStripe::log(serialize($ex->getMessage()));
+        }
     }
 }

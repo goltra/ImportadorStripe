@@ -9,7 +9,9 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use Exception;
 use FacturaScripts\Core\Base\Controller;
+use FacturaScripts\Core\Where;
 use FacturaScripts\Dinamic\Lib\Email\NewMail;
+use FacturaScripts\Dinamic\Model\FacturaCliente;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
@@ -50,7 +52,6 @@ class WebhookStripe extends Controller
 
     public function init(): void
     {
-
         $payload = @file_get_contents('php://input');
 
         if(!$payload)
@@ -58,11 +59,11 @@ class WebhookStripe extends Controller
 
         $data = json_decode($payload);
 
-        if (!isset($_GET['source']))
-            $this->sendError('Error: No viene source', 400);
-
-        $source = $_GET['source'];
-//        $source = 'c38113434288e0c3cd160210ba3f2158';
+//        if (!isset($_GET['source']))
+//            $this->sendError('Error: No viene source', 400);
+//
+//        $source = $_GET['source'];
+        $source = 'c38113434288e0c3cd160210ba3f2158';
 
         $sk = SettingStripeModel::loadSkStripeByToken($source);
 
@@ -103,6 +104,17 @@ class WebhookStripe extends Controller
                 InvoiceStripe::log('invoice id correcto: ' . $invoice);
             } catch (Exception $ex) {
                 $this->sendError('Error: Error al registrar la factura en la cola. '. $ex->getMessage(), 200);
+            }
+        }
+
+
+        if ($event->type == 'invoice.marked_uncollectible') {
+            $factura_numero = $event->data->object->number;
+            $factura_id = $event->data->object->id;
+            $facturaFS = new FacturaCliente();
+
+            if ($facturaFS->loadWhere([Where::eq('numero2', $factura_numero)])) {
+                $this->sendMailFacturaIncobrable($factura_id, $facturaFS->idfactura, $facturaFS->codigo);
             }
         }
 
@@ -156,5 +168,24 @@ class WebhookStripe extends Controller
             ->body(nl2br($body));
 
         $mail->send();
+    }
+
+    private function sendMailFacturaIncobrable($factura_stripe_id, $factura_fs_id, $factura_fs_codigo)
+    {
+        $subject = 'No se ha podido cobrar la factura';
+        $body = "Hola, \r\n La factura de stripe <a href=\"https://dashboard.stripe.com/acct_1ILOeaHDuQaJAlOm/invoices/$factura_stripe_id\">$factura_stripe_id</a> no se ha podido cobrar y había sido generada con el código <a href=\"https://goltratec.facturasenlanube.es/EditFacturaCliente?code=$factura_fs_id\">$factura_fs_codigo</a>.";
+
+        try {
+            $mail = NewMail::create()
+                ->to(SettingStripeModel::getSetting('satEmail'))
+                ->subject($subject)
+                ->body($body);
+
+            $mail->send();
+        }
+        catch (Exception $ex) {
+            InvoiceStripe::log('Error al enviar el email cuando la factura no se puede cobrar');
+            InvoiceStripe::log(serialize($ex->getMessage()));
+        }
     }
 }

@@ -177,7 +177,7 @@ class WebhookStripe extends Controller
 
         try {
             $mail = NewMail::create()
-                ->to(SettingStripeModel::getSetting('satEmail'))
+                ->to(SettingStripeModel::getSetting('adminEmail'))
                 ->subject($subject)
                 ->body($body);
 

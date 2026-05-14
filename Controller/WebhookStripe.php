@@ -79,29 +79,29 @@ class WebhookStripe extends Controller
             exit();
         }
 
-        if($event->type == 'charge.succeeded') {
-            $invoice = $event->data->object->invoice;
+        if($event->type == 'invoice.finalized') {
+            $invoiceId = $event->data->object->id;
 
-            if($event->data->object->amount === 0)
+            if($event->data->object->amount_paid === 0)
                 $this->sendError('Se ha pagado 0€, no se factura', 200, false);
 
 
-            if (StripeTransactionsQueue::existsObjectId($invoice, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID))
+            if (StripeTransactionsQueue::existsObjectId($invoiceId, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID))
                 $this->sendError('Error: La factura ya está en la cola ', 200);
 
             try {
                 StripeTransactionsQueue::setStripeTransaction(
                     $sk['name'],
                     StripeTransactionsQueue::EVENT_INVOICE_PAYMENT_SUCCEEDED,
-                    $invoice,
+                    $invoiceId,
                     date('Y-m-d H:i:s'),
                     StripeTransactionsQueue::TRANSACTION_TYPE_INVOICE,
-                    $invoice,
+                    $invoiceId,
                     StripeTransactionsQueue::DESTINATION_CUSTOMER,
                     $event->data->object->customer,
                 );
 
-                InvoiceStripe::log('invoice id correcto: ' . $invoice);
+                InvoiceStripe::log('invoice id correcto: ' . $invoiceId);
             } catch (Exception $ex) {
                 $this->sendError('Error: Error al registrar la factura en la cola. '. $ex->getMessage(), 200);
             }

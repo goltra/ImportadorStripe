@@ -82,7 +82,7 @@ class WebhookStripe extends Controller
         if($event->type == 'invoice.finalized') {
             $invoiceId = $event->data->object->id;
 
-            if($event->data->object->amount_paid === 0)
+            if($event->data->object->amount_due === 0)
                 $this->sendError('Se ha pagado 0€, no se factura', 200, false);
 
 

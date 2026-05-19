@@ -92,7 +92,7 @@ class InvoiceStripe
             $_data = [];
 
             array_filter($stripe_response->data, function ($inv) use (&$_data) {
-                if ($inv->amount_paid > 0 && (!isset($inv->metadata['fs_idFactura']) || $inv->metadata['fs_idFactura'] == '')) {
+                if ($inv->amount_due > 0 && (!isset($inv->metadata['fs_idFactura']) || $inv->metadata['fs_idFactura'] == '')) {
                     $_data[] = $inv;
                 }
             });
@@ -196,7 +196,7 @@ class InvoiceStripe
 
             self::log('Comprobamos si ya se ha pagado la factura o si ya ha sido descargada');
 
-            if ($inv->amount_paid > 0 && (!isset($inv->metadata['fs_idFactura']) || $inv->metadata['fs_idFactura'] == '')) {
+            if ($inv->amount_due > 0 && (!isset($inv->metadata['fs_idFactura']) || $inv->metadata['fs_idFactura'] == '')) {
                 $invoice = new InvoiceStripe();
                 $invoice->id = $inv->id;
                 $invoice->numero = $inv->number;
@@ -218,7 +218,7 @@ class InvoiceStripe
                 }
 
                 $invoice->date = Helper::castTime($inv->created);
-                $invoice->amount = $inv->amount_paid / 100;
+                $invoice->amount = $inv->amount_due / 100;
 
                 if (isset($inv->lines) && $withLines) {
                     self::log('Hay lineas en la factura');

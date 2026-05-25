@@ -12,6 +12,7 @@ use FacturaScripts\Dinamic\Model\ReciboCliente;
 use FacturaScripts\Plugins\RemesasSEPA\Model\RemesaSEPA;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Invoice;
+use Stripe\PaymentMethod;
 use Stripe\StripeClient;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
@@ -452,5 +453,20 @@ class StripeTransactionsQueue extends ModelClass
             return Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
 
         return SettingStripeModel::getSetting('verifactu') && Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
+    }
+
+    static function getPaymentMethodFromPI(string $pi, string $sk): string {
+        $stripe = new StripeClient($sk);
+        $paymentIntent = $stripe->paymentIntents->retrieve($pi, []);
+
+        $paymentMethodId = $paymentIntent->payment_method;
+
+        if (empty($paymentMethodId)) {
+            return '';
+        }
+
+        $paymentMethod = $stripe->paymentMethods->retrieve($paymentMethodId, []);
+
+        return $paymentMethod->type;
     }
 }

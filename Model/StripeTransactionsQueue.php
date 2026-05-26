@@ -462,10 +462,21 @@ class StripeTransactionsQueue extends ModelClass
         $paymentMethodId = $paymentIntent->payment_method;
 
         if (empty($paymentMethodId)) {
-            return '';
+
+            $paymentMethodId = $paymentIntent->charges->data[0]->payment_method;
+
+            if (empty($paymentMethodId)) {
+                InvoiceStripe::log('No se ha encontado el payment method id.');
+                return '';
+            }
+
         }
 
+        InvoiceStripe::log('paymentMethodId: ' . $paymentMethodId);
+
         $paymentMethod = $stripe->paymentMethods->retrieve($paymentMethodId, []);
+
+        InvoiceStripe::log(serialize($paymentMethod));
 
         return $paymentMethod->type;
     }

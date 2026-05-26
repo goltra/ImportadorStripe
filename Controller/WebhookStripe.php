@@ -58,11 +58,11 @@ class   WebhookStripe extends Controller
 
         $data = json_decode($payload);
 
-//        if (!isset($_GET['source']))
-//            $this->sendError('Error: No viene source', 400);
+        if (!isset($_GET['source']))
+            $this->sendError('Error: No viene source', 400);
 
-//        $source = $_GET['source'];
-        $source = 'c38113434288e0c3cd160210ba3f2158';
+        $source = $_GET['source'];
+//        $source = 'c38113434288e0c3cd160210ba3f2158';
 
         $sk = SettingStripeModel::loadSkStripeByToken($source);
 
@@ -84,9 +84,11 @@ class   WebhookStripe extends Controller
             try {
                 $paymentMethod = StripeTransactionsQueue::getPaymentMethodFromPI($event->data->object->payment_intent, $sk['sk']);
 
-                if ($paymentMethod !== 'sepa_debit'){
-                    $this->sendError('invoice.finalized: No es un pago sepa, no se agrega a la cola ', 200);
-                }
+                if (!$paymentMethod)
+                    $this->sendError('invoice.finalized: No encuentro el método de pago ', 200);
+
+                if ($paymentMethod !== 'sepa_debit')
+                    $this->sendError('invoice.finalized: No es un pago sepa, no se agrega a la cola ', 200, false);
 
                 InvoiceStripe::log('PaymentMethod: ' . $paymentMethod);
                 $this->addEventToQueue($event, $sk);
@@ -102,9 +104,11 @@ class   WebhookStripe extends Controller
             try {
                 $paymentMethod = StripeTransactionsQueue::getPaymentMethodFromPI($event->data->object->payment_intent, $sk['sk']);
 
-                if (!$paymentMethod || $paymentMethod === 'sepa_debit'){
-                    $this->sendError('invoice.paid: Es un pago sepa, no se agrega a la cola ', 200);
-                }
+                if (!$paymentMethod)
+                    $this->sendError('invoice.finalized: No encuentro el método de pago ', 200);
+
+                if (!$paymentMethod || $paymentMethod === 'sepa_debit')
+                    $this->sendError('invoice.paid: Es un pago sepa, no se agrega a la cola ', 200, false);
 
                 InvoiceStripe::log('PaymentMethod: ' . $paymentMethod);
 
@@ -146,7 +150,7 @@ class   WebhookStripe extends Controller
 
         try {
 
-            if (StripeTransactionsQueue::existsObjectId($invoiceId, StripeTransactionsQueue::EVENT_PAYOUT_PAID))
+            if (StripeTransactionsQueue::existsObjectId($invoiceId, StripeTransactionsQueue::EVENT_INVOICE_PAYMENT_SUCCEEDED))
                 $this->sendError('Error: La factura ya está en la cola ', 200);
 
             StripeTransactionsQueue::setStripeTransaction(

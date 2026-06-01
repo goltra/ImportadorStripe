@@ -82,7 +82,15 @@ class   WebhookStripe extends Controller
             InvoiceStripe::log('invoice.finalized');
 
             try {
-                $paymentMethod = StripeTransactionsQueue::getPaymentMethodFromPI($event->data->object->payment_intent, $sk['sk']);
+                if($event->data->object->amount_due === 0)
+                    $this->sendError('Se ha pagado 0€, no se factura', 200, false);
+
+                $pi = $event->data->object->payment_intent;
+
+                if (!$pi)
+                    $this->sendError('No viene Paiment Intent', 200);
+
+                $paymentMethod = StripeTransactionsQueue::getPaymentMethodFromPI($pi, $sk['sk']);
 
                 if (!$paymentMethod)
                     $this->sendError('invoice.finalized: No encuentro el método de pago ', 200);
@@ -102,7 +110,15 @@ class   WebhookStripe extends Controller
             InvoiceStripe::log('invoice.paid');
 
             try {
-                $paymentMethod = StripeTransactionsQueue::getPaymentMethodFromPI($event->data->object->payment_intent, $sk['sk']);
+                if($event->data->object->amount_due === 0)
+                    $this->sendError('Se ha pagado 0€, no se factura', 200, false);
+
+                $pi = $event->data->object->payment_intent;
+
+                if (!$pi)
+                    $this->sendError('No viene Paiment Intent', 200);
+
+                $paymentMethod = StripeTransactionsQueue::getPaymentMethodFromPI($pi, $sk['sk']);
 
                 if (!$paymentMethod)
                     $this->sendError('invoice.finalized: No encuentro el método de pago ', 200);
@@ -144,9 +160,6 @@ class   WebhookStripe extends Controller
     private function addEventToQueue(Event $event, array $sk): void
     {
         $invoiceId = $event->data->object->id;
-
-        if($event->data->object->amount_due === 0)
-            $this->sendError('Se ha pagado 0€, no se factura', 200, false);
 
         try {
 

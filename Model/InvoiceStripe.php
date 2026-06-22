@@ -39,6 +39,7 @@ class InvoiceStripe
     public string $customer_email;
     public string $fs_idFsCustomer = '';
     public int|null $fs_idFactura;
+    public int|null $starting_balance;
     public string $fs_customerName;
     public float $discount=0;
     public array $lines = [];
@@ -203,6 +204,7 @@ class InvoiceStripe
                 $invoice->status = $inv->status;
                 $invoice->customer_id = $inv->customer;
                 $invoice->customer_email = $inv->customer_email;
+                $invoice->starting_balance = $inv->starting_balance;
                 $invoice->fs_idFactura = $inv->metadata['fs_idFactura'] ?? null;
                 $_fs_idCustomer = $customer->metadata['fs_idFsCustomer'] ?? SettingStripeModel::getSetting('codcliente');
                 $fs_customer = new \FacturaScripts\Core\Model\Cliente();
@@ -540,6 +542,45 @@ class InvoiceStripe
 
                 //  Con la entrada de verifactu la línea a coste 0 daba error, ahora lo ponemos en obsevaciones.
                 $invoiceFs->observaciones = 'Referencia: '.$invoice->customer_id . '. ';
+            }
+
+            // Si viene valor en el campo "starting_balance" (Saldo en la factura del cliente en Stripe) metemos una linea con precio negativo descontando impuestos
+            if ($invoice->starting_balance !== 0){
+
+                $line = $invoiceFs->getNewLine();
+                $line->idfactura = $invoiceFs->idfactura;
+                $line->descripcion = 'Descuento';
+                $line->cantidad = 1;
+
+                /**
+                 * Para sacar la referencia y los impuestos, necesito sacar la línea de producto en la factura de stripe.
+                 */
+                $l = $invoice->lines[0];
+                $pvp = $invoice->starting_balance / 100;
+
+                if (count($invoice->lines) > 0){
+                    if ($l['fs_product_id'] !== null && $l['fs_product_id'] !== '') {
+                        $producto = new Producto();
+                        $producto->load($l['fs_product_id']);
+                        $line->referencia = $producto->referencia;
+                    }
+
+                    if ($client->regimeniva !== 'Exento') {
+                        $line->codimpuesto = $l['codimpuesto'];
+                        $line->iva = $l['iva'];
+
+                        $pvp = $pvp / (1 + ($l['iva'] / 100));
+                    }
+
+                    self::log('Se agrega un descuento de '. $pvp . 'a la factura.');
+                }
+                else{
+                    self::log('No se ha aplicado el código ni el impuesto porque no hay linea de producto en la factura de stripe.');
+                }
+
+                $line->pvpunitario = $pvp;
+                $line->pvptotal = $pvp;
+                $line->save();
             }
 
         } else {

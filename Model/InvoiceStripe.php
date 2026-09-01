@@ -545,7 +545,8 @@ class InvoiceStripe
             }
 
             // Si viene valor en el campo "starting_balance" (Saldo en la factura del cliente en Stripe) metemos una linea con precio negativo descontando impuestos
-            if ($invoice->starting_balance !== 0){
+            if ($invoice->starting_balance != 0){
+                self::log('starting_balance: '. $invoice->starting_balance);
 
                 $line = $invoiceFs->getNewLine();
                 $line->idfactura = $invoiceFs->idfactura;

@@ -1,3 +1,8 @@
+2025-10-13: Version 1.9
+
+    Corrección:
+    * Se quitan modelos del plugin de la api de FS
+
 2025-10-28: Version 1.8
 
     Corrección:

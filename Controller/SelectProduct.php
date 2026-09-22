@@ -64,10 +64,12 @@ class SelectProduct extends ParentListProducto
         $this->setSettings('ListProducto', 'clickable', false);
     }
 
-    protected function execPreviousAction($action): void
+    protected function execPreviousAction($action): bool
     {
-        parent::execPreviousAction($action);
+        $result = parent::execPreviousAction($action);
         $this->init();
+
+        return $result;
     }
 
     protected function execAfterAction($action): void
@@ -96,13 +98,25 @@ class SelectProduct extends ParentListProducto
 
     private function selectProduct(): void
     {
-        $id = unserialize($this->request->request->get('codes'))[0];
+        $id = $this->getSelectedCode();
 
-        if ($id !== null && strlen($id) > 0) {
+        if ($id !== null) {
             $this->redirect('ListProduct?action=linkProduct&codproduct=' . $id);
         } else {
             Tools::log()->error('No se ha podido vincular el producto de facturascript. Alguno de los valores no es correcto');
         }
     }
 
+    private function getSelectedCode(): ?string
+    {
+        $codes = $this->request->request->get('codes');
+
+        if (!is_string($codes)) {
+            return null;
+        }
+
+        $decoded = unserialize($codes, ['allowed_classes' => false]);
+
+        return is_array($decoded) && !empty($decoded[0]) ? (string)$decoded[0] : null;
+    }
 }

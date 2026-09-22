@@ -35,21 +35,22 @@ class ListStripeTransactionsQueue extends ListController
         return parent::execPreviousAction($action);
     }
 
-    private function generateAction()
+    private function generateAction(): bool
     {
-        if (!$this->request->request->get('codes')){
+        $codes = $this->request->request->get('codes');
+        $decoded = is_string($codes) ? unserialize($codes, ['allowed_classes' => false]) : null;
+
+        if (!is_array($decoded) || count($decoded) === 0) {
             Tools::log()->error('No has seleccionado una linea.');
             return true;
         }
 
-        $codes = unserialize($this->request->request->get('codes'));
-
-        if (count($codes) > 1){
+        if (count($decoded) > 1) {
             Tools::log()->error('Sólo se puede seleccionar una línea.');
             return true;
         }
 
-        $code = $codes[0];
+        $code = $decoded[0];
         $transaction = new StripeTransactionsQueue();
         $transaction->load($code);
 

@@ -64,10 +64,9 @@ class SelectClient extends ParentListCliente
         $this->setSettings('ListCliente', 'clickable', false);
     }
 
-    protected function execPreviousAction($action): void
+    protected function execPreviousAction($action): bool
     {
-
-        if($action == "" && $this->request->query->get('action')){
+        if ($action === '' && $this->request->query->get('action')) {
             $action = $this->request->query->get('action');
         }
 
@@ -75,12 +74,15 @@ class SelectClient extends ParentListCliente
             case 'invoicing':
                 $this->postAction = 'selectClient';
                 break;
-            case'changing':
+            case 'changing':
                 $this->postAction = 'changeClient';
                 break;
         }
-        parent::execPreviousAction($action);
+
+        $result = parent::execPreviousAction($action);
         $this->init();
+
+        return $result;
     }
 
     protected function execAfterAction($action): void
@@ -106,10 +108,10 @@ class SelectClient extends ParentListCliente
 
     private function selectClient(): void
     {
-        $customer_id = unserialize($this->request->request->get('codes'))[0];
+        $customerId = $this->getSelectedCode();
 
-        if ($customer_id !== null && strlen($customer_id) > 0) {
-            $this->redirect('CreateInvoiceStripe?action=clientOk&codcliente=' . $customer_id);
+        if ($customerId !== null) {
+            $this->redirect('CreateInvoiceStripe?action=clientOk&codcliente=' . $customerId);
         } else {
             Tools::log()->error('No se ha podido vincular el cliente de facturascript. Alguno de los valores no es correcto');
         }
@@ -117,21 +119,32 @@ class SelectClient extends ParentListCliente
 
     private function changeClient(): void
     {
-        $customer_id = unserialize($this->request->request->get('codes'))[0];
-        $stripe_customer_id = $this->request->query->get('stripe_customer_id');
+        $customerId = $this->getSelectedCode();
+        $stripeCustomerId = $this->request->query->get('stripe_customer_id');
 
         switch ($this->request->query->get('source')) {
             case 'ListClient':
-                $this->redirect('ListClient?action=linkClient&customer_id='.$customer_id.'&stripe_customer_id='.$stripe_customer_id);
+                $this->redirect('ListClient?action=linkClient&customer_id=' . $customerId . '&stripe_customer_id=' . $stripeCustomerId);
                 break;
             case 'ListInvoiceStripe':
-                $this->redirect('ListInvoiceStripe?action=linkClient&customer_id='.$customer_id.'&stripe_customer_id='.$stripe_customer_id);
+                $this->redirect('ListInvoiceStripe?action=linkClient&customer_id=' . $customerId . '&stripe_customer_id=' . $stripeCustomerId);
                 break;
-
             case 'CreateInvoiceStripe':
-                $this->redirect('CreateInvoiceStripe?action=linkClient&customer_id='.$customer_id.'&stripe_customer_id='.$stripe_customer_id);
+                $this->redirect('CreateInvoiceStripe?action=linkClient&customer_id=' . $customerId . '&stripe_customer_id=' . $stripeCustomerId);
                 break;
         }
     }
 
+    private function getSelectedCode(): ?string
+    {
+        $codes = $this->request->request->get('codes');
+
+        if (!is_string($codes)) {
+            return null;
+        }
+
+        $decoded = unserialize($codes, ['allowed_classes' => false]);
+
+        return is_array($decoded) && !empty($decoded[0]) ? (string)$decoded[0] : null;
+    }
 }

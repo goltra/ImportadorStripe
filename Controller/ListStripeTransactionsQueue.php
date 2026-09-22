@@ -137,7 +137,7 @@ class ListStripeTransactionsQueue extends ListController
             'destination',
             'Destino',
             'destination',
-            StripeTransactionsQueue::$destinoOptions
+            StripeTransactionsQueue::$destinationOptions
         );
 
         $this->addFilterSelect(
@@ -151,16 +151,17 @@ class ListStripeTransactionsQueue extends ListController
 
 
     /**
-     * Listado de payouts que hay en la tabla para el filtro
+     * Listado de cuentas de stripe que hay en la tabla para el filtro.
      */
     protected function getDistinctStripeAccount(): array
     {
         $db = new DataBase();
         $items = $db->select("SELECT DISTINCT stripe_account FROM stripe_transactions_queue");
-        $res = [];
+        $accounts = [];
         foreach ($items as $line) {
-            $res[$line['stripe_account']] = $line['stripe_account'];
+            $accounts[$line['stripe_account']] = $line['stripe_account'];
         }
-        return $res;
+
+        return $accounts;
     }
 }

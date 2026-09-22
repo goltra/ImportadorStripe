@@ -2,97 +2,80 @@
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
-use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\Plugins;
 use FacturaScripts\Core\Template\ModelClass;
 use FacturaScripts\Core\Template\ModelTrait;
-use FacturaScripts\Dinamic\Lib\Email\NewMail;
+use FacturaScripts\Core\Where;
 use FacturaScripts\Dinamic\Model\ReciboCliente;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\InvoiceImporter;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\Logger;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeGateway;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeMailer;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSettings;
 use FacturaScripts\Plugins\RemesasSEPA\Model\RemesaSEPA;
-use Stripe\Exception\ApiErrorException;
 use Stripe\Invoice;
-use Stripe\StripeClient;
-use Twig\Error\LoaderError;
-use Twig\Error\RuntimeError;
-use Twig\Error\SyntaxError;
 
 class StripeTransactionsQueue extends ModelClass
 {
     use ModelTrait;
 
     public int|null $id;
-    public string|null $stripe_account; // cuenta de stripe
-    public string|null $event; // Evento (payout, invoice)
-    public string|null $object_id; // id del objecto del evento (po_xxx, inv_xxx)
-    public string|null $object_date; // fecha en la que se produjo el objecto del evento
-    public string|null $transaction_type; // tipo de transacción en stripe (cargo, invoice, transaction, etc.)
-    public string|null $transaction_id; // id de la transacción en stripe, el que campo se va a tener en cuenta para procesar la cola
-    public string|null $destination; // tipo de destino en FS (factura, remesa, etc.)
-    public string|null $destination_id; // id del destino
-    public string|null $status; // estado en la cola (Pendiente, Ok, error)
-    public string|null $error_type; // tipos de error que puede dar en la cola
-    public string|null $created_at; // fecha de creación
+    public string|null $stripe_account;
 
-    /**
-     * Origen de los datos de la cola.
-     * Ahora mismo tenemos dos, cuando se realiza un payout y cuando se cobra una factura en stripe
-     */
-    CONST EVENT_PAYOUT_PAID = 'Pago';
-    CONST EVENT_INVOICE_PAYMENT_SUCCEEDED = 'Suscripcion';
+    /** Tipo de evento (pago de un payout o cobro de una factura). */
+    public string|null $event;
+    public string|null $object_id;
+    public string|null $object_date;
+    public string|null $transaction_type;
+    public string|null $transaction_id;
+    public string|null $destination;
+    public string|null $destination_id;
+    public string|null $status;
+    public string|null $error_type;
+    public string|null $created_at;
 
-    static array $eventOptions = [
+    public const EVENT_PAYOUT_PAID = 'Pago';
+    public const EVENT_INVOICE_PAYMENT_SUCCEEDED = 'Suscripcion';
+
+    public static array $eventOptions = [
         self::EVENT_PAYOUT_PAID => self::EVENT_PAYOUT_PAID,
         self::EVENT_INVOICE_PAYMENT_SUCCEEDED => self::EVENT_INVOICE_PAYMENT_SUCCEEDED,
     ];
 
+    public const TRANSACTION_TYPE_CHARGE = 'Cargo';
+    public const TRANSACTION_TYPE_PAYMENT_INTENT = 'Payment intent';
+    public const TRANSACTION_TYPE_INVOICE = 'Factura';
 
-    /**
-     * Tipo de transacción que vamos a proccesar
-     */
-    CONST TRANSACTION_TYPE_CHARGE = 'Cargo';
-    CONST TRANSACTION_TYPE_PAYMENT_INTENT = 'Payment intent';
-    CONST TRANSACTION_TYPE_INVOICE = 'Factura';
-
-    static array $tansactionTypeOptions = [
+    public static array $transactionTypeOptions = [
         self::TRANSACTION_TYPE_CHARGE => self::TRANSACTION_TYPE_CHARGE,
         self::TRANSACTION_TYPE_PAYMENT_INTENT => self::TRANSACTION_TYPE_PAYMENT_INTENT,
-        self:: TRANSACTION_TYPE_INVOICE => self:: TRANSACTION_TYPE_INVOICE
+        self::TRANSACTION_TYPE_INVOICE => self::TRANSACTION_TYPE_INVOICE,
     ];
 
+    public const DESTINATION_REMESA = 'Remesa';
+    public const DESTINATION_INVOICE = 'Factura';
+    public const DESTINATION_CUSTOMER = 'Cliente';
 
-    /**
-     * Tipo de destino donde vamos a procesar los datos
-     */
-    CONST DESTINATION_REMESA = 'Remesa';
-    CONST DESTINATION_INVOICE = 'Factura';
-    const DESTINATION_CUSTOMER = 'Cliente';
-
-    static array $destinoOptions = [
+    public static array $destinationOptions = [
         self::DESTINATION_REMESA => self::DESTINATION_REMESA,
         self::DESTINATION_INVOICE => self::DESTINATION_INVOICE,
     ];
 
-    /**
-     * Estado la linea en la cola
-     */
-    CONST STATUS_PENDING = 'Pendiente'; // Pendiente a ser procesado
-    CONST STATUS_SUCCESS = 'Procesado'; // Procesado correctamente
-    CONST STATUS_ERROR = 'Error'; // Ha dado error al ser procesado.
+    public const STATUS_PENDING = 'Pendiente';
+    public const STATUS_SUCCESS = 'Procesado';
+    public const STATUS_ERROR = 'Error';
 
-    static array $statusOptions = [
+    public static array $statusOptions = [
         self::STATUS_PENDING => self::STATUS_PENDING,
         self::STATUS_SUCCESS => self::STATUS_SUCCESS,
         self::STATUS_ERROR => self::STATUS_ERROR,
     ];
 
-
-    CONST ERROR_TYPE_NO_EVENT = 'Evento no reconocido';
-    CONST ERROR_TYPE_NOT_GENERATE_INVOICE = 'Factura no generada';
-    CONST ERROR_TYPE_RECIBO_PAGADO = 'Recibo pagado';
-    CONST ERROR_TYPE_FACTURA_NO_VINCULADA = 'Factura no vinculada';
-    CONST ERROR_TYPE_ASIGNADO_OTRA_REMESA = 'Asignado otra remesa';
-
-
+    public const ERROR_TYPE_NO_EVENT = 'Evento no reconocido';
+    public const ERROR_TYPE_NOT_GENERATE_INVOICE = 'Factura no generada';
+    public const ERROR_TYPE_RECIBO_PAGADO = 'Recibo pagado';
+    public const ERROR_TYPE_FACTURA_NO_VINCULADA = 'Factura no vinculada';
+    public const ERROR_TYPE_ASIGNADO_OTRA_REMESA = 'Asignado otra remesa';
 
     public function clear(): void
     {
@@ -101,69 +84,36 @@ class StripeTransactionsQueue extends ModelClass
         $this->created_at = date('Y-m-d H:i:s');
     }
 
-    /**
-     * La columna primaria del modelo.
-     */
     public static function primaryColumn(): string
     {
         return 'id';
     }
 
-    /**
-     * Nombre de la tabla
-     */
     public static function tableName(): string
     {
         return 'stripe_transactions_queue';
     }
 
     /**
-     * Método para conseguir líneas pendientes de procesar
-     *
-     * @param int $limit número máximo de registros a devolver
      * @return StripeTransactionsQueue[]
      */
     public static function getPendingTransactions(int $limit = 5): array
     {
-        $where = [ new DataBaseWhere('status', self::STATUS_PENDING) ];
-        return self::all(
-            $where,
-            [],
-            0,
-            $limit
-        );
+        return self::all([Where::eq('status', self::STATUS_PENDING)], [], 0, $limit);
     }
 
-    /**
-     * @return void
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
-     * @throws \PHPMailer\PHPMailer\Exception
-     */
-    static function processQueue(): void
+    public static function processQueue(): void
     {
-        $data = self::getPendingTransactions();
-
-        foreach ($data as $d) {
-            $d->processQueueRow();
+        foreach (self::getPendingTransactions() as $transaction) {
+            $transaction->processQueueRow();
             sleep(2);
         }
     }
 
-    /**
-     * @param bool $sendMailError
-     * @return void
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
-     * @throws \PHPMailer\PHPMailer\Exception
-     */
     public function processQueueRow(bool $sendMailError = true): void
     {
         switch ($this->event) {
             case self::EVENT_PAYOUT_PAID:
-
                 try {
                     $this->processPayoutTransaction();
                     $this->status = self::STATUS_SUCCESS;
@@ -175,26 +125,23 @@ class StripeTransactionsQueue extends ModelClass
                         $remesa->load($this->destination_id);
                         $remesa->estado = RemesaSEPA::STATUS_REVIEW;
                         $remesa->save();
-
-            //         Calculamos los totales de la remesa
                         $remesa->updateTotal();
-                        $this->sendMailRemesaCompleta($remesa->idremesa);
+                        StripeMailer::sendRemesaComplete($remesa->idremesa, $this->getRemesaErrors($remesa->idremesa));
                     }
-                }
-                catch (Exception $e) {
+                } catch (Exception $e) {
                     $this->status = self::STATUS_ERROR;
                     $this->error_type = $e->getMessage();
                     $this->save();
                 }
-
                 break;
-            case self::EVENT_INVOICE_PAYMENT_SUCCEEDED:
 
+            case self::EVENT_INVOICE_PAYMENT_SUCCEEDED:
                 try {
-                    $enviarEmail = SettingStripeModel::getSetting('enviarEmail') == 1 && $this->status !== self::STATUS_ERROR;
-                    InvoiceStripe::generateFSInvoice(
+                    $enviarEmail = StripeSettings::getSetting('enviarEmail') == 1 && $this->status !== self::STATUS_ERROR;
+
+                    InvoiceImporter::generateFSInvoice(
                         $this->transaction_id,
-                        SettingStripeModel::loadSkIndexStripeByName($this->stripe_account),
+                        StripeSettings::loadSkIndexStripeByName($this->stripe_account),
                         false,
                         'TARJETA',
                         $enviarEmail,
@@ -206,17 +153,15 @@ class StripeTransactionsQueue extends ModelClass
                     $this->status = self::STATUS_SUCCESS;
                     $this->error_type = '';
                     $this->save();
-
-                 } catch (Exception) {
+                } catch (Exception) {
                     $this->status = self::STATUS_ERROR;
                     $this->error_type = self::ERROR_TYPE_NOT_GENERATE_INVOICE;
 
-                    if ($this->save() && $sendMailError)
-                        $this->sendMailError();
+                    if ($this->save() && $sendMailError) {
+                        StripeMailer::sendQueueError($this->object_id);
+                    }
                 }
-
                 break;
-
 
             default:
                 $this->status = self::STATUS_ERROR;
@@ -228,191 +173,106 @@ class StripeTransactionsQueue extends ModelClass
 
     /**
      * @return void
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
-     * @throws \PHPMailer\PHPMailer\Exception
-     */
-    private function sendMailError(): void
-    {
-        $subject = 'Error al procesar la factura de stripe';
-        $body = "Hola, \r\n se ha intentado procesar la factura $this->object_id y ha dado error: . \r\n";
-
-        $mail = NewMail::create()
-            ->to(SettingStripeModel::getSetting('adminEmail'))
-            ->cc(SettingStripeModel::getSetting('satEmail'))
-            ->subject($subject)
-            ->body(nl2br($body));
-
-        $mail->send();
-    }
-
-
-    /**
-     * Método que va a mandar un email
-     * @param $id_remesa
-     * @return void
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
-     * @throws \PHPMailer\PHPMailer\Exception
-     */
-    private function sendMailRemesaCompleta($id_remesa): void
-    {
-        $subject = 'Remesa ' . $id_remesa . ' procesada';
-        $body = "La remesa se ha procesado completamente, por favor comprueba que está correcta. \r\n";
-
-        $errors = self::all([
-            new DataBaseWhere('destination', self::DESTINATION_REMESA),
-            new DataBaseWhere('destination_id', $id_remesa),
-            new DataBaseWhere('status', self::STATUS_ERROR),
-        ]);
-
-        if (count($errors) > 0) {
-            $res = [];
-
-            foreach ($errors as $error) {
-                $res[] = '- Factura: ' . $error->transaction_id;
-            }
-
-            $body .= "Errores:\r\n" . implode("\r\n", $res);
-        }
-
-        $mail = NewMail::create()
-            ->to(SettingStripeModel::getSetting('adminEmail'))
-            ->cc(SettingStripeModel::getSetting('satEmail'))
-            ->subject($subject)
-            ->body(nl2br($body));
-
-        $mail->send();
-    }
-
-
-    /**
-     * @return void
-     * @throws ApiErrorException
-     * @throws Exception
+     * @throws \Exception
      */
     private function processPayoutTransaction(): void
     {
-        $sk = SettingStripeModel::loadSkStripeByName($this->stripe_account);
-        $invoice = $this->getInvoiceFromPayoutTransaction($this->transaction_id, $sk );
-        $facturaId = $invoice->metadata['fs_idFactura'];
+        $invoice = $this->getInvoiceFromPayoutTransaction($this->transaction_id);
 
-        if (!isset($facturaId)){
-            InvoiceStripe::log('La factura ' . $invoice['id']. ' no está vinculada en stripe.', 'remesa');
+        if ($invoice === null) {
+            Logger::log('No se ha encontrado la factura ' . $this->transaction_id . ' del pago.', Logger::CHANNEL_REMESA);
+            throw new Exception(self::ERROR_TYPE_FACTURA_NO_VINCULADA);
+        }
+
+        $facturaId = $invoice->metadata['fs_idFactura'] ?? null;
+
+        if (empty($facturaId)) {
+            Logger::log('La factura ' . $invoice->id . ' no está vinculada en stripe.', Logger::CHANNEL_REMESA);
             throw new Exception(self::ERROR_TYPE_FACTURA_NO_VINCULADA);
         }
 
         $reciboCliente = new ReciboCliente();
+        $reciboCliente->loadWhere([Where::eq('idfactura', $facturaId), Where::eq('pagado', false)]);
 
-        $where = [new DataBaseWhere('idfactura', $facturaId), new DataBaseWhere('pagado', false)];
-        $reciboCliente->loadWhere($where);
-
-        if (!$reciboCliente->idrecibo){
-            InvoiceStripe::log('La factura ' . $facturaId. ' no tiene un recibo o ya está pagado', 'remesa');
+        if (!$reciboCliente->idrecibo) {
+            Logger::log('La factura ' . $facturaId . ' no tiene un recibo o ya está pagado', Logger::CHANNEL_REMESA);
             throw new Exception(self::ERROR_TYPE_RECIBO_PAGADO);
         }
 
-        if ($reciboCliente->idremesa){
-            InvoiceStripe::log('La factura ' . $facturaId. ' ya tiene una remesa asignada', 'remesa');
+        if ($reciboCliente->idremesa) {
+            Logger::log('La factura ' . $facturaId . ' ya tiene una remesa asignada', Logger::CHANNEL_REMESA);
             throw new Exception(self::ERROR_TYPE_ASIGNADO_OTRA_REMESA);
         }
 
         $reciboCliente->idremesa = $this->destination_id;
 
-        if ($reciboCliente->save()){
-            InvoiceStripe::log('Se genera linea de remesa con la factura:  ' . $facturaId, 'remesa');
+        if ($reciboCliente->save()) {
+            Logger::log('Se genera linea de remesa con la factura: ' . $facturaId, Logger::CHANNEL_REMESA);
         }
     }
 
-
-    /**
-     * @param $event
-     * @param $objectId
-     * @return bool
-     */
-    private function checkAllTransactionCompleted($event, $objectId): bool {
+    private function checkAllTransactionCompleted(string $event, string $objectId): bool
+    {
         $pending = self::findWhere([
-            new DataBaseWhere('event', $event),
-            new DataBaseWhere('object_id', $objectId),
-            new DataBaseWhere('status', self::STATUS_PENDING),
+            Where::eq('event', $event),
+            Where::eq('object_id', $objectId),
+            Where::eq('status', self::STATUS_PENDING),
         ]);
 
         return empty($pending);
     }
 
+    /**
+     * @return string[]
+     */
+    private function getRemesaErrors(string $idRemesa): array
+    {
+        $errors = self::all([
+            Where::eq('destination', self::DESTINATION_REMESA),
+            Where::eq('destination_id', $idRemesa),
+            Where::eq('status', self::STATUS_ERROR),
+        ]);
 
+        $transactionIds = [];
+        foreach ($errors as $error) {
+            $transactionIds[] = $error->transaction_id;
+        }
 
+        return $transactionIds;
+    }
 
     /**
-     *  En un pago pueden venir varias procedencias de cobro.
-     *  ch >> Es mediante cargo, que es la que nos interesa
-     *  in >> Es una factura
-     * @param string $source
-     * @param string $sk
-     * @return Invoice|null
-     * @throws ApiErrorException
+     * En un pago pueden venir varias procedencias de cobro. Solo procesamos facturas (in_).
+     *
+     * @throws Exception
      */
-    public function getInvoiceFromPayoutTransaction(string $source, string $sk): ?Invoice
+    private function getInvoiceFromPayoutTransaction(string $source): ?Invoice
     {
-        $stripe = new StripeClient($sk);
-
-//        if (str_starts_with($source, 'ch_')) {
-//            $charge = $stripe->charges->retrieve($source, []);
-//
-//            if (empty($charge->invoice)) {
-////                $errors[] = 'El cargo ' . $source . ' no tiene factura';
-//                return null;
-//            }
-//
-//            return $stripe->invoices->retrieve($charge->invoice, []);
-//        }
-
         if (str_starts_with($source, 'in_')) {
-            return $stripe->invoices->retrieve($source, []);
+            return StripeGateway::byName($this->stripe_account)->retrieveInvoiceSimple($source);
         }
 
         return null;
     }
 
-    /**
-     * Comprueba si existe una fila con el mismo objectId.
-     *
-     * @param string $objectId
-     * @param string $event
-     * @return bool
-     */
     public static function existsObjectId(string $objectId, string $event): bool
     {
         return static::count([
-                new DataBaseWhere('object_id', $objectId),
-                new DataBaseWhere('event', $event)
-            ]) > 0;
+            Where::eq('object_id', $objectId),
+            Where::eq('event', $event),
+        ]) > 0;
     }
 
-    /**
-     * @param $stripe_account
-     * @param $event
-     * @param $object_id
-     * @param $object_date
-     * @param $transaction_type
-     * @param $transaction_id
-     * @param $destination
-     * @param $destination_id
-     * @return bool
-     */
-    static function setStripeTransaction(
-        $stripe_account,
-        $event,
-        $object_id,
-        $object_date,
-        $transaction_type,
-        $transaction_id,
-        $destination,
-        $destination_id,
-    ): bool
-    {
+    public static function setStripeTransaction(
+        string $stripe_account,
+        string $event,
+        string $object_id,
+        string $object_date,
+        string $transaction_type,
+        string $transaction_id,
+        string $destination,
+        string $destination_id,
+    ): bool {
         $model = new StripeTransactionsQueue();
         $model->stripe_account = $stripe_account;
         $model->event = $event;
@@ -422,60 +282,25 @@ class StripeTransactionsQueue extends ModelClass
         $model->transaction_id = $transaction_id;
         $model->destination = $destination;
         $model->destination_id = $destination_id;
+
         return $model->save();
     }
 
-
-    /**
-     * Comprueba si puedo usar las remesas
-     * @param bool $onlyVerifyPlugin
-     * @return bool
-     */
-    static function canUseRemesas(bool $onlyVerifyPlugin = false): bool
+    public static function canUseRemesas(bool $onlyVerifyPlugin = false): bool
     {
-        if ($onlyVerifyPlugin)
+        if ($onlyVerifyPlugin) {
             return Plugins::isInstalled('RemesasSEPA') && Plugins::isEnabled('RemesasSEPA');
-
-        return SettingStripeModel::getSetting('remesasSEPA') && Plugins::isInstalled('RemesasSEPA') && Plugins::isEnabled('RemesasSEPA');
-    }
-
-
-    /**
-     * Comprueba si puedo usar verifactu
-     * @param bool $onlyVerifyPlugin
-     * @return bool
-     */
-    static function canUseVerifactu(bool $onlyVerifyPlugin = false): bool
-    {
-        if ($onlyVerifyPlugin)
-            return Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
-
-        return SettingStripeModel::getSetting('verifactu') && Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
-    }
-
-    static function getPaymentMethodFromPI(string $pi, string $sk): string {
-        $stripe = new StripeClient($sk);
-        $paymentIntent = $stripe->paymentIntents->retrieve($pi, []);
-
-        $paymentMethodId = $paymentIntent->payment_method;
-
-        if (empty($paymentMethodId)) {
-
-            $paymentMethodId = $paymentIntent->charges->data[0]->payment_method;
-
-            if (empty($paymentMethodId)) {
-                InvoiceStripe::log('No se ha encontado el payment method id.');
-                return '';
-            }
-
         }
 
-        InvoiceStripe::log('paymentMethodId: ' . $paymentMethodId);
+        return StripeSettings::getSetting('remesasSEPA') && Plugins::isInstalled('RemesasSEPA') && Plugins::isEnabled('RemesasSEPA');
+    }
 
-        $paymentMethod = $stripe->paymentMethods->retrieve($paymentMethodId, []);
+    public static function canUseVerifactu(bool $onlyVerifyPlugin = false): bool
+    {
+        if ($onlyVerifyPlugin) {
+            return Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
+        }
 
-        InvoiceStripe::log(serialize($paymentMethod));
-
-        return $paymentMethod->type;
+        return StripeSettings::getSetting('verifactu') && Plugins::isInstalled('Verifactu') && Plugins::isEnabled('Verifactu');
     }
 }

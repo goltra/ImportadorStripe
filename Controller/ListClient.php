@@ -7,16 +7,17 @@
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
+use Exception;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\KernelException;
-use FacturaScripts\Core\Tools;
-use FacturaScripts\Dinamic\Model\ClientModel;
 use FacturaScripts\Core\Lib\AssetManager;
+use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\FormaPago;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeCustomer;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSettings;
 
 class ListClient extends Controller
 {
-
     public array $clients = [];
     public array $sks_stripe = [];
     public string|null $action = '';
@@ -50,79 +51,57 @@ class ListClient extends Controller
         AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/stripe.css');
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
         $this->action = $this->request->query->get('action');
-        $this->sks_stripe = ClientModel::loadSkStripe();
-        switch ($this->action) {
-            case('load'):
+        $this->sks_stripe = StripeSettings::getSks();
 
-                if ($this->request->request->get('sk_stripe_index') !== null) {
-                    $this->sk_stripe_index = $this->request->request->get('sk_stripe_index');
-                } elseif ($this->request->query->get('sk_stripe_index') !== null) {
-                    $this->sk_stripe_index = $this->request->query->get('sk_stripe_index');
-                } elseif (isset($_SESSION['sk_stripe_index'])) {
-                    $this->sk_stripe_index = $_SESSION['sk_stripe_index'];
-                } else {
+        switch ($this->action) {
+            case 'load':
+                $this->sk_stripe_index = $this->request->request->get('sk_stripe_index')
+                    ?? $this->request->query->get('sk_stripe_index')
+                    ?? ($_SESSION['sk_stripe_index'] ?? null);
+
+                if ($this->sk_stripe_index === null) {
                     Tools::log()->error('No se ha recibido el sk correspondiente');
                     return;
                 }
 
                 $this->stripe_customer_email = $this->request->request->get('stripe_customer_email') ?? $_SESSION['stripe_customer_email'] ?? '';
-                $start = $this->request->query->get('start');
-                $limit = $this->request->query->get('limit');
-                $pm = new FormaPago();
-                $this->paymentMethods = $pm->all();
+                $paymentMethod = new FormaPago();
+                $this->paymentMethods = $paymentMethod->all();
 
                 $_SESSION['sk_stripe_index'] = $this->sk_stripe_index;
                 $_SESSION['stripe_customer_email'] = $this->stripe_customer_email;
 
-                if ($limit === null || count($limit) == 0)
-                    $limit = 1000;
-                if ($start === null || count($start) == 0)
-                    $start = null;
-
-                $this->getData($this->sk_stripe_index, $this->stripe_customer_email, $start, $limit);
+                $this->getData($this->sk_stripe_index, $this->stripe_customer_email);
                 break;
 
             case 'linkClient':
-                $customer_id = $this->request->query->get('customer_id');
-                $stripe_customer_id = $this->request->query->get('stripe_customer_id');
+                $customerId = $this->request->query->get('customer_id');
+                $stripeCustomerId = $this->request->query->get('stripe_customer_id');
 
-                if (strlen($customer_id) > 0){
-                    $res = ClientModel::linkFsClientToStripeCustomer($stripe_customer_id, $_SESSION['sk_stripe_index'], $customer_id);
-
-                    if ($res['status'] === true) {
+                if (!empty($customerId)) {
+                    try {
+                        StripeCustomer::linkToFsCustomer((int)$_SESSION['sk_stripe_index'], $stripeCustomerId, $customerId);
                         Tools::log()->info('Cliente vinculado correctamente.');
-                    } else {
-                        Tools::log()->error($res['message']);
+                    } catch (Exception $e) {
+                        Tools::log()->error($e->getMessage());
                     }
-                }
-                else
+                } else {
                     Tools::log()->error('Error al seleccionar el cliente');
-
+                }
                 break;
 
             default:
-                //si no pasa accion, debe mostrar solo el desplegable para elegir que cuenta de stripe usar.
-
+                // Si no hay acción, solo se muestra el desplegable para elegir la cuenta de stripe.
                 break;
         }
     }
 
-    public function getData($sk_stripe_index, $stripe_customer_email, $start = null, $limit = 10): void
+    public function getData($sk_stripe_index, string $stripe_customer_email): void
     {
-        try{
-            $data = ClientModel::loadStripeCustomers($sk_stripe_index, $stripe_customer_email, $start, $limit);
-
-            if (array_key_exists('status', $data) && $data['status'] === false) {
-                Tools::log()->error( 'Error: ' . $data['message']);
-            } else {
-                $this->clients = $data;
-            }
-        } catch (\Exception $ex){
-            Tools::log()->error( 'Error: ' . $ex->getMessage());
+        try {
+            $this->clients = StripeCustomer::loadAll((int)$sk_stripe_index, $stripe_customer_email);
+        } catch (Exception $e) {
+            Tools::log()->error('Error: ' . $e->getMessage());
         }
-
-
     }
-
-
 }

@@ -10,22 +10,22 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 use Exception;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\KernelException;
-use FacturaScripts\Core\Tools;
-use FacturaScripts\Dinamic\Model\ClientModel;
-use FacturaScripts\Plugins\ImportadorStripe\Model\Helper;
-use \FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Core\Lib\AssetManager;
+use FacturaScripts\Core\Tools;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\DateHelper;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\InvoiceImporter;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeCustomer;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSettings;
 
 class ListInvoiceStripe extends Controller
 {
-
     public $invoices = [];
     public $sks_stripe = [];
     public $action = '';
     public $sk_stripe_index = null;
     public $textFilter = '';
-    public $f_ini='';
-    public $f_fin='';
+    public $f_ini = '';
+    public $f_fin = '';
 
     public function getPageData(): array
     {
@@ -46,7 +46,6 @@ class ListInvoiceStripe extends Controller
         $this->init();
     }
 
-
     private function init(): void
     {
         session_start();
@@ -54,83 +53,66 @@ class ListInvoiceStripe extends Controller
         AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/stripe.css');
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
         $this->action = $this->request->query->get('action');
-        $this->sks_stripe = InvoiceStripe::loadSkStripe();
+        $this->sks_stripe = StripeSettings::getSks();
 
         switch ($this->action) {
-            case('load'):
-                if ($this->request->request->get('sk_stripe_index') !== null) {
-                    $this->sk_stripe_index = $this->request->request->get('sk_stripe_index');
-                } elseif ($this->request->query->get('sk_stripe_index') !== null) {
-                    $this->sk_stripe_index = $this->request->query->get('sk_stripe_index');
-                } else {
+            case 'load':
+                $this->sk_stripe_index = $this->request->request->get('sk_stripe_index')
+                    ?? $this->request->query->get('sk_stripe_index');
+
+                if ($this->sk_stripe_index === null) {
                     Tools::log()->error('No se ha recibido el sk correspondiente');
                     return;
                 }
 
-                $start = $this->request->query->get('start');
-                $limit = $this->request->query->get('limit');
+                $start = $this->request->query->get('start') ?: null;
+                $limit = (int)($this->request->query->get('limit') ?: 5);
+                $fIni = null;
+                $fFin = null;
 
-                if ($limit === null || count($limit) == 0)
-                    $limit = 5;
-                if ($start === null || count($start) == 0)
-                    $start = null;
-
-                $f_ini = null;
-                $f_fin = null;
-
-                // OBTENGO FECHAS SIN VIENEN EN EL POST Y LAS CONVIERTO A TIMESTAMP
+                // Obtengo las fechas si vienen en el POST y las convierto a timestamp.
                 if ($this->request->request->get('f-ini-date')) {
                     $this->f_ini = $this->request->request->get('f-ini-date');
-                    $f_ini = Helper::parseDateToTS($this->f_ini,'Y-m-d');
+                    $fIni = DateHelper::parseDateToTS($this->f_ini, 'Y-m-d');
                 }
                 if ($this->request->request->get('f-fin-date')) {
-                    $this->f_fin=$this->request->request->get('f-fin-date');
-                    $f_fin = Helper::parseDateToTS($this->f_fin,'Y-m-d');
+                    $this->f_fin = $this->request->request->get('f-fin-date');
+                    $fFin = DateHelper::parseDateToTS($this->f_fin, 'Y-m-d');
                 }
 
-                $this->getData($this->sk_stripe_index, $start, $limit, $f_ini, $f_fin);
-                $this->textFilter='Filtrando de ' . $this->f_ini . ' a ' . $this->f_fin;
+                $this->getData($this->sk_stripe_index, $start, $limit, $fIni, $fFin);
+                $this->textFilter = 'Filtrando de ' . $this->f_ini . ' a ' . $this->f_fin;
                 break;
 
             case 'linkClient':
-                $customer_id = $this->request->query->get('customer_id');
-                $stripe_customer_id = $this->request->query->get('stripe_customer_id');
+                $customerId = $this->request->query->get('customer_id');
+                $stripeCustomerId = $this->request->query->get('stripe_customer_id');
 
-                if (strlen($customer_id) > 0){
-                    $res = ClientModel::linkFsClientToStripeCustomer($stripe_customer_id, $_SESSION['sk_stripe_index'], $customer_id);
-
-                    if ($res['status'] === true) {
+                if (!empty($customerId)) {
+                    try {
+                        StripeCustomer::linkToFsCustomer((int)$_SESSION['sk_stripe_index'], $stripeCustomerId, $customerId);
                         Tools::log()->info('Cliente vinculado correctamente.');
-                    } else {
-                        Tools::log()->error($res['message']);
+                    } catch (Exception $e) {
+                        Tools::log()->error($e->getMessage());
                     }
-                }
-                else
+                } else {
                     Tools::log()->error('Error al seleccionar el cliente');
-
-
+                }
                 break;
 
             default:
-                //si no pasa accion, debe mostrar solo el desplegable para elegir que cuenta de stripe usar.
-
+                // Si no hay acción, solo se muestra el desplegable para elegir la cuenta de stripe.
                 break;
         }
     }
 
     /**
-     * Carga las facturas de stripe que no tienen en los metadatos la variable fs_idFatura con los filtros de fecha.
-     *
-     * @param $sk_stripe_index
-     * @param null $start
-     * @param int $limit
-     * @param null $f_ini
-     * @param null $f_fin
+     * Carga las facturas de stripe que no tienen en los metadatos la variable fs_idFactura, con los filtros de fecha.
      */
     public function getData($sk_stripe_index, $start = null, int $limit = 5, $f_ini = null, $f_fin = null): void
     {
         try {
-            $data = InvoiceStripe::loadInvoicesNotProcessed($sk_stripe_index, $start, $limit, (int)$f_ini, $f_fin);
+            $data = InvoiceImporter::loadInvoicesNotProcessed($sk_stripe_index, $start, $limit, (int)$f_ini, $f_fin);
 
             if ($data['status'] === false) {
                 Tools::log()->error('No se han podido cargar las facturas ' . $data['message']);
@@ -140,6 +122,5 @@ class ListInvoiceStripe extends Controller
         } catch (Exception $e) {
             Tools::log()->error('No se han podido cargar las facturas ' . $e->getMessage());
         }
-
     }
 }

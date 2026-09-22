@@ -5,34 +5,26 @@
  * @author Francisco José García Alonso
  */
 
-//stripe listen --forward-to localhost:8081/WebhookStripeRemesasSepa
-
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
+use Exception;
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Dinamic\Lib\Email\NewMail;
-use FacturaScripts\Dinamic\Model\InvoiceStripe;
+use FacturaScripts\Core\Tools;
+use FacturaScripts\Dinamic\Model\Empresa;
 use FacturaScripts\Dinamic\Model\RemesaSEPA;
-use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\Logger;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeGateway;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeMailer;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSettings;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
-use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue as StripeTransactionsQueueAlias;
-use PHPMailer\PHPMailer\Exception;
-use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
-use Stripe\Stripe;
-use Stripe\StripeClient;
-use Twig\Error\LoaderError;
-use Twig\Error\RuntimeError;
-use Twig\Error\SyntaxError;
-
 
 /**
- * Controlador que va a hacer de webservice para crear remesas en base a los payout de stripe.
- * El funcionamiento es que por cada transferencia que haga Stripe, llamará aquí y se creará una remesa con todas las facturas asociadas a esa transferencia
+ * Webhook que crea remesas en base a los payouts de stripe.
+ * Por cada transferencia de Stripe se crea una remesa con todas las facturas asociadas.
  */
 class WebhookStripeRemesasSepa extends Controller
 {
-
     public function getPageData(): array
     {
         $pageData = parent::getPageData();
@@ -48,57 +40,55 @@ class WebhookStripeRemesasSepa extends Controller
         $this->init();
     }
 
-
     public function init(): void
     {
-        InvoiceStripe::log('entro al init', 'remesa');
+        Logger::log('entro al init', Logger::CHANNEL_REMESA);
 
-        if (!StripeTransactionsQueue::canUseRemesas())
+        if (!StripeTransactionsQueue::canUseRemesas()) {
             $this->sendError('Error: No tienes remesas activadas en los ajustes del plugin', 400);
+        }
 
         $payload = @file_get_contents('php://input');
 
-        if (!$payload)
+        if (!$payload) {
             $this->sendError('Error: No viene payload', 400);
+        }
 
         $data = json_decode($payload);
 
-        if (!isset($_GET['source']))
+        if (!isset($_GET['source'])) {
             $this->sendError('Error: No viene source', 400);
-
-        $source = $_GET['source'];
-        // $source = 'd4d9a56531e84cd5b842e208b3ee65ef';
-        $sk = SettingStripeModel::loadSkStripeByToken($source);
-
-
-        if (count($sk) === 0)
-            $this->sendError('Error: No hay sk', 400);
-
-        InvoiceStripe::log('SK ' . serialize($sk), 'remesa');
-
-//        $payoutId = 'po_1S899KHDuQaJAlOmVNHE1ZIN';
-        Stripe::setApiKey($sk['sk']);
-
-        try {
-            $event = Event::retrieve($data->id);
-            InvoiceStripe::log('Recuperamos event', 'remesa');
-        } catch (ApiErrorException $e) {
-            $this->sendError('Error: Error al recuperar el evento. '. $e->getMessage(), 400);
-            exit();
         }
 
-        if ($event->type == 'payout.paid') {
+        $sk = StripeSettings::loadSkStripeByToken($_GET['source']);
 
+        if (count($sk) === 0) {
+            $this->sendError('Error: No hay sk', 400);
+        }
+
+        Logger::log('SK ' . serialize($sk), Logger::CHANNEL_REMESA);
+
+        $gateway = new StripeGateway($sk['sk']);
+
+        try {
+            $event = $gateway->retrieveEvent($data->id);
+            Logger::log('Recuperamos event', Logger::CHANNEL_REMESA);
+        } catch (ApiErrorException $e) {
+            $this->sendError('Error: Error al recuperar el evento. ' . $e->getMessage(), 400);
+        }
+
+        if ($event->type === 'payout.paid') {
             $payoutId = $event->data->object->id;
-            InvoiceStripe::log('payout id: ' . $payoutId, 'remesa');
+            Logger::log('payout id: ' . $payoutId, Logger::CHANNEL_REMESA);
 
-            if (StripeTransactionsQueue::existsObjectId($payoutId, StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID))
-                $this->sendError('Error: El pago ya ha sido registrado previamente ', 200);
+            if (StripeTransactionsQueue::existsObjectId($payoutId, StripeTransactionsQueue::EVENT_PAYOUT_PAID)) {
+                $this->sendError('Error: El pago ya ha sido registrado previamente', 200);
+            }
 
             try {
-                $this->processPayout($sk, $payoutId);
-            } catch (\Exception $e) {
-                $this->sendError('Error: Error al registrar la remesa en la cola. '. $e->getMessage(), 200);
+                $this->processPayout($sk, $payoutId, $gateway);
+            } catch (Exception $e) {
+                $this->sendError('Error: Error al registrar la remesa en la cola. ' . $e->getMessage(), 200);
             }
 
             http_response_code(200);
@@ -106,208 +96,94 @@ class WebhookStripeRemesasSepa extends Controller
         }
     }
 
-    /**
-     * @param $sk
-     * @param $payoutId
-     * @return void
-     * @throws ApiErrorException
-     * @throws Exception
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
-     */
-    private function processPayout($sk, $payoutId): void
+    private function processPayout(array $sk, string $payoutId, StripeGateway $gateway): void
     {
-        InvoiceStripe::log('Entra a processPayout', 'remesa');
-        $stripe = new StripeClient($sk['sk']);
+        Logger::log('Entra a processPayout', Logger::CHANNEL_REMESA);
 
-        //  Pido los datos del pago
-        $payout = $stripe->payouts->retrieve($payoutId, []);
+        $payout = $gateway->retrievePayout($payoutId);
+        $totalIngreso = $payout['amount'] / 100;
+        Logger::log('Total ingreso: ' . $totalIngreso, Logger::CHANNEL_REMESA);
 
-        $totalIngresoStripe = $payout['amount'] / 100;
-        InvoiceStripe::log('Total ingreso: ' . $totalIngresoStripe, 'remesa');
-
-        //  Creo la remesa
         $remesa = new RemesaSEPA();
-
-        $remesa->nombre = 'GOLTRATEC S.L.';
+        $remesa->nombre = $this->getEmpresaNombre();
         $remesa->descripcion = 'Pago ' . $sk['name'];
         $remesa->fecha = date('Y-m-d H:i:s');
-        $remesa->fechacargo  = date('Y-m-d', $payout['arrival_date']);
+        $remesa->fechacargo = date('Y-m-d', $payout['arrival_date']);
         $remesa->estado = RemesaSEPA::STATUS_WAIT;
-        $remesa->codcuenta = (int)SettingStripeModel::getSetting('cuentaRemesaSEPA');
+        $remesa->codcuenta = (int)StripeSettings::getSetting('cuentaRemesaSEPA');
 
-        if (!$remesa->save()){
-            InvoiceStripe::log('No se ha podido crear la remesa. ', 'remesa');
+        if (!$remesa->save()) {
+            Logger::log('No se ha podido crear la remesa.', Logger::CHANNEL_REMESA);
             throw new Exception('Error al guardar la remesa');
         }
 
-        InvoiceStripe::log('Se genera la remesa. ', 'remesa');
+        Logger::log('Se genera la remesa.', Logger::CHANNEL_REMESA);
 
-        // Pido el balance transaction
-        $balanceTransactions = $this->getAllBalanceTransactions($stripe, $payoutId, 50);
+        $balanceTransactions = $gateway->listAllBalanceTransactions($payoutId);
+        Logger::log('El pago trae ' . count($balanceTransactions) . ' cargos.', Logger::CHANNEL_REMESA);
 
-        InvoiceStripe::log('El pago trae ' . count($balanceTransactions) . 'cargos.', 'remesa');
         $cargos = 0;
         $ok = 0;
-        $errors = [];
+        $errores = [];
 
         foreach ($balanceTransactions as $transaction) {
-
-            if (empty($transaction['source']) || $transaction['type'] === 'payout' || !in_array($transaction['type'], ['payment', 'charge'])){
+            if (empty($transaction['source']) || $transaction['type'] === 'payout' || !in_array($transaction['type'], ['payment', 'charge'], true)) {
                 continue;
             }
 
-            $cargos ++;
+            $cargos++;
 
-            if (StripeTransactionsQueue::setStripeTransaction(
+            $saved = StripeTransactionsQueue::setStripeTransaction(
                 $sk['name'],
-                StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID,
+                StripeTransactionsQueue::EVENT_PAYOUT_PAID,
                 $payoutId,
                 date('Y-m-d H:i:s'),
-                StripeTransactionsQueueAlias::TRANSACTION_TYPE_INVOICE,
+                StripeTransactionsQueue::TRANSACTION_TYPE_INVOICE,
                 $transaction['source']->invoice,
-                StripeTransactionsQueueAlias::DESTINATION_REMESA,
+                StripeTransactionsQueue::DESTINATION_REMESA,
                 $remesa->idremesa,
-            ))
+            );
+
+            if ($saved) {
                 $ok++;
-            else{
-
-                $lineaError = [
-                    'sk' => $sk['name'],
-                    'evento' => StripeTransactionsQueueAlias::EVENT_PAYOUT_PAID,
-                    'pago' => $payoutId,
-                    'fecha' => date('Y-m-d H:i:s'),
-                    'transacción' => StripeTransactionsQueue::TRANSACTION_TYPE_INVOICE,
-                    'transaccion_id' => $transaction['source']->invoice,
-                    'destino' => StripeTransactionsQueueAlias::DESTINATION_REMESA,
-                    'destino_id' => $remesa->idremesa,
-                ];
-
-                $errors[] = serialize($lineaError);
+                continue;
             }
 
+            $errores[] = serialize([
+                'sk' => $sk['name'],
+                'evento' => StripeTransactionsQueue::EVENT_PAYOUT_PAID,
+                'pago' => $payoutId,
+                'fecha' => date('Y-m-d H:i:s'),
+                'transacción' => StripeTransactionsQueue::TRANSACTION_TYPE_INVOICE,
+                'transaccion_id' => $transaction['source']->invoice,
+                'destino' => StripeTransactionsQueue::DESTINATION_REMESA,
+                'destino_id' => $remesa->idremesa,
+            ]);
         }
 
-
-        $this->sendMail($cargos, $ok, $errors, $totalIngresoStripe, $remesa->idremesa );
-
+        StripeMailer::sendRemesaCreated($cargos, $ok, $errores, $totalIngreso, $remesa->idremesa);
     }
 
-
-    /**
-     * @param $stripe
-     * @param $payoutId
-     * @param int $limitPerRequest
-     * @param string $startingAfter
-     * @param array $accumulated
-     * @return array
-     */
-    private function getAllBalanceTransactions($stripe, $payoutId, int $limitPerRequest = 50, string $startingAfter = '', array $accumulated = []): array
+    private function getEmpresaNombre(): string
     {
-        // Stripe permite un máximo de 100 por request
-        $limit = min($limitPerRequest, 100);
+        $empresa = new Empresa();
+        $empresa->load(Tools::settings('default', 'idempresa'));
 
-        $params = [
-            'payout' => $payoutId,
-            'limit'  => $limit,
-            'expand' => ['data.source.source'],
-        ];
-
-        if ($startingAfter) {
-            $params['starting_after'] = $startingAfter;
-        }
-
-        // Hacemos la llamada a Stripe
-        $response = $stripe->balanceTransactions->all($params);
-
-        // Acumulamos los resultados
-        $accumulated = array_merge($accumulated, $response->data);
-
-        // Si hay más páginas, seguimos recursivamente
-        if ($response->has_more) {
-            $lastId = end($response->data)->id;
-            return $this->getAllBalanceTransactions($stripe, $payoutId, $limitPerRequest, $lastId, $accumulated);
-        }
-
-        // Si no hay más páginas, devolvemos todos los resultados acumulados
-        return $accumulated;
+        return $empresa->nombre;
     }
 
-    /**
-     * @param $error
-     * @param $response_code
-     * @return void
-     */
-    private function sendError($error, $response_code): void
+    private function sendError(string $error, int $responseCode): void
     {
         echo $error;
-        InvoiceStripe::log($error, 'remesa');
+        Logger::log($error, Logger::CHANNEL_REMESA);
 
         try {
-            $this->sendMailError($error);
-        }
-        catch (\Exception $e) {
-            InvoiceStripe::log('No se ha podido mandar el email. '. $e->getMessage());
+            StripeMailer::sendRemesaWebhookError($error);
+        } catch (Exception $e) {
+            Logger::log('No se ha podido mandar el email. ' . $e->getMessage(), Logger::CHANNEL_REMESA);
         }
 
-        http_response_code($response_code);
+        http_response_code($responseCode);
         exit();
-    }
-
-    /**
-     * @param string $error
-     * @return void
-     * @throws Exception
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
-     */
-    private function sendMailError(string $error = ''): void
-    {
-        $subject = 'Error al generar la remesa de cobro de stripe';
-        $body = "Hola, \r\n La llamada de stripe para generar una remesa y agregar las facturas a la cola ha dado error: . \r\n";
-
-        if ($error)
-            $body .= $error;
-
-        $mail = NewMail::create()
-            ->to(SettingStripeModel::getSetting('satEmail'))
-            ->subject($subject)
-            ->body(nl2br($body));
-
-        $mail->send();
-    }
-
-    /**
-     * Método que va a mandar un email
-     * @param $numCargos
-     * @param $cargosCorrectos
-     * @param $errores
-     * @param $totalIngresoStripe
-     * @param $idRemesa
-     * @return void
-     * @throws Exception
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
-     */
-    private function sendMail($numCargos, $cargosCorrectos, $errores, $totalIngresoStripe, $idRemesa): void
-    {
-        $subject = 'Nueva remesa de cobro de stripe agregada a la cola.';
-        $body = "Hola, \r\n Se ha creado la remesa $idRemesa de forma automática por un pago de stripe. Y todas las líneas se han agregado a la cola para su procesamiento. \r\n";
-        $body .= "Total del ingreso: $totalIngresoStripe €\n";
-        $body .= "Total cargos: $numCargos \r\n";
-        $body .= "Num cargos agregados a la cola: $cargosCorrectos \r\n";
-
-        if (count($errores) > 0)
-            $body .= "Errores:\r\n" . implode("\r\n", $errores);
-
-        $mail = NewMail::create()
-            ->to(SettingStripeModel::getSetting('adminEmail'))
-            ->subject($subject)
-            ->body(nl2br($body));
-
-        $mail->send();
     }
 }

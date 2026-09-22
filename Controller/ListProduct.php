@@ -7,15 +7,16 @@
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
+use Exception;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\KernelException;
-use FacturaScripts\Core\Tools;
-use FacturaScripts\Plugins\ImportadorStripe\Model\ProductModel;
 use FacturaScripts\Core\Lib\AssetManager;
+use FacturaScripts\Core\Tools;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeProduct;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSettings;
 
 class ListProduct extends Controller
 {
-
     public array $products = [];
     public array $sks_stripe = [];
     public string $action = '';
@@ -47,37 +48,27 @@ class ListProduct extends Controller
         AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/stripe.css');
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
         $this->action = $this->request->query->get('action') ?? '';
-        $this->sks_stripe = ProductModel::loadSkStripe();
+        $this->sks_stripe = StripeSettings::getSks();
+
         switch ($this->action) {
-            case('load'):
+            case 'load':
+                $this->sk_stripe_index = $this->request->request->get('sk_stripe_index')
+                    ?? $this->request->query->get('sk_stripe_index')
+                    ?? ($_SESSION['sk_stripe_index'] ?? null);
 
-
-                if ($this->request->request->get('sk_stripe_index') !== null) {
-                    $this->sk_stripe_index = $this->request->request->get('sk_stripe_index');
-                } elseif ($this->request->query->get('sk_stripe_index') !== null) {
-                    $this->sk_stripe_index = $this->request->query->get('sk_stripe_index');
-                } elseif (isset($_SESSION['sk_stripe_index'])) {
-                    $this->sk_stripe_index = $_SESSION['sk_stripe_index'];
-                } else {
+                if ($this->sk_stripe_index === null) {
                     Tools::log()->error('No se ha recibido el sk correspondiente');
                     return;
                 }
 
-                $start = $this->request->query->get('start');
-                $limit = $this->request->query->get('limit');
-
                 $_SESSION['sk_stripe_index'] = $this->sk_stripe_index;
-
-                if ($limit === null || count($limit) == 0)
-                    $limit = 1000;
-                if ($start === null || count($start) == 0)
-                    $start = null;
-
-                $this->getData($this->sk_stripe_index, $start, $limit);
+                $this->getData($this->sk_stripe_index);
                 break;
-            case('linkProduct'):
+
+            case 'linkProduct':
                 $codproduct = $this->request->query->get('codproduct');
-                if ($codproduct === null || strlen($codproduct) == 0) {
+
+                if (empty($codproduct)) {
                     Tools::log()->error('No se ha podido enlazar el producto, no se ha definido el producto de FS');
                     break;
                 }
@@ -91,38 +82,27 @@ class ListProduct extends Controller
                 }
 
                 $this->sk_stripe_index = $_SESSION['sk_stripe_index'];
-                $st_product_id = $_SESSION['st_product_id'];
 
                 try {
-                    ProductModel::linkFsProductToStripeProduct($this->sk_stripe_index, $codproduct, $st_product_id);
-                    $this->redirect('ListProduct?action=load',0);
-                } catch (\Exception $e) {
+                    StripeProduct::linkToFsProduct((int)$this->sk_stripe_index, $codproduct, $_SESSION['st_product_id']);
+                    $this->redirect('ListProduct?action=load', 0);
+                } catch (Exception $e) {
                     Tools::log()->error('No se ha podido enlazar el producto' . $e->getMessage());
                 }
                 break;
-            default:
-                //si no pasa accion, debe mostrar solo el desplegable para elegir que cuenta de stripe usar.
 
+            default:
+                // Si no hay acción, solo se muestra el desplegable para elegir la cuenta de stripe.
                 break;
         }
     }
 
-    public function getData($sk_stripe_index, $start = null, $limit = 10): void
+    public function getData($sk_stripe_index): void
     {
-        try{
-            $data = ProductModel::loadStripeProducts($sk_stripe_index, $start, $limit);
-
-            if (array_key_exists('status', $data) && $data['status'] === false) {
-                Tools::log()->error( 'Error: ' . $data['message']);
-            } else {
-                $this->products = $data;
-            }
-        } catch (\Exception $ex){
-            Tools::log()->error( 'Error: ' . $ex->getMessage());
+        try {
+            $this->products = StripeProduct::loadAll((int)$sk_stripe_index);
+        } catch (Exception $e) {
+            Tools::log()->error('Error: ' . $e->getMessage());
         }
-
-
     }
-
-
 }

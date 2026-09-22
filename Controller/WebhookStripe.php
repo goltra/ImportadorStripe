@@ -76,7 +76,12 @@ class WebhookStripe extends Controller
             $facturaFs = new FacturaCliente();
 
             if ($facturaFs->loadWhere([Where::eq('numero2', $facturaNumero)])) {
-                StripeMailer::sendUncollectible($facturaId, $facturaFs->idfactura, $facturaFs->codigo);
+                try {
+                    StripeMailer::sendUncollectible($facturaId, $facturaFs->idfactura, $facturaFs->codigo);
+                } catch (Exception $ex) {
+                    Logger::log('Error al enviar el email cuando la factura no se puede cobrar');
+                    Logger::log(serialize($ex->getMessage()));
+                }
             }
         }
 

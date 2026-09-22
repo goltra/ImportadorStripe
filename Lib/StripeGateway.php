@@ -185,6 +185,9 @@ class StripeGateway
 
         Logger::log('paymentMethodId: ' . $paymentMethodId);
 
-        return $runner->paymentMethods->retrieve($paymentMethodId, [])->type;
+        $paymentMethod = $runner->paymentMethods->retrieve($paymentMethodId, []);
+        Logger::log(serialize($paymentMethod));
+
+        return $paymentMethod->type;
     }
 }

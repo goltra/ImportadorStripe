@@ -112,7 +112,7 @@ class InvoiceImporter
         $database->beginTransaction();
 
         try {
-            $build = FsInvoiceBuilder::build($invoice, $sk, $source, $esBoceto, $mark_as_paid, $payment_method);
+            $build = FsInvoiceBuilder::build($invoice, $sk, $source, $esBoceto, $mark_as_paid, $payment_method, $stripe_customer);
             $invoiceFs = $build['model'];
 
             $gateway->updateInvoiceMetadata($id_invoice_stripe, ['fs_idFactura' => $invoiceFs->idfactura]);

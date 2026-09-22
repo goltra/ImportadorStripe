@@ -59,6 +59,8 @@ class InvoiceParser
      */
     private static function parseInvoice($stripeInvoice, $customer, int $skIndex, bool $withLines): StripeInvoice
     {
+        Logger::log('Comprobamos si ya se ha pagado la factura o si ya ha sido descargada');
+
         $invoice = new StripeInvoice();
         $invoice->id = $stripeInvoice->id;
         $invoice->numero = $stripeInvoice->number;
@@ -84,6 +86,7 @@ class InvoiceParser
         $invoice->amount = $stripeInvoice->amount_due / 100;
 
         if (isset($stripeInvoice->lines) && $withLines) {
+            Logger::log('Hay lineas en la factura');
             $errors = [];
 
             foreach ($stripeInvoice->lines->data as $stripeLine) {
@@ -92,6 +95,9 @@ class InvoiceParser
                     $invoice->lines[] = $line;
                 }
             }
+
+            Logger::log('Factura de stripe procesada correctamente');
+            Logger::log('Errores: ' . count($errors));
 
             // el descuento es a nivel de factura
             $invoice->discount = self::calculateDiscount($stripeInvoice);

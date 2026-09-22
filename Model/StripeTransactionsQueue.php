@@ -246,9 +246,9 @@ class StripeTransactionsQueue extends ModelClass
      *
      * @throws Exception
      */
-    private function getInvoiceFromPayoutTransaction(string $source): ?Invoice
+    private function getInvoiceFromPayoutTransaction(?string $source): ?Invoice
     {
-        if (str_starts_with($source, 'in_')) {
+        if ($source !== null && str_starts_with($source, 'in_')) {
             return StripeGateway::byName($this->stripe_account)->retrieveInvoiceSimple($source);
         }
 
@@ -269,9 +269,9 @@ class StripeTransactionsQueue extends ModelClass
         string $object_id,
         string $object_date,
         string $transaction_type,
-        string $transaction_id,
+        ?string $transaction_id,
         string $destination,
-        string $destination_id,
+        ?string $destination_id,
     ): bool {
         $model = new StripeTransactionsQueue();
         $model->stripe_account = $stripe_account;

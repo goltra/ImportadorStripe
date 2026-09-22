@@ -28,7 +28,7 @@ class FsInvoiceBuilder
      * @return array{model: FacturaCliente, esClienteNoVinculado: bool, usoProductoPorDefecto: bool}
      * @throws Exception
      */
-    public static function build(StripeInvoice $invoice, array $sk, string $source, bool $esBoceto, bool $markAsPaid, ?string $paymentMethod): array
+    public static function build(StripeInvoice $invoice, array $sk, string $source, bool $esBoceto, bool $markAsPaid, ?string $paymentMethod, string $stripeCustomer = ''): array
     {
         Logger::log('FsInvoiceBuilder::build');
 
@@ -40,7 +40,7 @@ class FsInvoiceBuilder
             throw new Exception('El cliente no existe');
         }
 
-        $esClienteNoVinculado = $invoice->customer_id !== '' && $client->codcliente === StripeSettings::getSetting('codcliente');
+        $esClienteNoVinculado = $stripeCustomer !== '' && $client->codcliente === StripeSettings::getSetting('codcliente');
 
         if ($esClienteNoVinculado) {
             Logger::log('El cliente no está vinculado');
@@ -56,7 +56,11 @@ class FsInvoiceBuilder
         Logger::log('serie usada: ' . $serie);
 
         $serieModel = new Serie();
-        if ($serieModel->load($serie)) {
+        $serieModel->load($serie);
+        Logger::log('serie devuelta al filtrar: ');
+        Logger::log($serieModel);
+
+        if ($serieModel->exists()) {
             $invoiceFs->codserie = $serie;
             Logger::log('Se asigna la serie ' . $serie);
         } else {
@@ -64,6 +68,7 @@ class FsInvoiceBuilder
         }
 
         if (!$invoiceFs->save()) {
+            Logger::log($invoiceFs);
             Logger::log('Ha ocurrido algún error mientras se creaba la factura.');
             throw new Exception('Ha ocurrido algún error mientras se creaba la factura.');
         }
@@ -168,6 +173,7 @@ class FsInvoiceBuilder
         }
 
         if (!$line->save()) {
+            Logger::log($line);
             Logger::log('Ha ocurrido algún error mientras se creaban la lineas de la factura.');
             return null;
         }
@@ -235,6 +241,7 @@ class FsInvoiceBuilder
         $generator->generate($invoice);
 
         Logger::log('Factura una vez generado el asiento contable. Si no hay idasiento, ha dado error interno.');
+        Logger::log(serialize($invoice));
 
         return !empty($invoice->idasiento) && $invoice->save();
     }

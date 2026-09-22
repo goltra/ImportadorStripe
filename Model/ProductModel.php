@@ -7,8 +7,6 @@
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
-use Exception;
-
 class ProductModel
 {
 

@@ -290,7 +290,6 @@ class InvoiceStripe
                         self::log('Precio antes de impuestos '.$unit_amount);
 
 
-//                        // Aplico los descuentos que trae la linea, siempre van a ser porcentaje. Por tanto si el descuento es una cantidad fija, se calcula el porcentaje respecto al precio final.
                         if(isset($inv->total_discount_amounts) && isset($inv->subtotal) && count($inv->total_discount_amounts) > 0) {
                             $discount = 0;
                             foreach ($inv->total_discount_amounts as $d){
@@ -533,13 +532,6 @@ class InvoiceStripe
 
             //  Agrego una nueva línea sin coste con la referencia del cliente de stripe
             if (SettingStripeModel::getSetting('mostrarStripeCus') == 1 && !$esClienteNoVinculado){
-//                $line = $invoiceFs->getNewLine();
-//                $line->idfactura = $invoiceFs->idfactura;
-//                $line->descripcion = 'Referencia: '.$invoice->customer_id;
-//                $line->codimpuesto = null;
-//                $line->iva = 0;
-//                $line->save();
-
                 //  Con la entrada de verifactu la línea a coste 0 daba error, ahora lo ponemos en obsevaciones.
                 $invoiceFs->observaciones = 'Referencia: '.$invoice->customer_id . '. ';
             }
@@ -778,7 +770,6 @@ class InvoiceStripe
                 $mail->title = 'Le enviamos su factura ' . $factura->codigo;
                 $mail->text = 'Estimado cliente, le enviamos la factura correspondiente al servicio. Gracias por confiar en nosotros';
                 $mail->addAttachment($path . $fileName, $fileName);
-//                $mail->fromNick = $user->nick;
                 if ($mail->send()) {
                     $factura->femail = date('Y-m-d');
                     $factura->save();

@@ -13,7 +13,6 @@ use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\ClientModel;
 use FacturaScripts\Core\Lib\AssetManager;
 use FacturaScripts\Dinamic\Model\FormaPago;
-use FacturaScripts\Plugins\ImportadorStripe\Model\SettingStripeModel;
 
 class ListClient extends Controller
 {
@@ -53,31 +52,13 @@ class ListClient extends Controller
         $this->action = $this->request->query->get('action');
         $this->sks_stripe = ClientModel::loadSkStripe();
         switch ($this->action) {
-            case('linkPaymentMethod'):
-//                if (
-//                    ($pm = $this->request->query->get('pm')) !== null &&
-//                    ($stripe_customer_id = $this->request->query->get('stripe_customer_id')) !== null
-//                ) {
-//                        $res = ClientModel::addPaymentMethodInMetaData($stripe_customer_id, $_SESSION['sk_stripe_index'], $pm);
-//
-////                        if ($res['status'] === true) {
-////                            Tools::log()->info('Cliente vinculado correctamente.');
-////                        } else {
-////                            Tools::log()->error($res['message']);
-////                        }
-//
-//                }
-                break;
             case('load'):
 
                 if ($this->request->request->get('sk_stripe_index') !== null) {
-                    /*echo'post';*/
                     $this->sk_stripe_index = $this->request->request->get('sk_stripe_index');
                 } elseif ($this->request->query->get('sk_stripe_index') !== null) {
-                    /*echo 'get';*/
                     $this->sk_stripe_index = $this->request->query->get('sk_stripe_index');
                 } elseif (isset($_SESSION['sk_stripe_index'])) {
-                    /*echo 'session';*/
                     $this->sk_stripe_index = $_SESSION['sk_stripe_index'];
                 } else {
                     Tools::log()->error('No se ha recibido el sk correspondiente');

@@ -55,7 +55,7 @@ class ListInvoiceStripe extends Controller
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
         $this->action = $this->request->query->get('action');
         $this->sks_stripe = InvoiceStripe::loadSkStripe();
-        /*$this->test();*/
+
         switch ($this->action) {
             case('load'):
                 if ($this->request->request->get('sk_stripe_index') !== null) {

@@ -153,24 +153,6 @@ class ListStripeTransactionsQueue extends ListController
     /**
      * Listado de payouts que hay en la tabla para el filtro
      */
-//    protected function getDistinctPayouts(): array
-//    {
-//        $items = StripeTransactionsQueue::all([ Where::like('event', StripeTransactionsQueue::EVENT_PAYOUT_PAID )]);
-//        $ret = [];
-//        foreach ($items as $line) {
-//            if (array_key_exists($line->object_id, $ret))
-//                continue;
-//
-//            $ret[$line->object_id] = $line->object_id;
-//        }
-//        return $ret;
-//    }
-
-
-
-    /**
-     * Listado de payouts que hay en la tabla para el filtro
-     */
     protected function getDistinctStripeAccount(): array
     {
         $db = new DataBase();

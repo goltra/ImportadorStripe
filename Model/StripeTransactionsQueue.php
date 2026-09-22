@@ -3,7 +3,6 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
 use Exception;
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
-use FacturaScripts\Core\Internal\Plugin;
 use FacturaScripts\Core\Plugins;
 use FacturaScripts\Core\Template\ModelClass;
 use FacturaScripts\Core\Template\ModelTrait;
@@ -12,7 +11,6 @@ use FacturaScripts\Dinamic\Model\ReciboCliente;
 use FacturaScripts\Plugins\RemesasSEPA\Model\RemesaSEPA;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Invoice;
-use Stripe\PaymentMethod;
 use Stripe\StripeClient;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;

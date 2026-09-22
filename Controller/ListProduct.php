@@ -10,7 +10,6 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\KernelException;
 use FacturaScripts\Core\Tools;
-use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
 use FacturaScripts\Plugins\ImportadorStripe\Model\ProductModel;
 use FacturaScripts\Core\Lib\AssetManager;
 
@@ -54,13 +53,10 @@ class ListProduct extends Controller
 
 
                 if ($this->request->request->get('sk_stripe_index') !== null) {
-                    /*echo'post';*/
                     $this->sk_stripe_index = $this->request->request->get('sk_stripe_index');
                 } elseif ($this->request->query->get('sk_stripe_index') !== null) {
-                    /*echo 'get';*/
                     $this->sk_stripe_index = $this->request->query->get('sk_stripe_index');
                 } elseif (isset($_SESSION['sk_stripe_index'])) {
-                    /*echo 'session';*/
                     $this->sk_stripe_index = $_SESSION['sk_stripe_index'];
                 } else {
                     Tools::log()->error('No se ha recibido el sk correspondiente');
@@ -109,12 +105,6 @@ class ListProduct extends Controller
 
                 break;
         }
-
-        /*if ($this->request->query->get('action') && $this->request->query->get('action') == 'test') {
-
-        } else {
-
-        }*/
     }
 
     public function getData($sk_stripe_index, $start = null, $limit = 10): void

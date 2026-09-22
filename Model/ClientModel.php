@@ -7,7 +7,6 @@
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Model;
 
-use Exception;
 use Stripe\Exception\ApiErrorException;
 
 class ClientModel
@@ -104,10 +103,5 @@ class ClientModel
         } catch (\Exception $ex) {
             return ['status' => false, 'message' => 'Error al obtener el cliente desde stripe ' . $ex->getMessage()];
         }
-    }
-
-
-    static function addPaymentMethodInMetaData($customer_stripe_id, $sk_stripe_index, $paymentMethod){
-//        enviar datos a stripe
     }
 }

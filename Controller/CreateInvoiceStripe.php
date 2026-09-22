@@ -9,17 +9,10 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\KernelException;
-use FacturaScripts\Core\Lib\Email\NewMail;
-use FacturaScripts\Core\Lib\Export\PDFExport;
-use FacturaScripts\Core\Lib\ExtendedController\BaseController;
-use FacturaScripts\Core\Lib\ExtendedController\BaseView;
 use FacturaScripts\Core\Model\Cliente;
-use FacturaScripts\Core\Model\EmailSent;
-use FacturaScripts\Core\Model\FacturaCliente;
 use FacturaScripts\Core\Model\FormaPago;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Plugins\ImportadorStripe\Model\InvoiceStripe;
-use FacturaScripts\Core\Lib\ExportManager;
 
 
 class CreateInvoiceStripe extends Controller
@@ -60,10 +53,6 @@ class CreateInvoiceStripe extends Controller
         $this->sk_stripe_index = $this->request->query->get('sk_stripe_index') !== null ? $this->request->query->get('sk_stripe_index') : $_SESSION['sk_stripe_index'];
         $this->paymentMethods();
 
-        /* if ($this->>action === null) {
-            Tools::log()->error('No se ha definido la acción');
-            return false;
-        } */
         if ($this->sk_stripe_index === null) {
             Tools::log()->error('No se ha definido el sk');
             return;

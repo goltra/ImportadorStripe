@@ -15,6 +15,7 @@ use FacturaScripts\Core\Model\FormaPago;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Plugins\ImportadorStripe\Lib\InvoiceImporter;
 use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeCustomer;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSession;
 
 class CreateInvoiceStripe extends Controller
 {
@@ -47,9 +48,9 @@ class CreateInvoiceStripe extends Controller
 
     private function init(): void
     {
-        session_start();
+        StripeSession::start();
         $this->action = $this->request->query->get('action');
-        $this->sk_stripe_index = $this->request->query->get('sk_stripe_index') ?? $_SESSION['sk_stripe_index'];
+        $this->sk_stripe_index = $this->request->query->get('sk_stripe_index') ?? StripeSession::get('sk_stripe_index');
         $this->paymentMethods();
 
         if ($this->sk_stripe_index === null) {
@@ -60,8 +61,8 @@ class CreateInvoiceStripe extends Controller
         switch ($this->action) {
             case 'check':
                 $id = $this->request->query->get('id');
-                $_SESSION['id_stripe_invoice'] = $id;
-                $_SESSION['sk_stripe_index'] = $this->sk_stripe_index;
+                StripeSession::set('id_stripe_invoice', $id);
+                StripeSession::set('sk_stripe_index', $this->sk_stripe_index);
 
                 if ($id !== null) {
                     $this->processInvoice($id, $this->sk_stripe_index);
@@ -75,7 +76,7 @@ class CreateInvoiceStripe extends Controller
                     : null;
                 $sendByEmail = $this->request->request->get('send_email') !== null && $this->request->request->get('send_email') !== 'false';
 
-                $this->generateFSInvoice($_SESSION['id_stripe_invoice'], $this->sk_stripe_index, $markAsPaid, $paymentMethod, $sendByEmail);
+                $this->generateFSInvoice(StripeSession::get('id_stripe_invoice'), $this->sk_stripe_index, $markAsPaid, $paymentMethod, $sendByEmail);
                 break;
 
             case 'linkClient':
@@ -84,7 +85,7 @@ class CreateInvoiceStripe extends Controller
 
                 if (!empty($customerId)) {
                     try {
-                        StripeCustomer::linkToFsCustomer((int)$_SESSION['sk_stripe_index'], $stripeCustomerId, $customerId);
+                        StripeCustomer::linkToFsCustomer((int)StripeSession::get('sk_stripe_index'), $stripeCustomerId, $customerId);
                         Tools::log()->info('Cliente vinculado correctamente.');
                         $this->setClientToStripeClient();
                     } catch (Exception $e) {
@@ -129,7 +130,7 @@ class CreateInvoiceStripe extends Controller
         $invoice = InvoiceImporter::loadInvoiceFromStripe($id, $sk_stripe_index);
 
         if (isset($invoice['data'][0]->customer_id)) {
-            $_SESSION['stripe_customer_id'] = $invoice['data'][0]->customer_id;
+            StripeSession::set('stripe_customer_id', $invoice['data'][0]->customer_id);
         }
 
         if (!empty($invoice['data'][0]->fs_idFsCustomer)) {
@@ -142,8 +143,8 @@ class CreateInvoiceStripe extends Controller
     private function setClientToStripeClient(): void
     {
         try {
-            StripeCustomer::linkToFsCustomer((int)$_SESSION['sk_stripe_index'], $_SESSION['stripe_customer_id'], $this->customer_id);
-            $this->processInvoice($_SESSION['id_stripe_invoice'], $_SESSION['sk_stripe_index']);
+            StripeCustomer::linkToFsCustomer((int)StripeSession::get('sk_stripe_index'), StripeSession::get('stripe_customer_id'), $this->customer_id);
+            $this->processInvoice(StripeSession::get('id_stripe_invoice'), StripeSession::get('sk_stripe_index'));
             Tools::log()->info('Cliente vinculado correctamente.');
         } catch (Exception $e) {
             Tools::log()->error($e->getMessage());

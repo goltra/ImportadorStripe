@@ -13,6 +13,7 @@ use FacturaScripts\Core\KernelException;
 use FacturaScripts\Core\Lib\AssetManager;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeProduct;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSession;
 use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSettings;
 
 class ListProduct extends Controller
@@ -43,7 +44,7 @@ class ListProduct extends Controller
 
     private function init(): void
     {
-        session_start();
+        StripeSession::start();
 
         AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/stripe.css');
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
@@ -54,14 +55,14 @@ class ListProduct extends Controller
             case 'load':
                 $this->sk_stripe_index = $this->request->request->get('sk_stripe_index')
                     ?? $this->request->query->get('sk_stripe_index')
-                    ?? ($_SESSION['sk_stripe_index'] ?? null);
+                    ?? StripeSession::get('sk_stripe_index');
 
                 if ($this->sk_stripe_index === null) {
                     Tools::log()->error('No se ha recibido el sk correspondiente');
                     return;
                 }
 
-                $_SESSION['sk_stripe_index'] = $this->sk_stripe_index;
+                StripeSession::set('sk_stripe_index', $this->sk_stripe_index);
                 $this->getData($this->sk_stripe_index);
                 break;
 
@@ -72,19 +73,19 @@ class ListProduct extends Controller
                     Tools::log()->error('No se ha podido enlazar el producto, no se ha definido el producto de FS');
                     break;
                 }
-                if (!isset($_SESSION['sk_stripe_index'])) {
+                if (!StripeSession::has('sk_stripe_index')) {
                     Tools::log()->error('No se ha podido enlazar el producto, no se ha definido la cuenta de stripe');
                     break;
                 }
-                if (!isset($_SESSION['st_product_id'])) {
+                if (!StripeSession::has('st_product_id')) {
                     Tools::log()->error('No se ha podido enlazar el producto, no se ha definido el producto de stripe');
                     break;
                 }
 
-                $this->sk_stripe_index = $_SESSION['sk_stripe_index'];
+                $this->sk_stripe_index = StripeSession::get('sk_stripe_index');
 
                 try {
-                    StripeProduct::linkToFsProduct((int)$this->sk_stripe_index, $codproduct, $_SESSION['st_product_id']);
+                    StripeProduct::linkToFsProduct((int)$this->sk_stripe_index, $codproduct, StripeSession::get('st_product_id'));
                     $this->redirect('ListProduct?action=load', 0);
                 } catch (Exception $e) {
                     Tools::log()->error('No se ha podido enlazar el producto' . $e->getMessage());

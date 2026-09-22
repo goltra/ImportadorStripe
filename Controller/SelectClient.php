@@ -7,7 +7,6 @@
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
-use Exception;
 use FacturaScripts\Core\Controller\ListCliente as ParentListCliente;
 use FacturaScripts\Core\Tools;
 
@@ -44,7 +43,7 @@ class SelectClient extends ParentListCliente
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     private function customSettingsView(): void
     {

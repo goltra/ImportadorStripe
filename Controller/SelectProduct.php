@@ -7,9 +7,9 @@
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
-use Exception;
 use FacturaScripts\Core\Controller\ListProducto as ParentListProducto;
 use FacturaScripts\Core\Tools;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSession;
 
 
 class SelectProduct extends ParentListProducto
@@ -40,12 +40,12 @@ class SelectProduct extends ParentListProducto
     {
 
         $this->customSettingsView();
-        session_start();
+        StripeSession::start();
     }
 
     /**
      * @return void
-     * @throws Exception
+     * @throws \Exception
      */
     private function customSettingsView(): void
     {
@@ -81,7 +81,7 @@ class SelectProduct extends ParentListProducto
                     Tools::log()->error('No se ha recibo el código del producto de stripe');
                     break;
                 }
-                $_SESSION['st_product_id'] = $st_product_id;
+                StripeSession::set('st_product_id', $st_product_id);
                 $this->selectProduct();
                 break;
             default:

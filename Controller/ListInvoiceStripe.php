@@ -15,6 +15,7 @@ use FacturaScripts\Core\Tools;
 use FacturaScripts\Plugins\ImportadorStripe\Lib\DateHelper;
 use FacturaScripts\Plugins\ImportadorStripe\Lib\InvoiceImporter;
 use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeCustomer;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSession;
 use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSettings;
 
 class ListInvoiceStripe extends Controller
@@ -48,7 +49,7 @@ class ListInvoiceStripe extends Controller
 
     private function init(): void
     {
-        session_start();
+        StripeSession::start();
 
         AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/stripe.css');
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
@@ -90,7 +91,7 @@ class ListInvoiceStripe extends Controller
 
                 if (!empty($customerId)) {
                     try {
-                        StripeCustomer::linkToFsCustomer((int)$_SESSION['sk_stripe_index'], $stripeCustomerId, $customerId);
+                        StripeCustomer::linkToFsCustomer((int)StripeSession::get('sk_stripe_index'), $stripeCustomerId, $customerId);
                         Tools::log()->info('Cliente vinculado correctamente.');
                     } catch (Exception $e) {
                         Tools::log()->error($e->getMessage());

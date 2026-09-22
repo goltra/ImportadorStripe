@@ -14,6 +14,7 @@ use FacturaScripts\Core\Lib\AssetManager;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\FormaPago;
 use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeCustomer;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSession;
 use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSettings;
 
 class ListClient extends Controller
@@ -46,7 +47,7 @@ class ListClient extends Controller
 
     private function init(): void
     {
-        session_start();
+        StripeSession::start();
 
         AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/stripe.css');
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
@@ -57,19 +58,19 @@ class ListClient extends Controller
             case 'load':
                 $this->sk_stripe_index = $this->request->request->get('sk_stripe_index')
                     ?? $this->request->query->get('sk_stripe_index')
-                    ?? ($_SESSION['sk_stripe_index'] ?? null);
+                    ?? StripeSession::get('sk_stripe_index');
 
                 if ($this->sk_stripe_index === null) {
                     Tools::log()->error('No se ha recibido el sk correspondiente');
                     return;
                 }
 
-                $this->stripe_customer_email = $this->request->request->get('stripe_customer_email') ?? $_SESSION['stripe_customer_email'] ?? '';
+                $this->stripe_customer_email = $this->request->request->get('stripe_customer_email') ?? StripeSession::get('stripe_customer_email', '');
                 $paymentMethod = new FormaPago();
                 $this->paymentMethods = $paymentMethod->all();
 
-                $_SESSION['sk_stripe_index'] = $this->sk_stripe_index;
-                $_SESSION['stripe_customer_email'] = $this->stripe_customer_email;
+                StripeSession::set('sk_stripe_index', $this->sk_stripe_index);
+                StripeSession::set('stripe_customer_email', $this->stripe_customer_email);
 
                 $this->getData($this->sk_stripe_index, $this->stripe_customer_email);
                 break;
@@ -80,7 +81,7 @@ class ListClient extends Controller
 
                 if (!empty($customerId)) {
                     try {
-                        StripeCustomer::linkToFsCustomer((int)$_SESSION['sk_stripe_index'], $stripeCustomerId, $customerId);
+                        StripeCustomer::linkToFsCustomer((int)StripeSession::get('sk_stripe_index'), $stripeCustomerId, $customerId);
                         Tools::log()->info('Cliente vinculado correctamente.');
                     } catch (Exception $e) {
                         Tools::log()->error($e->getMessage());

@@ -84,7 +84,7 @@ class ListStripeTransactionsQueue extends ListController
         $this->setSettings($viewName, 'btnDelete', false);
         $this->setSettings($viewName, 'clickable', false);
 
-        $this->addButton($viewName, [
+        $this->tab($viewName)->addButton([
             'action' => 'generate',
             'icon' => 'fas fa-plus',
             'label' => 'Procesar',

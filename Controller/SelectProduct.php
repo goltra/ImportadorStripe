@@ -50,7 +50,7 @@ class SelectProduct extends ParentListProducto
     private function customSettingsView(): void
     {
         //
-        $this->addButton('ListProducto', [
+        $this->tab('ListProducto')->addButton([
             'action' => 'selectProduct',
             'icon' => 'fas fa-check',
             'label' => 'Seleccionar',

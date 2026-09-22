@@ -49,7 +49,7 @@ class SelectClient extends ParentListCliente
     private function customSettingsView(): void
     {
         //
-        $this->addButton('ListCliente', [
+        $this->tab('ListCliente')->addButton([
             'action' => $this->postAction,
             'icon' => 'fas fa-check',
             'label' => 'Seleccionar',

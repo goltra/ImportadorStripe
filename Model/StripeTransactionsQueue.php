@@ -75,6 +75,7 @@ class StripeTransactionsQueue extends ModelClass
     public const ERROR_TYPE_NOT_GENERATE_INVOICE = 'Factura no generada';
     public const ERROR_TYPE_RECIBO_PAGADO = 'Recibo pagado';
     public const ERROR_TYPE_FACTURA_NO_VINCULADA = 'Factura no vinculada';
+    public const ERROR_TYPE_NO_INVOICE = 'Sin factura';
     public const ERROR_TYPE_ASIGNADO_OTRA_REMESA = 'Asignado otra remesa';
 
     public function clear(): void
@@ -172,6 +173,18 @@ class StripeTransactionsQueue extends ModelClass
     }
 
     /**
+     * Indica si la línea se puede vincular manualmente a una factura de FacturaScripts.
+     * Solo aplica a pagos (payouts) con error de factura no vinculada y con factura de Stripe.
+     */
+    public function canLinkInvoice(): bool
+    {
+        return $this->event === self::EVENT_PAYOUT_PAID
+            && $this->error_type === self::ERROR_TYPE_FACTURA_NO_VINCULADA
+            && $this->transaction_id !== null
+            && str_starts_with($this->transaction_id, 'in_');
+    }
+
+    /**
      * @return void
      * @throws \Exception
      */
@@ -181,7 +194,7 @@ class StripeTransactionsQueue extends ModelClass
 
         if ($invoice === null) {
             Logger::log('No se ha encontrado la factura ' . $this->transaction_id . ' del pago.', Logger::CHANNEL_REMESA);
-            throw new Exception(self::ERROR_TYPE_FACTURA_NO_VINCULADA);
+            throw new Exception(self::ERROR_TYPE_NO_INVOICE);
         }
 
         $facturaId = $invoice->metadata['fs_idFactura'] ?? null;

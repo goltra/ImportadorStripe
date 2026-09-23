@@ -1,9 +1,13 @@
 <?php
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
+use Exception;
 use FacturaScripts\Core\Base\DataBase;
+use FacturaScripts\Core\Lib\AssetManager;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Lib\ExtendedController\ListController;
+use FacturaScripts\Dinamic\Model\FacturaCliente;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeGateway;
 use FacturaScripts\Plugins\ImportadorStripe\Model\StripeTransactionsQueue;
 
 class ListStripeTransactionsQueue extends ListController
@@ -30,6 +34,9 @@ class ListStripeTransactionsQueue extends ListController
         switch ($action) {
             case 'generate':
                 return $this->generateAction();
+
+            case 'stripe-link':
+                return $this->linkInvoiceAction();
         }
 
         return parent::execPreviousAction($action);
@@ -52,7 +59,10 @@ class ListStripeTransactionsQueue extends ListController
 
         $code = $decoded[0];
         $transaction = new StripeTransactionsQueue();
-        $transaction->load($code);
+        if (false === $transaction->load($code)) {
+            Tools::log()->error('No se ha encontrado la línea seleccionada.');
+            return true;
+        }
 
         if ($transaction->status === StripeTransactionsQueue::STATUS_SUCCESS) {
             Tools::log()->error('La línea ya ha sido procesada.');
@@ -61,7 +71,59 @@ class ListStripeTransactionsQueue extends ListController
 
         $transaction->processQueueRow(false);
 
+        // Si la factura de Stripe no está vinculada, recargamos la página abriendo el
+        // modal para elegir la factura de FacturaScripts y vincularla + procesarla.
+        if ($transaction->canLinkInvoice()) {
+            $this->redirect('ListStripeTransactionsQueue?activetab=' . $this->mainTabName() . '&linkInvoice=' . urlencode($code), 0);
+            return true;
+        }
+
         Tools::log()->info('Linea procesada, revisa que no haya dado error.');
+
+        return true;
+    }
+
+    private function linkInvoiceAction(): bool
+    {
+        $codes = $this->request->request->getArray('codes');
+        if (count($codes) !== 1) {
+            Tools::log()->error('No has seleccionado una linea.');
+            return true;
+        }
+
+        $transaction = new StripeTransactionsQueue();
+        if (false === $transaction->load($codes[0])) {
+            Tools::log()->error('No se ha encontrado la línea seleccionada.');
+            return true;
+        }
+
+        if (false === $transaction->canLinkInvoice()) {
+            Tools::log()->error('Sólo se pueden vincular facturas de pagos (payouts) con el error "Factura no vinculada".');
+            return true;
+        }
+
+        $fsInvoice = new FacturaCliente();
+        $fsInvoiceId = $this->request->request->get('fs_invoice_id');
+        if (empty($fsInvoiceId) || false === $fsInvoice->load($fsInvoiceId)) {
+            Tools::log()->error('No se ha encontrado la factura de FacturaScripts seleccionada.');
+            return true;
+        }
+
+        try {
+            StripeGateway::byName($transaction->stripe_account)
+                ->updateInvoiceMetadata($transaction->transaction_id, ['fs_idFactura' => (string)$fsInvoice->idfactura]);
+        } catch (Exception $e) {
+            Tools::log()->error('No se ha podido vincular la factura en Stripe: ' . $e->getMessage());
+            return true;
+        }
+
+        $transaction->processQueueRow(false);
+
+        if ($transaction->status === StripeTransactionsQueue::STATUS_SUCCESS) {
+            Tools::log()->notice('Factura vinculada y línea procesada correctamente.');
+        } else {
+            Tools::log()->warning('Factura vinculada, pero la línea no se ha podido procesar: ' . $transaction->error_type);
+        }
 
         return true;
     }
@@ -69,6 +131,8 @@ class ListStripeTransactionsQueue extends ListController
 
     protected function createViews(): void
     {
+        AssetManager::addJs(FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/ListStripeTransactionsQueue.js');
+
         // Se crean las pestañas usando funciones separadas para mayor claridad
         $this->createViewsProject();
     }

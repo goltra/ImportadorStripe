@@ -1,88 +1,113 @@
 {% extends 'Master/MenuTemplate.html.twig' %}
 {% block body %}
-    <div class="m-3">
-        <h1>Crear Factura desde Stripe</h1>
-        {% if(fsc.action!='createInvoice') %}
-            {% if(fsc.existClient==false) %}
-                <div class="mt-3 ml-1">
-                    <h4>No existe cliente</h4>
-                    No existe un cliente de facturascripts asociado a la factura de stripe. Es necesario seleccionar un
-                    cliente
-                    de facturascripts
-                    para vincularlo al de stripe. Para ellos puede seleccionar uno existente o bien crearlo previamente.<br>
-                    ¿Qué desea hacer?.
+    <div class="container-fluid mt-3">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h1 class="h4 mb-0">
+                            <i class="fa-brands fa-stripe-s me-2" aria-hidden="true"></i>
+                            Crear factura desde Stripe
+                        </h1>
+                    </div>
+                    <div class="card-body">
+                        {% if(fsc.action!='createInvoice') %}
+                            {% if(fsc.existClient==false) %}
+                                <div class="text-center py-3">
+                                    <i class="fa-solid fa-user-slash fa-3x text-warning mb-3" aria-hidden="true"></i>
+                                    <h4 class="h5">No existe cliente vinculado</h4>
+                                    <p class="text-muted">
+                                        No existe un cliente de FacturaScripts asociado a la factura de Stripe. Es necesario
+                                        seleccionar un cliente de FacturaScripts para vincularlo al de Stripe. Para ello puede
+                                        seleccionar uno existente o bien crearlo previamente.
+                                    </p>
+                                    <p class="fw-bold">¿Qué desea hacer?</p>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                    <a class="btn btn-primary" href="{{ asset('EditCliente') }}?return=CreateInvoiceStripe">
+                                        <i class="fa-solid fa-user-plus me-1" aria-hidden="true"></i> Crear nuevo cliente
+                                    </a>
+                                    <a class="btn btn-outline-primary" href="{{ asset('SelectClient') }}?action=invoicing">
+                                        <i class="fa-solid fa-users me-1" aria-hidden="true"></i> Usar cliente existente
+                                    </a>
+                                    <a class="btn btn-outline-danger" href="{{ asset('ListInvoiceStripe') }}">
+                                        <i class="fa-solid fa-xmark me-1" aria-hidden="true"></i> Cancelar
+                                    </a>
+                                </div>
+                            {% endif %}
+                            {% if(fsc.existClient==true) %}
+                                <p class="text-muted mb-2">Si continúa se creará una factura en FacturaScripts a nombre de:</p>
+                                <ul class="list-group mb-4">
+                                    <li class="list-group-item">
+                                        <i class="fa-solid fa-user me-2 text-primary" aria-hidden="true"></i>
+                                        <strong>{{ fsc.clientFs.razonsocial }}</strong> ({{ fsc.clientFs.nombre }})
+                                    </li>
+                                </ul>
+
+                                <form action="{{ asset('CreateInvoiceStripe') }}?action=createInvoice" method="post">
+                                    <h5 class="text-info mt-3">
+                                        <i class="fa-solid fa-credit-card me-1" aria-hidden="true"></i> Pago de factura
+                                    </h5>
+                                    <hr>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="ck_paid">Pagada</label>
+                                            <select class="form-select" name="ck_paid" id="ck_paid">
+                                                <option value=true selected>Sí</option>
+                                                <option value=false>No</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="payment_method">Forma de pago</label>
+                                            <select class="form-select" id="payment_method" name="payment_method">
+                                                {% for key,value in fsc.payment_methods %}
+                                                    <option value="{{ key }}">{{ value }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <h5 class="text-info mt-4">
+                                        <i class="fa-solid fa-envelope me-1" aria-hidden="true"></i> Notificación
+                                    </h5>
+                                    <hr>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="send_email">Enviar factura por email</label>
+                                            <select class="form-select" name="send_email" id="send_email">
+                                                <option value=true selected>Sí</option>
+                                                <option value=false>No</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-end gap-2 mt-4">
+                                        <a class="btn btn-outline-danger" href="{{ asset('ListInvoiceStripe') }}">
+                                            <i class="fa-solid fa-xmark me-1" aria-hidden="true"></i> Cancelar
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa-solid fa-file-circle-plus me-1" aria-hidden="true"></i> Crear factura
+                                        </button>
+                                    </div>
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center py-3">
+                                {% if(fsc.error==false) %}
+                                    <i class="fa-solid fa-circle-check fa-3x text-success mb-3" aria-hidden="true"></i>
+                                    <p class="alert alert-success">Factura creada correctamente.</p>
+                                {% else %}
+                                    <i class="fa-solid fa-circle-exclamation fa-3x text-danger mb-3" aria-hidden="true"></i>
+                                    <p class="alert alert-danger">Se produjo algún error.</p>
+                                {% endif %}
+                                <a href="{{ asset('ListInvoiceStripe') }}" class="btn btn-info">
+                                    <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i> Volver al listado de facturas
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
-                <a class="btn btn-primary" href="{{ asset('EditCliente') }}?return=CreateInvoiceStripe">Crear nuevo
-                    cliente.</a>
-                <a class="btn btn-primary"
-                   href="{{ asset('SelectClient') }}?action=invoicing">Usar
-                    cliente
-                    existente.</a>
-                <a class="btn btn-danger" href="{{ asset('ListInvoiceStripe') }}">Cancelar.</a>
-            {% endif %}
-            {% if(fsc.existClient==true) %}
-                <div class="mt-3 ml-1">
-                    <h4>Crear Factura</h4>
-                    Si continua se creará una factura en Facturascript a nombre de:<br>
-                    <li>{{ fsc.clientFs.razonsocial }} ( {{ fsc.clientFs.nombre }} )</li>
-                    <br>
-
-                    <form action="{{ asset('CreateInvoiceStripe') }}?action=createInvoice" method="post">
-                        <div class="row">
-                            <legend class="text-info mt-3">
-                                Pago de factura
-                            </legend>
-                            <div class="col-md mb-3">
-                                <label>Pagada</label>
-                                <select class="form-control" name="ck_paid" id="ck_paid">
-                                    <option value=true selected>Si</option>
-                                    <option value=false>No</option>
-                                </select>
-                            </div>
-                            <div class="col-md mb-3">
-                                <label for="payment_method">
-                                    Forma de pago
-                                </label>
-                                <select class="form-control" id="payment_method" name="payment_method">
-                                    {% for key,value in fsc.payment_methods %}
-                                        <option value="{{ key }}">
-                                            {{ value }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <legend class="text-info mt-3">Notificación</legend>
-                            <div class="col-md mb-3">
-                                <label>Enviar factura por email</label>
-                                <select class="form-control" name="send_email" id="send_email">
-                                    <option value=true selected>Si</option>
-                                    <option value=false>No</option>
-                                </select>
-                            </div>
-                        </div>
-                        <br>
-                        <div class="row">
-                            <div class="col text-end">
-                                <a class="btn btn-danger" href="{{ asset('ListInvoiceStripe') }}">Cancelar.</a>
-                                <input type="submit" class="btn btn-primary" value="Crear Factura.">
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-            {% endif %}
-        {% else %}
-            <div class="m-1">
-                {% if(fsc.error==false) %}
-                    <p class="alert-info">Factura creada correctamente</p>
-                {% else %}
-                    <p class="alert-danger">Se produjo algún error</p>
-                {% endif %}
-                <a href="{{ asset('ListInvoiceStripe') }}" class="btn btn-info">Voler al listado de facturas</a>
             </div>
-        {% endif %}
+        </div>
     </div>
 {% endblock %}

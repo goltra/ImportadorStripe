@@ -51,7 +51,7 @@ class ListInvoiceStripe extends Controller
     {
         StripeSession::start();
 
-        AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/stripe.css');
+        AssetManager::add('css', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/CSS/style.css');
         AssetManager::add('js', FS_ROUTE . '/Plugins/ImportadorStripe/Assets/JS/Helper.js');
         $this->action = $this->request->query->get('action');
         $this->sks_stripe = StripeSettings::getSks();

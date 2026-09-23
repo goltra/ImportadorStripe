@@ -9,6 +9,8 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\KernelException;
+use FacturaScripts\Core\Lib\AssetManager;
+use FacturaScripts\Core\Model\CodeModel;
 use FacturaScripts\Core\Plugins;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Serie;
@@ -22,12 +24,15 @@ class SettingParams extends Controller
     public array $series = [];
     public string $codcliente = '';
     public string $codproducto = '';
+    public string $clienteNombre = '';
+    public string $productoNombre = '';
     public bool $enviarEmail;
     public string $satEmail = '';
     public string $adminEmail = '';
     public bool $mostrarStripeCus;
     public bool $remesasSEPA = false;
     public string $cuentaRemesaSEPA = '';
+    public string $cuentaRemesaNombre = '';
     public bool $hayPluginRemesas = false;
     public bool $verifactu = false;
     public bool $hayPluginVerifactu = false;
@@ -37,10 +42,35 @@ class SettingParams extends Controller
      */
     public function privateCore(&$response, $user, $permissions): void
     {
-        $this->init();
         parent::privateCore($response, $user, $permissions);
 
+        if ($this->request->inputOrQuery('action') === 'autocomplete') {
+            $this->setTemplate(false);
+            $this->response->json($this->autocompleteAction());
+            return;
+        }
+
+        $this->init();
     }
+
+    /**
+     * Devuelve los valores de cliente/producto para el widget de autocompletado.
+     */
+    protected function autocompleteAction(): array
+    {
+        $source = (string)$this->request->inputOrQuery('source', '');
+        $fieldcode = (string)$this->request->inputOrQuery('fieldcode', '');
+        $fieldtitle = (string)$this->request->inputOrQuery('fieldtitle', '');
+        $term = (string)$this->request->inputOrQuery('term', '');
+
+        $results = [];
+        foreach (CodeModel::search($source, $fieldcode, $fieldtitle, $term) as $value) {
+            $results[] = ['key' => $value->code, 'value' => $value->description];
+        }
+
+        return $results;
+    }
+
     public function getPageData(): array
     {
         $pageData = parent::getPageData();
@@ -54,6 +84,9 @@ class SettingParams extends Controller
     private function init(): void
     {
         $this->title='Configuración de Claves de stripe';
+        AssetManager::addCss(FS_ROUTE . '/node_modules/jquery-ui-dist/jquery-ui.min.css');
+        AssetManager::addJs(FS_ROUTE . '/node_modules/jquery-ui-dist/jquery-ui.min.js');
+        AssetManager::addJs(FS_ROUTE . '/Dinamic/Assets/JS/WidgetAutocomplete.js');
         $action = $this->request->query->get('action');
         $serieModel = new Serie();
         $this->series = $serieModel->all();
@@ -102,6 +135,11 @@ class SettingParams extends Controller
         $this->remesasSEPA = StripeSettings::getSetting('remesasSEPA') ?? false;
         $this->cuentaRemesaSEPA = StripeSettings::getSetting('cuentaRemesaSEPA') ?? '';
         $this->verifactu = StripeSettings::getSetting('verifactu') ?? false;
+
+        $codeModel = new CodeModel();
+        $this->clienteNombre = $codeModel->getDescription('Cliente', 'codcliente', $this->codcliente, 'nombre');
+        $this->productoNombre = $codeModel->getDescription('Producto', 'idproducto', $this->codproducto, 'referencia');
+        $this->cuentaRemesaNombre = $codeModel->getDescription('cuentasbanco', 'codcuenta', $this->cuentaRemesaSEPA, 'descripcion');
     }
 
     private function setSkStripe(): void

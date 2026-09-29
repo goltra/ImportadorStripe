@@ -66,7 +66,7 @@ class WebhookStripeRemesasSepa extends Controller
             $this->sendError('Error: No hay sk', 400);
         }
 
-        Logger::log('SK ' . serialize($sk), Logger::CHANNEL_REMESA);
+        Logger::log('SK ' . $sk['name'], Logger::CHANNEL_REMESA);
 
         $gateway = new StripeGateway($sk['sk']);
 

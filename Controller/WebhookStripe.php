@@ -56,6 +56,8 @@ class WebhookStripe extends Controller
             $this->sendError('Error: No hay sk', 400);
         }
 
+        Logger::log('SK ' . $sk['name']);
+
         $gateway = new StripeGateway($sk['sk']);
 
         try {

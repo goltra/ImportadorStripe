@@ -74,15 +74,14 @@
                                             <td>{{ f.date }}</td>
                                             <td>{{ f.customer_email }}</td>
                                             <td>
-                                                {% if f.fs_idFsCustomer %}
+                                                {% if f.fs_customerLinked %}
                                                     <a href="{{ asset('EditCliente') }}?code={{ f.fs_idFsCustomer }}"
                                                        target="_blank">{{ f.fs_customerName }}</a>
+                                                {% else %}
                                                     <a href="{{ asset('SelectClient') }}?stripe_customer_id={{ f.customer_id }}&source=ListInvoiceStripe&action=changing"
-                                                       class="ms-1" title="Cambiar cliente">
+                                                       class="ms-1" title="Vincular cliente">
                                                         <i class="fas fa-pencil-alt" aria-hidden="true"></i>
                                                     </a>
-                                                {% else %}
-                                                    <span class="text-muted">—</span>
                                                 {% endif %}
                                             </td>
                                             <td class="text-end">{{ f.amount }}</td>

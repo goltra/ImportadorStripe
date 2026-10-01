@@ -70,9 +70,14 @@ class InvoiceParser
         $invoice->starting_balance = $stripeInvoice->starting_balance;
         $invoice->fs_idFactura = $stripeInvoice->metadata['fs_idFactura'] ?? null;
 
-        $fsCustomerId = $customer->metadata['fs_idFsCustomer'] ?? StripeSettings::getSetting('codcliente');
+        $linkedFsCustomerId = $customer->metadata['fs_idFsCustomer'] ?? null;
+        $fsCustomerId = $linkedFsCustomerId ?? StripeSettings::getSetting('codcliente');
         $fsCustomer = new CoreCliente();
         $fsCustomer->load($fsCustomerId);
+
+        // Solo se considera vinculado si el cliente de Stripe tiene el metadato; el cliente por
+        // defecto se usa para poder generar la factura, pero no implica un vínculo real.
+        $invoice->fs_customerLinked = !empty($linkedFsCustomerId);
 
         if ($fsCustomerId !== null && $fsCustomer->exists()) {
             $invoice->fs_idFsCustomer = $fsCustomerId;

@@ -20,6 +20,7 @@ class StripeInvoice
     public $customer_id = '';
     public $customer_email = '';
     public $fs_idFsCustomer = '';
+    public $fs_customerLinked = false;
     public $fs_idFactura = null;
     public $starting_balance = null;
     public $fs_customerName = '';

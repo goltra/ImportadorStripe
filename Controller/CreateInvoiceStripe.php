@@ -133,7 +133,7 @@ class CreateInvoiceStripe extends Controller
             StripeSession::set('stripe_customer_id', $invoice['data'][0]->customer_id);
         }
 
-        if (!empty($invoice['data'][0]->fs_idFsCustomer)) {
+        if (!empty($invoice['data'][0]->fs_customerLinked)) {
             $this->existClient = true;
             $this->clientFs = new Cliente();
             $this->clientFs->load($invoice['data'][0]->fs_idFsCustomer);

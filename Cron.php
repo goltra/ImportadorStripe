@@ -15,7 +15,6 @@ class Cron extends CronClass
     public function run(): void
     {
         $this->job('procesar-cola-pagos-stripe')
-//            ->every('1 hour')
             ->every('5 minutes')
             ->run(function () {
                 StripeTransactionsQueue::processQueue();

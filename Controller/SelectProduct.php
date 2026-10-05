@@ -7,9 +7,9 @@
 
 namespace FacturaScripts\Plugins\ImportadorStripe\Controller;
 
-use Exception;
 use FacturaScripts\Core\Controller\ListProducto as ParentListProducto;
 use FacturaScripts\Core\Tools;
+use FacturaScripts\Plugins\ImportadorStripe\Lib\StripeSession;
 
 
 class SelectProduct extends ParentListProducto
@@ -40,17 +40,17 @@ class SelectProduct extends ParentListProducto
     {
 
         $this->customSettingsView();
-        session_start();
+        StripeSession::start();
     }
 
     /**
      * @return void
-     * @throws Exception
+     * @throws \Exception
      */
     private function customSettingsView(): void
     {
         //
-        $this->addButton('ListProducto', [
+        $this->tab('ListProducto')->addButton([
             'action' => 'selectProduct',
             'icon' => 'fas fa-check',
             'label' => 'Seleccionar',
@@ -64,10 +64,12 @@ class SelectProduct extends ParentListProducto
         $this->setSettings('ListProducto', 'clickable', false);
     }
 
-    protected function execPreviousAction($action): void
+    protected function execPreviousAction($action): bool
     {
-        parent::execPreviousAction($action);
+        $result = parent::execPreviousAction($action);
         $this->init();
+
+        return $result;
     }
 
     protected function execAfterAction($action): void
@@ -79,7 +81,7 @@ class SelectProduct extends ParentListProducto
                     Tools::log()->error('No se ha recibo el código del producto de stripe');
                     break;
                 }
-                $_SESSION['st_product_id'] = $st_product_id;
+                StripeSession::set('st_product_id', $st_product_id);
                 $this->selectProduct();
                 break;
             default:
@@ -96,13 +98,25 @@ class SelectProduct extends ParentListProducto
 
     private function selectProduct(): void
     {
-        $id = unserialize($this->request->request->get('codes'))[0];
+        $id = $this->getSelectedCode();
 
-        if ($id !== null && strlen($id) > 0) {
+        if ($id !== null) {
             $this->redirect('ListProduct?action=linkProduct&codproduct=' . $id);
         } else {
             Tools::log()->error('No se ha podido vincular el producto de facturascript. Alguno de los valores no es correcto');
         }
     }
 
+    private function getSelectedCode(): ?string
+    {
+        $codes = $this->request->request->get('codes');
+
+        if (!is_string($codes)) {
+            return null;
+        }
+
+        $decoded = unserialize($codes, ['allowed_classes' => false]);
+
+        return is_array($decoded) && !empty($decoded[0]) ? (string)$decoded[0] : null;
+    }
 }

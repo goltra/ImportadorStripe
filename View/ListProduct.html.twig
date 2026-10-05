@@ -2,61 +2,98 @@
 
 {% block body %}
 
-    <div class="m-3">
-        <form style="display:flex" action="{{ asset('ListProduct') }}?action=load" method="post">
-            <div style="flex:1; margin-right: 5px">
-                <label for="sk_stripe_index">Indica la cuenta de stripe</label>
-                <select id="sk_stripe_index" name="sk_stripe_index" class="custom-select">
-                    {% for key,value in fsc.sks_stripe %}
-                        <option {% if(key == fsc.sk_stripe_index) %} selected {% endif %}
-                                value="{{ key }}">{{ value.name }}</option>
-                    {% endfor %}
-                </select>
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <div class="col">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h1 class="h4 mb-0">
+                            <i class="fa-solid fa-box-open me-2" aria-hidden="true"></i>
+                            Productos de Stripe
+                        </h1>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ asset('ListProduct') }}?action=load" method="post">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-10">
+                                    <label class="form-label" for="sk_stripe_index">Cuenta de Stripe</label>
+                                    <select id="sk_stripe_index" name="sk_stripe_index" class="form-select">
+                                        {% for key,value in fsc.sks_stripe %}
+                                            <option {% if(key == fsc.sk_stripe_index) %} selected {% endif %}
+                                                    value="{{ key }}">{{ value.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button onclick="muestraSpinner(true)" class="btn btn-info w-100" type="submit">
+                                        <i class="fa-solid fa-magnifying-glass me-1" aria-hidden="true"></i> Consultar
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {% if(fsc.action=='load') %}
+                    {% set res = fsc.products %}
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h2 class="h5 mb-0">
+                                <i class="fa-solid fa-list me-2" aria-hidden="true"></i>
+                                Resultados
+                            </h2>
+                            <span class="badge bg-primary rounded-pill">{{ res|length }}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>Id</th>
+                                        <th>Nombre</th>
+                                        <th>Producto FS</th>
+                                        <th>Descripción</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for p in res %}
+                                        <tr>
+                                            <td><code>{{ p.id }}</code></td>
+                                            <td>{{ p.name }}</td>
+                                            <td>
+                                                {% if p.fs_idProduct %}
+                                                    <a href="{{ asset('EditProducto') }}?code={{ p.fs_idProduct }}"
+                                                       target="_blank" title="Ver producto">
+                                                        <i class="fas fa-eye me-1" aria-hidden="true"></i>{{ p.fs_idProduct }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ p.description }}</td>
+                                            <td class="text-end">
+                                                <a class="btn btn-sm btn-outline-primary"
+                                                   href="{{ asset('SelectProduct') }}?st_product_id={{ p.id }}"
+                                                   title="Vincular producto">
+                                                    <i class="fas fa-plus" aria-hidden="true"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">No hay productos.</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
-            <button style="height: 40px;align-self: flex-end;" onclick="muestraSpinner(true)" class="btn btn-info" type="submit">Consultar</button>
-        </form>
-    </div>
-
-    {% if(fsc.action=='load') %}
-        <div class="m-3 mt-4">
-            <h1>Lista de Productos de Stripe</h1>
-
-            {% set res = fsc.products %}
-            <table class="table table-striped">
-                <thead class="thead-light">
-                <tr>
-                    <th>Id</th>
-                    <th>Nombre</th>
-                    <th>Producto FS</th>
-                    <th>Descripcion</th>
-                    <th>...</th>
-                </tr>
-                </thead>
-                {% for p in res %}
-                    <tr>
-                        <td>{{ p.id }}</td>
-                        <td>{{ p.name }}</td>
-                        <td>{{ p.fs_idProduct }}<a href="{{ asset('EditProducto') }}?code={{ p.fs_idProduct }}"
-                               target="_blank">{% if(p.fs_idProduct!='') %}<i class="fas fa-eye"></i>{% endif %}</a>
-                        </td>
-                        <td>{{ p.description }}</td>
-
-                        <td>
-                            <a href="{{ asset('SelectProduct') }}?st_product_id={{ p.id }}"><i
-                                        class="fas fa-plus"></i></a></td>
-                    </tr>
-                {% endfor %}
-            </table>
-
-            {#{% if res.has_more==true %}
-                <a onclick="muestraSpinner(true)"
-                   href="{{ fsc.url() }}?action={{ fsc.actions['load'] }}&start={{ res.last }}&limit={{ res.limit }}&sk_stripe_index={{ fsc.sk_stripe_index }}">Cargar
-                    más</a>
-            {% else %}
-                <a onclick="muestraSpinner(true)" href="{{ fsc.url() }}">No hay más facturas de esta cuenta.</a>
-            {% endif %}#}
         </div>
-    {% endif %}
+    </div>
 
     {{ include('_spinner.html.twig') }}
 {% endblock %}

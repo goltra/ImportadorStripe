@@ -86,9 +86,30 @@ class StripeGateway
 
     public function retrieveInvoice(string $id): Invoice
     {
-        return $this->client()->invoices->retrieve($id, [
+        Stripe::$apiVersion = self::API_VERSION;
+
+        $invoice = $this->client()->invoices->retrieve($id, [
             'expand' => ['lines.data.price.product'],
         ]);
+
+        // Stripe solo embebe la primera página de líneas (10 por defecto). Recuperamos todas
+        // paginando el endpoint de líneas, conservando el expand del producto en cada página.
+        $lines = [];
+        $collection = $this->client()->invoices->allLines($id, [
+            'limit' => 100,
+            'expand' => ['data.price.product'],
+        ]);
+
+        foreach ($collection->autoPagingIterator() as $line) {
+            $lines[] = $line;
+        }
+
+        Logger::log('retrieveInvoice: ' . count($lines) . ' líneas recuperadas para ' . $id);
+
+        $invoice->lines->data = $lines;
+        $invoice->lines->has_more = false;
+
+        return $invoice;
     }
 
     public function retrieveInvoiceSimple(string $id): Invoice

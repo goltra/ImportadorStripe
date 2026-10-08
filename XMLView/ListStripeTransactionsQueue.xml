@@ -45,4 +45,14 @@
             <widget type="datetime" fieldname="created_at" />
         </column>
     </columns>
+
+    <modals>
+        <group name="stripe-link" title="Vincular factura" icon="fa-brands fa-stripe">
+            <column name="Factura de FacturaScripts" numcolumns="12" order="100">
+                <widget type="autocomplete" fieldname="fs_invoice_id" required="true">
+                    <values source="FacturaCliente" fieldcode="idfactura" fieldtitle="codigo" />
+                </widget>
+            </column>
+        </group>
+    </modals>
 </view>

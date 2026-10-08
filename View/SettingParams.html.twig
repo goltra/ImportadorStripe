@@ -1,127 +1,317 @@
 {% extends 'Master/MenuTemplate.html.twig' %}
 {% block body %}
-    <div class="p-4">
-        <p>A continuación puedes configurar las claves secretas de las diferentes cuentas que tengas de stripe para
-            permitir que factura script se comunique con él.<br>
-            Por seguridad las claves no serán visibles una vez añadidas, solo verás el nombre que hayas puesto para
-            identificarla.
-        </p>
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <div class="col">
 
-        <form id="frm_sk" method="post" name="frm_sk" action="SettingParams?action=add" style="display:flex">
-            <label for="name" style="flex:1; padding-right:5px">
-                Nombre de la cuenta en Stripe*
-                <input type="text" id="name" name="name" class="form-control"/>
-            </label>
-            <label for="sk" style="flex:2; padding-right: 5px">
-                Clave secreta (sk_xxx)*
-                <input type="text" id="sk" name="sk" class="form-control"/>
-            </label>
-            <label for="sk" style="flex:2; padding-right: 5px">
-                Serie
-                <select name="codserie" id="codserie" class="form-control">
-                    {% for serie in fsc.series %}
-                        <option value="{{ serie.codserie }}">{{ serie.descripcion }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
-                    class="btn btn-info">Guardar
-            </button>
-        </form>
-        <hr style="margin-bottom: 50px">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h1 class="h4 mb-0">
+                            <i class="fa-solid fa-key me-2" aria-hidden="true"></i>
+                            Cuentas de Stripe
+                        </h1>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">
+                            Configura las claves secretas de las diferentes cuentas que tengas de Stripe para permitir que
+                            FacturaScripts se comunique con ellas. Por seguridad, las claves no serán visibles una vez añadidas;
+                            solo verás el nombre con el que las identifiques.
+                        </p>
 
-        <div>
-            <p>Aquí puedes agregar un cliente y producto por defecto para cuando se generen facturas cuyo cliente / producto no esté vinculado.
-            </p>
-
-            <form id="frm_settings" method="post" name="frm_settings" action="SettingParams?action=addSettings">
-                <div style="display:flex; gap: 20px; margin-bottom: 20px;">
-                    <label for="name" style="flex:1">
-                        Código del cliente por defecto *
-                        <input type="text" id="codcliente" name="codcliente" class="form-control" value="{{ fsc.codcliente }}"/>
-                    </label>
-                    <label for="sk" style="flex:1;">
-                        Código del producto por defecto *
-                        <input type="text" id="codproducto" name="codproducto" class="form-control" value="{{ fsc.codproducto }}"/>
-                    </label>
-
-                    <label for="enviarEmail" style="flex:1;">
-                        Enviar email al cliente cuando se genere la factura *
-                        <select name="enviarEmail" id="enviarEmail" class="form-control">
-                            <option value="0" {{ (fsc.enviarEmail == 0) ? 'selected' : '' }}>No</option>
-                            <option value="1" {{ (fsc.enviarEmail == 1) ? 'selected' : ''}}>Si</option>
-                        </select>
-                    </label>
-
-                    <label for="mostrarStripeCus" style="flex:1;">
-                        Mostrar el cliente de stripe en la factura *
-                        <select name="mostrarStripeCus" id="mostrarStripeCus" class="form-control">
-                            <option value="0" {{ (fsc.mostrarStripeCus == 0) ? 'selected' : '' }}>No</option>
-                            <option value="1" {{ (fsc.mostrarStripeCus == 1) ? 'selected' : ''}}>Si</option>
-                        </select>
-                    </label>
+                        <form id="frm_sk" method="post" name="frm_sk" action="SettingParams?action=add">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label" for="name">Nombre de la cuenta en Stripe *</label>
+                                    <input type="text" id="name" name="name" class="form-control"/>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="sk">Clave secreta (sk_xxx) *</label>
+                                    <input type="text" id="sk" name="sk" class="form-control"/>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="codserie">Serie</label>
+                                    <select name="codserie" id="codserie" class="form-select">
+                                        {% for serie in fsc.series %}
+                                            <option value="{{ serie.codserie }}">{{ serie.descripcion }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-info w-100">
+                                        <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i> Registrar
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
-                <div style="display:flex; gap: 20px;">
-                    <label for="satEmail" style="flex:1;">
-                        Email técnico para las comunicaciones de los webhooks *
-                        <input type="text" id="satEmail" name="satEmail" class="form-control" value="{{ fsc.satEmail }}"/>
-                    </label>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0">
+                            <i class="fa-solid fa-sliders me-2" aria-hidden="true"></i>
+                            Valores por defecto
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">
+                            Agrega un cliente y un producto por defecto para cuando se generen facturas cuyo cliente o
+                            producto no esté vinculado.
+                        </p>
 
-                    <label for="adminEmail" style="flex:1;">
-                        Email administrativo para las comunicaciones de los webhooks *
-                        <input type="text" id="adminEmail" name="adminEmail" class="form-control" value="{{ fsc.adminEmail }}"/>
-                    </label>
-
-                    <label for="remesasSEPA" style="flex:1;">
-                        Generar remesa con las facturas pagadas. Necesitas tener instalado el plugin RemesasSEPA.
-                        <select name="remesasSEPA" id="remesasSEPA" class="form-control">
-                            <option value="0" {{ (fsc.remesasSEPA == 0) ? 'selected' : '' }}>No</option>
-                            <option value="1" {{ (fsc.remesasSEPA == 1) ? 'selected' : ''}}>Si</option>
-                        </select>
-                    </label>
-
-                    {% if fsc.hayPluginRemesas %}
-                        <label for="cuentaRemesaSepa" style="flex:1;">
-                            Id de la cuenta bancaria donde llegan las transferencias de stripe
-                            <input type="text" id="cuentaRemesaSEPA" name="cuentaRemesaSEPA" class="form-control" value="{{ fsc.cuentaRemesaSEPA }}"/>
-                        </label>
-                    {% endif %}
-
-
-                    <label for="verifactu" style="flex:1;">
-                        Enviar facturas a verifactu. Necesitas tener instalado el plugin Verifactu.
-                        <select name="verifactu" id="verifactu" class="form-control">
-                            <option value="0" {{ (fsc.verifactu == 0) ? 'selected' : '' }}>No</option>
-                            <option value="1" {{ (fsc.verifactu == 1) ? 'selected' : ''}}>Si</option>
-                        </select>
-                    </label>
-
-                    <button style="height: 40px;     align-self: flex-end;    margin-bottom: 7px;" type="submit"
-                            class="btn btn-info">Guardar
-                    </button>
-
+                        <form id="frm_settings" method="post" name="frm_settings" action="SettingParams?action=addSettings">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="codcliente_autocomplete">Código del cliente por defecto *</label>
+                                    <input type="hidden" name="codcliente" value="{{ fsc.codcliente }}"/>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa-solid fa-search fa-fw" aria-hidden="true"></i></span>
+                                        <input type="text" id="codcliente_autocomplete" class="form-control widget-autocomplete"
+                                               value="{{ fsc.clienteNombre }}" autocomplete="off"
+                                               data-field="codcliente" data-source="Cliente" data-fieldcode="codcliente"
+                                               data-fieldtitle="nombre" data-strict="1"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="codproducto_autocomplete">Código del producto por defecto *</label>
+                                    <input type="hidden" name="codproducto" value="{{ fsc.codproducto }}"/>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa-solid fa-search fa-fw" aria-hidden="true"></i></span>
+                                        <input type="text" id="codproducto_autocomplete" class="form-control widget-autocomplete"
+                                               value="{{ fsc.productoNombre }}" autocomplete="off"
+                                               data-field="codproducto" data-source="Producto" data-fieldcode="idproducto"
+                                               data-fieldtitle="referencia" data-strict="1"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-3">
+                                    <label class="form-label" for="enviarEmail">Enviar email al cliente cuando se genere la factura *</label>
+                                    <select name="enviarEmail" id="enviarEmail" class="form-select">
+                                        <option value="0" {{ (fsc.enviarEmail == 0) ? 'selected' : '' }}>No</option>
+                                        <option value="1" {{ (fsc.enviarEmail == 1) ? 'selected' : ''}}>Sí</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 col-lg-3">
+                                    <label class="form-label" for="mostrarStripeCus">Mostrar el cliente de Stripe en la factura *</label>
+                                    <select name="mostrarStripeCus" id="mostrarStripeCus" class="form-select">
+                                        <option value="0" {{ (fsc.mostrarStripeCus == 0) ? 'selected' : '' }}>No</option>
+                                        <option value="1" {{ (fsc.mostrarStripeCus == 1) ? 'selected' : ''}}>Sí</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 col-lg-3">
+                                    <label class="form-label" for="satEmail">Email técnico para las comunicaciones de los webhooks *</label>
+                                    <input type="text" id="satEmail" name="satEmail" class="form-control"
+                                           value="{{ fsc.satEmail }}"/>
+                                </div>
+                                <div class="col-md-6 col-lg-3">
+                                    <label class="form-label" for="adminEmail">Email administrativo para las comunicaciones de los webhooks *</label>
+                                    <input type="text" id="adminEmail" name="adminEmail" class="form-control"
+                                           value="{{ fsc.adminEmail }}"/>
+                                </div>
+                                <div class="col-md-6 col-lg-4">
+                                    <label class="form-label" for="remesasSEPA">
+                                        Generar remesa con las facturas pagadas. Necesitas tener instalado el
+                                        <a href="https://facturascripts.com/plugins/remesassepa" target="_blank"
+                                           rel="nofollow" onclick="event.stopPropagation()">plugin RemesasSEPA</a>.
+                                    </label>
+                                    <select name="remesasSEPA" id="remesasSEPA" class="form-select">
+                                        <option value="0" {{ (fsc.remesasSEPA == 0) ? 'selected' : '' }}>No</option>
+                                        <option value="1" {{ (fsc.remesasSEPA == 1) ? 'selected' : ''}}>Sí</option>
+                                    </select>
+                                </div>
+                                {% if fsc.hayPluginRemesas %}
+                                    <div class="col-md-6 col-lg-4">
+                                        <label class="form-label" for="cuentaRemesaSEPA_autocomplete">
+                                            Id de la cuenta bancaria donde llegan las transferencias de Stripe
+                                        </label>
+                                        <input type="hidden" name="cuentaRemesaSEPA" value="{{ fsc.cuentaRemesaSEPA }}"/>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fa-solid fa-search fa-fw" aria-hidden="true"></i></span>
+                                            <input type="text" id="cuentaRemesaSEPA_autocomplete" class="form-control widget-autocomplete"
+                                                   value="{{ fsc.cuentaRemesaNombre }}" autocomplete="off"
+                                                   data-field="cuentaRemesaSEPA" data-source="cuentasbanco" data-fieldcode="codcuenta"
+                                                   data-fieldtitle="descripcion" data-strict="1"/>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                <div class="col-md-6 col-lg-4">
+                                    <label class="form-label" for="verifactu">
+                                        Enviar facturas a Verifactu. Necesitas tener instalado el
+                                        <a href="https://facturascripts.com/plugins/verifactu" target="_blank"
+                                           rel="nofollow" onclick="event.stopPropagation()">plugin Verifactu</a>.
+                                    </label>
+                                    <select name="verifactu" id="verifactu" class="form-select">
+                                        <option value="0" {{ (fsc.verifactu == 0) ? 'selected' : '' }}>No</option>
+                                        <option value="1" {{ (fsc.verifactu == 1) ? 'selected' : ''}}>Sí</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="text-end mt-4">
+                                <button type="submit" class="btn btn-info">
+                                    <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i> Guardar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
-            </form>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0">
+                            <i class="fa-brands fa-stripe-s me-2" aria-hidden="true"></i>
+                            Cuentas dadas de alta
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">
+                            Por seguridad solo se muestra el identificador que le pusiste al crearlas.
+                        </p>
+
+                        {% if fsc.sks_stripe is empty %}
+                            <p class="text-muted mb-0">No hay ninguna cuenta configurada.</p>
+                        {% else %}
+                            <div class="list-group">
+                                {% for sk in fsc.sks_stripe %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <i class="fa-solid fa-circle-check text-success me-1" aria-hidden="true"></i>
+                                                <strong>{{ sk.name }}</strong>
+                                                <span class="badge bg-secondary ms-2">Serie: {{ sk.codserie }}</span>
+                                            </div>
+                                            <a class="btn btn-sm btn-outline-danger"
+                                               href="{{ asset('SettingParams') }}?action=del&name={{ sk.name }}"
+                                               title="Eliminar cuenta">
+                                                <i class="fa fa-trash" aria-hidden="true"></i>
+                                            </a>
+                                        </div>
+                                        <div class="mt-2 small text-muted">
+                                            <div class="d-flex align-items-center mb-1">
+                                                <button type="button" class="copy-webhook-btn js-copy-webhook me-2"
+                                                        data-url="{{ asset('WebhookStripe') }}?source={{ sk.token }}"
+                                                        title="Copiar enlace">
+                                                    <i class="fa-solid fa-link" aria-hidden="true"></i>
+                                                </button>
+                                                Webhook Facturas:
+                                                <code class="ms-1">{{ asset('WebhookStripe') }}?source={{ sk.token }}</code>
+                                            </div>
+                                            {% if fsc.remesasSEPA == 1 and fsc.hayPluginRemesas %}
+                                                <div class="d-flex align-items-center">
+                                                    <button type="button" class="copy-webhook-btn js-copy-webhook me-2"
+                                                            data-url="{{ asset('WebhookStripeRemesasSepa') }}?source={{ sk.token }}"
+                                                            title="Copiar enlace">
+                                                        <i class="fa-solid fa-link" aria-hidden="true"></i>
+                                                    </button>
+                                                    Webhook Remesas:
+                                                    <code class="ms-1">{{ asset('WebhookStripeRemesasSepa') }}?source={{ sk.token }}</code>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
         </div>
-
-        <hr style="margin-bottom: 50px">
-
-        <p>Claves de Stripe dadas de alta ( por seguridad solo se muestra el identificador que le pusiste al
-            crearlo):</p>
-        {% for sk in fsc.sks_stripe %}
-            <li> <a href="{{ asset('SettingParams') }}?action=del&name={{ sk.name }}">
-                    <i class="fa fa-trash"></i>
-                </a>
-                {{ sk.name }} (Serie: {{ sk.codserie }}) :
-                <ul>
-                    <li>Webhook Facturas: {{ asset('WebhookStripe') }}?source={{ sk.token }}</li>
-                    {% if fsc.remesasSEPA == 1 and fsc.hayPluginRemesas %}
-                        <li>Webhook Remesas: {{ asset('WebhookStripeRemesasSepa') }}?source={{ sk.token }}</li>
-                    {% endif %}
-                </ul>
-            </li>
-        {% endfor %}
     </div>
+{% endblock %}
+
+{% block css %}
+    {{ parent() }}
+    <style>
+        .copy-webhook-btn {
+            border: 0;
+            background: none;
+            padding: 0;
+            color: inherit;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .copy-webhook-btn:hover,
+        .copy-webhook-btn:focus {
+            color: var(--bs-primary);
+        }
+        .stripe-copy-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 2rem;
+            transform: translateX(-50%) translateY(1rem);
+            z-index: 2000;
+            padding: .6rem 1.1rem;
+            border-radius: .4rem;
+            color: #fff;
+            font-size: .9rem;
+            box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s ease, transform .2s ease;
+        }
+        .stripe-copy-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .stripe-copy-toast-success {
+            background: var(--bs-success);
+        }
+        .stripe-copy-toast-error {
+            background: var(--bs-danger);
+        }
+    </style>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        function stripeCopyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text);
+            }
+            return new Promise(function (resolve, reject) {
+                var textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                try {
+                    document.execCommand('copy') ? resolve() : reject(new Error('copy-failed'));
+                } catch (e) {
+                    reject(e);
+                }
+                document.body.removeChild(textarea);
+            });
+        }
+
+        function stripeCopyToast(message, success) {
+            var toast = document.getElementById('stripe-copy-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'stripe-copy-toast';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.className = 'stripe-copy-toast show ' + (success ? 'stripe-copy-toast-success' : 'stripe-copy-toast-error');
+            clearTimeout(toast.copyTimer);
+            toast.copyTimer = setTimeout(function () {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('.js-copy-webhook');
+            if (!button) {
+                return;
+            }
+            var url = new URL(button.dataset.url, window.location.origin).href;
+            stripeCopyToClipboard(url).then(function () {
+                stripeCopyToast('Enlace copiado al portapapeles', true);
+            }).catch(function () {
+                stripeCopyToast('No se pudo copiar el enlace', false);
+                alert(url);
+            });
+        });
+    </script>
 {% endblock %}

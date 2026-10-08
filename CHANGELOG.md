@@ -1,3 +1,12 @@
+2026-10-01: Version 2.0
+
+    Mejoras:
+    * Compatibilidad con la versión 2026 de FS
+    * Nueva interfaz
+    * Refactorización del código
+    * Corrección de errors
+
+
 2025-10-13: Version 1.9
 
     Corrección:

@@ -1,3 +1,8 @@
+2026-10-01: Version 2.1
+
+    Corrección:
+    * Correcciones menores de tipos
+
 2026-10-01: Version 2.0
 
     Mejoras:

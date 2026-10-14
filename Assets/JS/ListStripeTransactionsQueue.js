@@ -26,6 +26,31 @@ $(function () {
     input.value = code;
     modalForm.appendChild(input);
 
+    var listForm = document.getElementById('formListStripeTransactionsQueue');
+    if (listForm) {
+        // El modal se renderiza fuera del formulario del listado, así que su formulario no
+        // incluye los filtros ni la búsqueda. Los copiamos para que, al enviarlo, el controlador
+        // conserve los filtros en lugar de vaciarlos.
+        var fields = listForm.querySelectorAll(
+            'input[name^="filter"], select[name^="filter"], input[name="query"],' +
+            'input[name="order"], input[name="offset"], input[name="loadfilter"]'
+        );
+        fields.forEach(function (field) {
+            var hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = field.name;
+            hidden.value = field.value;
+            modalForm.appendChild(hidden);
+        });
+
+        // La recarga de página pierde el check de la fila, así que lo volvemos a marcar.
+        listForm.querySelectorAll('input.listAction[name="codes[]"]').forEach(function (checkbox) {
+            if (checkbox.value === code) {
+                checkbox.checked = true;
+            }
+        });
+    }
+
     // Quitamos el parámetro de la URL para no reabrir el modal al recargar.
     params.delete('linkInvoice');
     var query = params.toString();

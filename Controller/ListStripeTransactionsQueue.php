@@ -31,6 +31,17 @@ class ListStripeTransactionsQueue extends ListController
      */
     protected function execPreviousAction($action): bool
     {
+        // Al recargar tras "Procesar" el redirect es un GET, y el core solo lee la búsqueda,
+        // el offset y el orden del cuerpo POST. Los recuperamos de la query string para que
+        // el listado quede igual (misma página y misma búsqueda) después de la recarga.
+        if ($this->request->isMethod('GET')) {
+            foreach (['query', 'offset', 'order', 'loadfilter'] as $key) {
+                if ($this->request->query->has($key)) {
+                    $this->request->request->set($key, $this->request->query->get($key));
+                }
+            }
+        }
+
         switch ($action) {
             case 'generate':
                 return $this->generateAction();
@@ -74,7 +85,15 @@ class ListStripeTransactionsQueue extends ListController
         // Si la factura de Stripe no está vinculada, recargamos la página abriendo el
         // modal para elegir la factura de FacturaScripts y vincularla + procesarla.
         if ($transaction->canLinkInvoice()) {
-            $this->redirect('ListStripeTransactionsQueue?activetab=' . $this->mainTabName() . '&linkInvoice=' . urlencode($code), 0);
+            $params = [
+                'activetab' => $this->mainTabName(),
+                'linkInvoice' => $code,
+                'query' => (string)$this->request->request->get('query', ''),
+                'offset' => (string)$this->request->request->get('offset', 0),
+                'order' => (string)$this->request->request->get('order', ''),
+                'loadfilter' => (string)$this->request->request->get('loadfilter', 0),
+            ];
+            $this->redirect('ListStripeTransactionsQueue?' . http_build_query($params), 0);
             return true;
         }
 

@@ -163,16 +163,16 @@ class SettingParams extends Controller
     {
         $data = $this->request->request->all();
 
-        $this->codcliente = $data['codcliente'];
-        $this->codproducto = $data['codproducto'];
-        $this->enviarEmail = $data['enviarEmail'];
+        $this->codcliente = $data['codcliente'] ?? '';
+        $this->codproducto = $data['codproducto'] ?? '';
+        $this->enviarEmail = !empty($data['enviarEmail']);
 
-        $this->satEmail = $data['satEmail'];
-        $this->adminEmail = $data['adminEmail'];
-        $this->mostrarStripeCus = $data['mostrarStripeCus'];
-        $this->remesasSEPA = $data['remesasSEPA'];
-        $this->cuentaRemesaSEPA = $data['cuentaRemesaSEPA'];
-        $this->verifactu = $data['verifactu'];
+        $this->satEmail = $data['satEmail'] ?? '';
+        $this->adminEmail = $data['adminEmail'] ?? '';
+        $this->mostrarStripeCus = !empty($data['mostrarStripeCus']);
+        $this->remesasSEPA = !empty($data['remesasSEPA']);
+        $this->cuentaRemesaSEPA = $data['cuentaRemesaSEPA'] ?? '';
+        $this->verifactu = !empty($data['verifactu']);
 
         $settings = [];
 
@@ -189,7 +189,7 @@ class SettingParams extends Controller
             $settings['mostrarStripeCus'] = $this->mostrarStripeCus;
 
 
-        if ($this->remesasSEPA !== '0') {
+        if ($this->remesasSEPA) {
             if (!Plugins::isInstalled('RemesasSEPA')){
                 Tools::log()->error('No tienes instalado el plugin Remesas SEPA.');
                 return;
@@ -206,7 +206,7 @@ class SettingParams extends Controller
             $settings['cuentaRemesaSEPA'] = $this->cuentaRemesaSEPA;
 
 
-        if ($this->verifactu && $this->verifactu !== '0') {
+        if ($this->verifactu) {
             if (!Plugins::isInstalled('Verifactu')) {
                 Tools::log()->error('No tienes instalado el plugin Verifactu.');
                 return;

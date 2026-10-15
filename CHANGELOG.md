@@ -1,5 +1,8 @@
 2026-10-01: Version 2.1
-
+    
+    Mejoras:
+    * Agregamos nombre del cliente en el listado de clientes
+    
     Corrección:
     * Correcciones menores de tipos
 

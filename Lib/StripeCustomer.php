@@ -10,6 +10,7 @@ namespace FacturaScripts\Plugins\ImportadorStripe\Lib;
 class StripeCustomer
 {
     public $id = '';
+    public $name = '';
     public $email = '';
     public $fs_idClient = '';
 
@@ -43,6 +44,7 @@ class StripeCustomer
         foreach ($data as $item) {
             $customer = new self();
             $customer->id = $item['id'];
+            $customer->name = $item['name'] ?? '';
             $customer->email = $item['email'] ?? '';
             $customer->fs_idClient = $item->metadata['fs_idFsCustomer'] ?? '';
             $customers[] = $customer;
